@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+out/
+bin/
+*.tsbuildinfo
+.turbo/
+
+# Go
+apps/api/bin/
+apps/api/tmp/
+apps/worker/bin/
+go.work.sum
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Coverage / test artifacts
+coverage/
+*.out
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars

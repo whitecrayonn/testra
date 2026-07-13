@@ -1,0 +1,17 @@
+{
+  "name": "@testra/shared",
+  "version": "0.0.0",
+  "description": "Shared TypeScript types and utilities for Testra",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@testra/config": "workspace:*",
+    "typescript": "^5.5.3"
+  }
+}

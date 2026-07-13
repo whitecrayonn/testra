@@ -1,0 +1,17 @@
+{
+  "name": "@testra/sdk",
+  "version": "0.0.0",
+  "description": "Official Testra TypeScript SDK",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@testra/config": "workspace:*",
+    "typescript": "^5.5.3"
+  }
+}

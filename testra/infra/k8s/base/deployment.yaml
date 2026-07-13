@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testra-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: testra-api
+  template:
+    metadata:
+      labels:
+        app: testra-api
+    spec:
+      containers:
+        - name: api
+          image: testra-api:latest
+          ports:
+            - containerPort: 8080

@@ -1,0 +1,118 @@
+package organization
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
+	"github.com/testra/testra/apps/api/internal/shared/middleware"
+)
+
+type Handler struct {
+	service *Service
+}
+
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
+}
+
+type orgResponse struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Slug    string `json:"slug"`
+	OwnerID string `json:"owner_id"`
+}
+
+func mapOrgResponse(o *Organization) orgResponse {
+	return orgResponse{
+		ID:      o.ID.String(),
+		Name:    o.Name,
+		Slug:    o.Slug,
+		OwnerID: o.OwnerID.String(),
+	}
+}
+
+type createOrgRequest struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	var req createOrgRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+		return
+	}
+
+	org, err := h.service.Create(r.Context(), CreateInput{
+		Name:  req.Name,
+		Slug:  req.Slug,
+		Owner: userID,
+	})
+	if err != nil {
+		mapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusCreated, mapOrgResponse(org))
+}
+
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid organization id")
+		return
+	}
+
+	org, err := h.service.Get(r.Context(), id)
+	if err != nil {
+		mapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusOK, mapOrgResponse(org))
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	orgs, err := h.service.ListForUser(r.Context(), userID)
+	if err != nil {
+		mapError(w, err)
+		return
+	}
+
+	resp := make([]orgResponse, len(orgs))
+	for i, org := range orgs {
+		resp[i] = mapOrgResponse(&org)
+	}
+	apihttp.JSON(w, http.StatusOK, resp)
+}
+
+func mapError(w http.ResponseWriter, err error) {
+	switch err {
+	case sharederrors.ErrConflict:
+		apihttp.ErrorJSON(w, http.StatusConflict, "CONFLICT", err.Error())
+	case sharederrors.ErrNotFound:
+		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+	case sharederrors.ErrInvalidInput:
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+	case sharederrors.ErrForbidden:
+		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+	default:
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+	}
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@testra/ml",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ../../scripts/dev/ml-dev.mjs",
+    "test": "pytest",
+    "lint": "ruff check ."
+  }
+}
