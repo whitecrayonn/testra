@@ -20,11 +20,12 @@ The documentation set is organized under `docs/api`, `docs/architecture`, `docs/
 
 - Documentation source-of-truth boundaries are accepted in ADR-002.
 - ADR-001 hybrid authentication is accepted and reconciled with ADR-007: self-hosted core auth, 15-minute JWTs, rotating refresh tokens, administrator/enterprise MFA, and scoped expiring API keys.
-- ADR-003 selects AWS as the production provider: ECS Fargate, RDS PostgreSQL, ElastiCache Redis, S3, ClickHouse Cloud, Cloudflare CDN/WAF, ACM TLS, and AWS Secrets Manager/KMS. Kubernetes is optional only after measured need.
+- ADR-003 selects the production deployment roadmap (amended by ADR-009): Ubuntu VM with systemd + Nginx for MVP; AWS ECS Fargate, RDS PostgreSQL, ElastiCache Redis, S3, ClickHouse Cloud, Cloudflare CDN/WAF, ACM TLS, and AWS Secrets Manager/KMS for Beta through Enterprise. Kubernetes is optional only after measured need.
 - ADR-004 mandates defense-in-depth tenancy: middleware identity/scope resolution, request context propagation, service-layer authorization, PostgreSQL RLS, and tenant propagation through jobs, caches, exports, ClickHouse, and ML boundaries.
 - ADR-005 fixes backup schedules, retention, RPO, and RTO: PostgreSQL PITR 35 days with 5-minute MVP RPO/4-hour MVP RTO; stronger Beta targets; bounded ClickHouse, audit, log, metric, trace, and object-storage retention.
 - ADR-006 selects cursor pagination, 24-hour PostgreSQL idempotency records for side-effecting operations, `/api/v1` major versioning, and a minimum 12-month/two-major-release deprecation window.
 - ADR-008 fixes MVP performance targets: p95 read 300 ms, p95 write 500 ms, 30-second synchronous timeout, 5-minute job timeout, 25 MiB request uploads, 500 concurrent users, 50 sustained requests/second, and 10,000 ClickHouse records/minute.
+- ADR-009 replaces Docker Compose with a native development environment: local PostgreSQL, Redis, Mailpit, MinIO. Docker is optional. MVP deployment is Ubuntu VM + systemd + Nginx.
 
 ## 5. Technology Stack
 
@@ -76,15 +77,15 @@ No architectural blockers remain. Production readiness remains conditional on im
 
 ## 9. Files Modified
 
-Documentation under `docs/` now includes the documentation index, API guides, architecture references and diagrams, onboarding/local/deployment guides, operations runbooks, security/release/readiness checklists, ADR-002 through ADR-008, and the engineering documentation report. The OpenAPI contract was extended for the implemented Phase 1 MFA, password-reset, and API-key routes. No application or infrastructure code was modified.
+Documentation under `docs/` now includes the documentation index, API guides, architecture references and diagrams, onboarding/local/deployment guides, operations runbooks, security/release/readiness checklists, ADR-002 through ADR-009, and the engineering documentation report. The OpenAPI contract was extended for the implemented Phase 1 MFA, password-reset, and API-key routes. No application or infrastructure code was modified.
 
 ## 10. Important Notes
 
-The OpenAPI contract covers auth, MFA, password reset, organizations, workspaces, projects, and API keys. Future endpoints must be added when approved and implemented. Planned product modules remain governed by `PHASES.md`, while architecture and engineering constraints are finalized in ADR-001 through ADR-008. The existing progress report remains append-only and authoritative for implementation status.
+The OpenAPI contract covers auth, MFA, password reset, organizations, workspaces, projects, and API keys. Future endpoints must be added when approved and implemented. Planned product modules remain governed by `PHASES.md`, while architecture and engineering constraints are finalized in ADR-001 through ADR-009. The existing progress report remains append-only and authoritative for implementation status.
 
 ## Architectural Decisions Finalized
 
-- **Production platform:** AWS managed services with ECS Fargate as the default runtime, RDS PostgreSQL, ElastiCache Redis, S3, ClickHouse Cloud, Cloudflare CDN/WAF, ACM TLS, and AWS Secrets Manager/KMS. Local, MVP, Beta, and Enterprise stages are defined in ADR-003.
+- **Production platform:** Ubuntu VM with systemd + Nginx for MVP (ADR-003 amended by ADR-009). AWS managed services with ECS Fargate for Beta through Enterprise: RDS PostgreSQL, ElastiCache Redis, S3, ClickHouse Cloud, Cloudflare CDN/WAF, ACM TLS, and AWS Secrets Manager/KMS. Local, MVP, Beta, and Enterprise stages are defined in ADR-003 and ADR-009. Local development is native (no Docker required).
 - **Recovery and retention:** PostgreSQL daily snapshots/WAL PITR for 35 days, 5-minute MVP RPO, 4-hour MVP RTO, 13-month ClickHouse result retention, versioned S3, 2-year minimum audit retention for MVP/Beta, 7-year Enterprise audit retention, 30/90-day application log retention, 15-month metrics, and 14-day traces.
 - **Tenant isolation:** PostgreSQL RLS is mandatory in staging/production; middleware resolves identity and candidate scope, request context propagates it, services authorize it, repositories set `app.tenant_id`, and all asynchronous/analytical paths carry tenant scope.
 - **API standards:** Cursor pagination with 50 default/100 maximum, `Idempotency-Key` for side-effecting operations with 24-hour PostgreSQL records, `/api/v1` major versioning, and deprecation support for at least 12 months or two major release cycles.
