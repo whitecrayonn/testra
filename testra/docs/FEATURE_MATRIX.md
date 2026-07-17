@@ -27,13 +27,13 @@
 
 | Feature | Backend | Frontend | OpenAPI | Tests | Production Ready | Status |
 |---------|---------|----------|---------|-------|------------------|--------|
-| Identity / Auth (register, login, refresh, me) | ✅ | ✅ | ✅ | 🔄 | ❌ | Functional; needs rate limiting and token refresh on client |
+| Identity / Auth (register, login, refresh, me) | ✅ | ✅ | ✅ | 🔄 | ❌ | Functional; client route guards and 401 token refresh added; `httpOnly` cookie deferred |
 | MFA TOTP (setup, verify, disable) | ✅ | ✅ | ✅ | 🔄 | ❌ | QR code rendered as `<img>` from backend data URL |
 | Password reset (request, confirm) | ✅ | ✅ | ✅ | 🔄 | ❌ | Token emailed; no fallback if SMTP disabled |
 | Organization management | ✅ | ✅ | ✅ | 🔄 | ❌ | POST/GET bypass tenant/permission gates |
 | Workspace management | ✅ | ✅ | ✅ | 🔄 | ❌ | Functional |
 | Project management | ✅ | ✅ | ✅ | 🔄 | ❌ | Frontend key generation now matches backend regex |
-| API keys (CRUD) | ✅ | ✅ | ✅ | 🔄 | ❌ | Settings UI implemented; not used for `/ingest` auth yet |
+| API keys (CRUD) | ✅ | ✅ | ✅ | 🔄 | ❌ | Settings UI implemented; `/ingest` now protected by API-key auth with scope and rate limiting |
 | RBAC (roles, permissions, assignments) | 🔄 | ❌ | 🔄 | 🔄 | ❌ | Org-scoped only; permission-name drift |
 | Audit logging | ✅ | ❌ | ❌ | 🔄 | ❌ | Fire-and-forget, no UI |
 | Billing / subscriptions | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
@@ -48,9 +48,9 @@
 | Test case versioning | ✅ | 🔄 | ✅ | 🔄 | ❌ | History list UI exists |
 | Test runs / results | ✅ | ✅ | ✅ | 🔄 | ❌ | Manual runs work; SSE uses query-token auth in browsers |
 | Test run progress (SSE) | ✅ | ✅ | ✅ | 🔄 | ❌ | `Auth` middleware accepts `Authorization` header or `access_token` query param |
-| Automation result ingestion (JUnit/Playwright/Cypress) | ✅ | ❌ | ✅ | 🔄 | ❌ | No UI; requires user JWT (API-key auth missing) |
+| Automation result ingestion (JUnit/Playwright/Cypress) | ✅ | ❌ | ✅ | 🔄 | ❌ | No UI; protected by API-key auth with scope and rate limiting |
 | API testing engine | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
-| Defects | ❌ | 🔄 | ❌ | ❌ | ❌ | Frontend placeholder only |
+| Defects | ✅ | ✅ | 🔄 | ✅ | ❌ | Backend CRUD, pagination, and list/create UI implemented; OpenAPI pending update |
 | Manual test execution tracker | 🔄 | 🔄 | 🔄 | 🔄 | ❌ | Runs can be created and started; no step-level UI |
 
 ## Core layer

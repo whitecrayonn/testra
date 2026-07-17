@@ -66,7 +66,7 @@ Route group `(dashboard)` applies `app/(dashboard)/layout.tsx` (sidebar + main c
 | `/[workspace]/test-runs` | `apps/web/app/(dashboard)/[workspace]/test-runs/page.tsx` | List test runs |
 | `/[workspace]/test-runs/new` | `apps/web/app/(dashboard)/[workspace]/test-runs/new/page.tsx` | Create manual test run |
 | `/[workspace]/test-runs/[id]` | `apps/web/app/(dashboard)/[workspace]/test-runs/[id]/page.tsx` | Run detail + SSE progress |
-| `/[workspace]/defects` | `apps/web/app/(dashboard)/[workspace]/defects/page.tsx` | Placeholder for Phase 4 |
+| `/[workspace]/defects` | `apps/web/app/(dashboard)/[workspace]/defects/page.tsx` | List, create, and paginate defects for the selected project |
 
 ### Workspace context persistence
 
@@ -172,7 +172,17 @@ GET    /test-runs/{id}/stream                  (runs:read, SSE)
 PUT    /test-runs/{id}                         (runs:update + AuditLog)
 DELETE /test-runs/{id}                         (runs:delete + AuditLog)
 PUT    /test-run-items/{id}                    (runs:update + AuditLog)
-POST   /ingest                                 (runs:ingest + AuditLog + IdempotencyKey)
+POST   /ingest                                 (API key auth + scope runs:ingest + RateLimit + AuditLog + IdempotencyKey)
+```
+
+### Defects
+
+```
+POST   /defects                                (TenantContext via body project_id + defects:create + AuditLog)
+GET    /defects?project_id=...                 (TenantContext via query project_id + defects:read)
+GET    /defects/{id}                           (TenantContext via defect_id + defects:read)
+PUT    /defects/{id}                           (TenantContext via defect_id + defects:update + AuditLog)
+DELETE /defects/{id}                           (TenantContext via defect_id + defects:delete + AuditLog)
 ```
 
 ---
@@ -198,6 +208,7 @@ POST   /ingest                                 (runs:ingest + AuditLog + Idempot
 | `{id}` (test cases) | `/test-cases/{id}` | Resolves via workspace/project | Tenant set by workspace context |
 | `{id}` (test runs) | `/test-runs/{id}` | Resolves via project/workspace | SSE uses same route group |
 | `{id}` (run items) | `/test-run-items/{id}` | `RunItemToOrg` | Resolves run item → run → workspace → organization |
+| `{id}` (defects) | `/defects/{id}` | `DefectToOrg` | Resolves defect → workspace → organization |
 
 ---
 
@@ -215,7 +226,7 @@ POST   /ingest                                 (runs:ingest + AuditLog + Idempot
 | Caveat | Impact | Recommended fix |
 |--------|--------|---------------|
 | **Two dashboard route trees** | `/dashboard/projects` and `/:workspace/projects` serve the same page but store context differently. Confuses users and analytics. | Consolidate to one route tree; use `/:workspace` and redirect `/dashboard` to the selected workspace. |
-| **No route guards** | Unauthenticated users can navigate to `/dashboard/*` and see empty/skeleton UI until API 401s. | Add client middleware or server-side auth check; redirect to `/login` when no token. |
+| **Route guards** | `DashboardLayout` and `AuthLayout` now use a client `RouteGuard` that redirects unauthenticated users to `/login` and authenticated users away from auth pages. | Tokens are still in `localStorage` and visible to XSS; move to `httpOnly` cookie or secure wrapper for production. |
 | **`[workspace]` not validated** | Any slug in the URL is accepted; the page reads workspace UUID from `localStorage` and may ignore the URL. | Use the URL param as source of truth and validate it against the backend. |
 | **No catch-all 404** | Unknown dashboard paths may fall through to Next.js default behavior. | Add a `not-found.tsx` in the dashboard group. |
 | **Backend route permissions are inconsistent** | `POST /organizations` and `GET /organizations` only require a valid JWT, not `orgs:create` or membership. | Add `RequirePermission` gates if org creation should be restricted or list filtered by membership. |

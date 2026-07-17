@@ -13,4 +13,5 @@ type Repository interface {
 	ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]APIKey, error)
 	Revoke(ctx context.Context, id uuid.UUID) error
 	UpdateLastUsed(ctx context.Context, id uuid.UUID) error
+	GetWorkspaceOrganization(ctx context.Context, workspaceID uuid.UUID) (uuid.UUID, error)
 }

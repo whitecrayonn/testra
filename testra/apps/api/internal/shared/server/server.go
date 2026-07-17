@@ -14,6 +14,7 @@ import (
 	"github.com/testra/testra/apps/api/internal/apikeys"
 	"github.com/testra/testra/apps/api/internal/audit"
 	"github.com/testra/testra/apps/api/internal/automationhub"
+	"github.com/testra/testra/apps/api/internal/defects"
 	"github.com/testra/testra/apps/api/internal/identity"
 	"github.com/testra/testra/apps/api/internal/notification"
 	"github.com/testra/testra/apps/api/internal/organization"
@@ -41,6 +42,14 @@ type Config struct {
 	SMTPFrom            string
 	CORSAllowedOrigins  string
 	IdempotencyKeyTTL   time.Duration
+}
+
+type apiKeyValidatorAdapter struct {
+	service *apikeys.Service
+}
+
+func (a *apiKeyValidatorAdapter) Validate(ctx context.Context, rawKey string) (sharedmiddleware.APIKeyInfo, error) {
+	return a.service.Validate(ctx, rawKey)
 }
 
 func corsMiddleware(allowedOrigins string) func(http.Handler) http.Handler {
@@ -89,6 +98,7 @@ func New(cfg Config) http.Handler {
 	apiKeyModule := apikeys.NewModule(cfg.DB)
 	testMgmtModule := testmanagement.NewModule(cfg.DB)
 	resultsModule := results.NewModule(cfg.DB)
+	defectsModule := defects.NewModule(cfg.DB)
 	notificationModule := notification.NewModule(cfg.DB, cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPFrom)
 	automationHubModule := automationhub.NewModule(resultsModule.Repository)
 	dbHandle := db.Wrap(cfg.DB)
@@ -116,12 +126,30 @@ func New(cfg Config) http.Handler {
 		})
 	}
 
+	apiKeyValidator := &apiKeyValidatorAdapter{service: apiKeyModule.Service}
+
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/auth/register", identityModule.Register)
-		r.Post("/auth/login", identityModule.Login)
-		r.Post("/auth/refresh", identityModule.RefreshToken)
-		r.Post("/auth/password-reset/request", identityModule.RequestPasswordReset)
-		r.Post("/auth/password-reset/confirm", identityModule.ResetPassword)
+		r.Group(func(r chi.Router) {
+			r.Use(sharedmiddleware.RateLimit(rateLimitCfg, sharedmiddleware.RateLimitByIP(), sharedmiddleware.RateLimitRule{Limit: 20, Window: time.Minute}))
+			r.Post("/auth/register", identityModule.Register)
+			r.Post("/auth/login", identityModule.Login)
+			r.Post("/auth/refresh", identityModule.RefreshToken)
+			r.Post("/auth/password-reset/request", identityModule.RequestPasswordReset)
+			r.Post("/auth/password-reset/confirm", identityModule.ResetPassword)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(sharedmiddleware.RateLimit(rateLimitCfg, sharedmiddleware.RateLimitByAPIKey(), sharedmiddleware.RateLimitRule{Limit: 100, Window: time.Minute}))
+			r.Use(sharedmiddleware.APIKeyAuth(cfg.DB, apiKeyValidator))
+			r.Use(sharedmiddleware.RequireScope("runs:ingest"))
+			r.Use(sharedmiddleware.AuditLog("test_run.ingest", "test_run",
+				func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+				func(r *http.Request) string { return "" },
+				auditLogFn,
+			))
+			r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, "ingest", cfg.IdempotencyKeyTTL))
+			r.Post("/ingest", automationHubModule.Handler.Ingest)
+		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(authMiddleware)
@@ -178,7 +206,7 @@ func New(cfg Config) http.Handler {
 						func(r *http.Request) string { return "" },
 						auditLogFn,
 					),
-				).Post("/api-keys", apiKeyModule.Create)
+				).Post("/api-keys", apiKeyModule.Handler.Create)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -187,7 +215,7 @@ func New(cfg Config) http.Handler {
 					tenantResolver,
 				))
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "projects:read")).Get("/projects", projectModule.List)
-				r.With(sharedmiddleware.RequirePermission(rbacCfg, "apikeys:read")).Get("/api-keys", apiKeyModule.List)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "apikeys:read")).Get("/api-keys", apiKeyModule.Handler.List)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -325,7 +353,7 @@ func New(cfg Config) http.Handler {
 						func(r *http.Request) string { return chi.URLParam(r, "id") },
 						auditLogFn,
 					),
-				).Delete("/api-keys/{id}", apiKeyModule.Revoke)
+				).Delete("/api-keys/{id}", apiKeyModule.Handler.Revoke)
 			})
 
 			// --- Phase 3: Execution & Results ---
@@ -394,21 +422,52 @@ func New(cfg Config) http.Handler {
 				).Put("/test-run-items/{id}", resultsModule.Handler.UpdateItemStatus)
 			})
 
-			r.Group(func(r chi.Router) {
-				r.Use(sharedmiddleware.TenantContext(cfg.DB,
-					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
-					tenantResolver,
-				))
-				r.With(
-					sharedmiddleware.RequirePermission(rbacCfg, "runs:ingest"),
-					sharedmiddleware.AuditLog("test_run.ingest", "test_run",
-						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
-						func(r *http.Request) string { return "" },
-						auditLogFn,
-					),
-					sharedmiddleware.IdempotencyKey(idempotencyStore, "ingest", cfg.IdempotencyKeyTTL),
-				).Post("/ingest", automationHubModule.Handler.Ingest)
-			})
+		r.Group(func(r chi.Router) {
+			r.Use(sharedmiddleware.TenantContext(cfg.DB,
+				sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromBody("project_id"), tenantResolver),
+				tenantResolver,
+			))
+			r.With(
+				sharedmiddleware.RequirePermission(rbacCfg, "defects:create"),
+				sharedmiddleware.AuditLog("defect.create", "defect",
+					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+					func(r *http.Request) string { return "" },
+					auditLogFn,
+				),
+			).Post("/defects", defectsModule.Create)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(sharedmiddleware.TenantContext(cfg.DB,
+				sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromQuery("project_id"), tenantResolver),
+				tenantResolver,
+			))
+			r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects", defectsModule.List)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(sharedmiddleware.TenantContext(cfg.DB,
+				sharedmiddleware.DefectToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+				tenantResolver,
+			))
+			r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects/{id}", defectsModule.Get)
+			r.With(
+				sharedmiddleware.RequirePermission(rbacCfg, "defects:update"),
+				sharedmiddleware.AuditLog("defect.update", "defect",
+					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+					func(r *http.Request) string { return chi.URLParam(r, "id") },
+					auditLogFn,
+				),
+			).Put("/defects/{id}", defectsModule.Update)
+			r.With(
+				sharedmiddleware.RequirePermission(rbacCfg, "defects:delete"),
+				sharedmiddleware.AuditLog("defect.delete", "defect",
+					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+					func(r *http.Request) string { return chi.URLParam(r, "id") },
+					auditLogFn,
+				),
+			).Delete("/defects/{id}", defectsModule.Delete)
+		})
 
 			// --- Notification Center ---
 			r.Group(func(r chi.Router) {
@@ -465,9 +524,6 @@ func New(cfg Config) http.Handler {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		apihttp.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-
-	_ = rateLimitCfg
-	_ = tenantResolver
 
 	return r
 }

@@ -2,8 +2,16 @@ package apikeys
 
 import "database/sql"
 
-func NewModule(db *sql.DB) *Handler {
+type Module struct {
+	Handler *Handler
+	Service *Service
+}
+
+func NewModule(db *sql.DB) *Module {
 	repo := NewSQLRepository(db)
 	service := NewService(repo)
-	return NewHandler(service)
+	return &Module{
+		Handler: NewHandler(service),
+		Service: service,
+	}
 }

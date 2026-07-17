@@ -57,6 +57,19 @@ func RateLimitByIP() func(*http.Request) string {
 
 func RateLimitByEmail(field string) func(*http.Request) string {
 	return func(r *http.Request) string {
+		email := r.URL.Query().Get(field)
+		if email == "" {
+			return "rl:ip:" + r.RemoteAddr
+		}
+		return "rl:email:" + email
+	}
+}
+
+func RateLimitByAPIKey() func(*http.Request) string {
+	return func(r *http.Request) string {
+		if key := extractAPIKey(r); key != "" {
+			return "rl:apikey:" + hashAPIKey(key)
+		}
 		return "rl:ip:" + r.RemoteAddr
 	}
 }

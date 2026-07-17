@@ -39,8 +39,13 @@ const (
 )
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, error) {
-	if input.Name == "" || input.WorkspaceID == uuid.Nil {
+	if input.Name == "" || input.WorkspaceID == uuid.Nil || input.CreatedBy == uuid.Nil {
 		return CreateResult{}, sharederrors.ErrInvalidInput
+	}
+
+	organizationID, err := s.repo.GetWorkspaceOrganization(ctx, input.WorkspaceID)
+	if err != nil {
+		return CreateResult{}, err
 	}
 
 	now := time.Now().UTC()
@@ -65,15 +70,16 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, 
 	prefix := rawKey[:12]
 
 	key := APIKey{
-		ID:          uuid.New(),
-		WorkspaceID: input.WorkspaceID,
-		Name:        input.Name,
-		KeyHash:     hash,
-		KeyPrefix:   prefix,
-		Scopes:      input.Scopes,
-		ExpiresAt:   &expiresAt,
-		CreatedBy:   input.CreatedBy,
-		CreatedAt:   now,
+		ID:             uuid.New(),
+		WorkspaceID:    input.WorkspaceID,
+		OrganizationID: organizationID,
+		Name:           input.Name,
+		KeyHash:        hash,
+		KeyPrefix:      prefix,
+		Scopes:         input.Scopes,
+		ExpiresAt:      &expiresAt,
+		CreatedBy:      input.CreatedBy,
+		CreatedAt:      now,
 	}
 
 	if err := s.repo.Create(ctx, &key); err != nil {

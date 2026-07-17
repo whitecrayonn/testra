@@ -318,7 +318,7 @@ Every backend module follows Clean / Hexagonal Architecture. The dependency rule
 | `notification` | [Implemented] | In-app notifications, preferences, channels | `testra/apps/api/internal/notification/` |
 | `audit` | [Implemented] | Immutable audit events on mutating endpoints | `testra/apps/api/internal/audit/`, `shared/middleware/audit.go` |
 | `apitesting` | [Planned] | API test definitions, environments, execution | — |
-| `defects` | [Planned] | Bug tracking, Jira sync | — |
+| `defects` | [Implemented] | CRUD, lifecycle, severity/priority, tenant isolation | `testra/apps/api/internal/defects/` |
 | `analytics` | [Planned] | Dashboards, trends, aggregations | — |
 | `intelligence` | [Planned] | Flaky detection, failure classification, risk scores | — |
 | `integrationhub` | [Planned] | Jira, GitHub, GitLab, CI/CD webhooks | — |
@@ -489,11 +489,12 @@ sequenceDiagram
 4. `Content-Type: application/json` header
 5. CORS middleware
 6. `MaxBodySize`
-7. `Auth` (JWT) on protected route groups
-8. `TenantContext` (per-route group)
-9. `RequirePermission` (per handler)
-10. `AuditLog` (on mutating handlers)
-11. Handler -> Service -> Repository
+7. `RateLimit` (public auth endpoints and API-key ingestion route)
+8. `Auth` (JWT) or `APIKeyAuth` on protected route groups
+9. `TenantContext` (per-route group)
+10. `RequirePermission` (per handler)
+11. `AuditLog` (on mutating handlers)
+12. Handler -> Service -> Repository
 
 ### Step-by-step explanation
 
@@ -517,7 +518,7 @@ sequenceDiagram
 | Email + password + TOTP MFA | Human users in the web app | [Implemented] | bcrypt password hash, encrypted MFA secret |
 | JWT access token | Session state for API requests | [Implemented] | Signed token, 15-minute expiry, no DB lookup |
 | Rotating refresh token | Long-lived sessions | [Implemented] | SHA-256 hashed opaque token in PostgreSQL |
-| API key | CI/CD and service integrations | [Implemented] but not wired to `/ingest` | SHA-256 hashed key with `testra_` prefix |
+| API key | CI/CD and service integrations | [Implemented] and wired to `/ingest` | SHA-256 hashed key with `testra_` prefix and scope checks |
 | OAuth / SSO | Future enterprise identity | [Planned] | TBD per provider |
 
 ### JWT login and refresh flow
@@ -578,9 +579,11 @@ sequenceDiagram
 
     actor CI
     CI->>API: POST /api/v1/ingest with X-API-Key
-    Note right of API: Not yet wired in current server.go; still expects JWT
-    API->>KeySvc: Validate hash, scope, expiry, update last_used_at
-    KeySvc-->>API: authorized workspace
+    API->>RateLimit: Check token-bucket by key hash
+    RateLimit-->>API: allowed
+    API->>KeySvc: Validate hash, scope runs:ingest, expiry, update last_used_at
+    KeySvc-->>API: authorized workspace + user
+    API->>Tenant: SET app.tenant_id from workspace.organization_id
     API->>AutomationHub: Ingest results
     AutomationHub->>DB: Create run and items
     API-->>CI: accepted response
@@ -588,8 +591,7 @@ sequenceDiagram
 
 ### Current vs future authentication
 
-- **Current:** self-hosted email/password with bcrypt, TOTP MFA, JWT access tokens, rotating refresh tokens, and scoped API keys for management endpoints. Browser `EventSource` connections authenticate via an `access_token` query parameter as a temporary MVP workaround.
-- **Gap:** `POST /api/v1/ingest` is currently protected by the same JWT middleware. CI/CD cannot use API keys yet. The `apikeys` module is fully implemented; the wiring to the ingestion route is pending.
+- **Current:** self-hosted email/password with bcrypt, TOTP MFA, JWT access tokens, rotating refresh tokens, and scoped API keys. `/ingest` is now protected by API-key authentication with scope enforcement and rate limiting. Browser `EventSource` connections authenticate via an `access_token` query parameter as a temporary MVP workaround. The web client now stores both access and refresh tokens, refreshes on 401, and uses client route guards; tokens are still in `localStorage` and should move to `httpOnly` cookies for production hardening.
 - **Future OAuth:** enterprise customers may request Google, GitHub, or SAML-based SSO. This is deferred to Phase 6 and requires an ADR because it changes the identity model.
 - **Future SSO / WorkOS:** WorkOS is listed as a conditional future option for SAML/SCIM, but it is not the default. Any SSO integration must keep the self-hosted path intact and cannot bypass RLS or RBAC.
 

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getUnreadCount } from "@/features/notifications/api";
+import { clearAuth } from "@/lib/api";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -29,7 +31,13 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  function signOut() {
+    clearAuth();
+    router.replace("/login");
+  }
 
   useEffect(() => {
     async function poll() {
@@ -83,13 +91,14 @@ export function Sidebar() {
         })}
       </nav>
       <div className="border-t border-slate-200 p-2">
-        <Link
-          href="/login"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+        <Button
+          variant="ghost"
+          onClick={signOut}
+          className="flex w-full items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
         >
           <LogOut className="h-4 w-4" />
           Sign out
-        </Link>
+        </Button>
       </div>
     </aside>
   );

@@ -92,6 +92,21 @@ func (r *Resolver) ResolveOrgFromRun(ctx context.Context, runID uuid.UUID) (uuid
 	return orgID, err
 }
 
+func (r *Resolver) ResolveOrgFromDefect(ctx context.Context, defectID uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT w.organization_id
+		 FROM defects d
+		 JOIN workspaces w ON d.workspace_id = w.id
+		 WHERE d.id = $1`,
+		defectID,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
 func (r *Resolver) CheckMembership(ctx context.Context, userID, orgID uuid.UUID) error {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,

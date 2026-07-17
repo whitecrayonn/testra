@@ -20,9 +20,9 @@ func NewSQLRepository(sqlDB *sql.DB) *SQLRepository {
 
 func (r *SQLRepository) Create(ctx context.Context, key *APIKey) error {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO api_keys (id, workspace_id, name, key_hash, key_prefix, scopes, last_used_at, expires_at, revoked_at, created_by, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-		key.ID, key.WorkspaceID, key.Name, key.KeyHash, key.KeyPrefix,
+		`INSERT INTO api_keys (id, workspace_id, organization_id, name, key_hash, key_prefix, scopes, last_used_at, expires_at, revoked_at, created_by, created_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		key.ID, key.WorkspaceID, key.OrganizationID, key.Name, key.KeyHash, key.KeyPrefix,
 		pqArray(key.Scopes), key.LastUsedAt, key.ExpiresAt, key.RevokedAt, key.CreatedBy, key.CreatedAt,
 	)
 	return err
@@ -33,10 +33,10 @@ func (r *SQLRepository) GetByHash(ctx context.Context, hash string) (*APIKey, er
 	var scopes string
 	var lastUsed, expires, revoked sql.NullTime
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+		`SELECT id, workspace_id, organization_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
 		 FROM api_keys WHERE key_hash = $1 AND revoked_at IS NULL`,
 		hash,
-	).Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt)
+	).Scan(&k.ID, &k.WorkspaceID, &k.OrganizationID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sharederrors.ErrNotFound
 	}
@@ -58,7 +58,7 @@ func (r *SQLRepository) GetByHash(ctx context.Context, hash string) (*APIKey, er
 
 func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]APIKey, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+		`SELECT id, workspace_id, organization_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
 		 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL
 		 ORDER BY created_at DESC`,
 		workspaceID,
@@ -73,7 +73,7 @@ func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.U
 		var k APIKey
 		var scopes string
 		var lastUsed, expires, revoked sql.NullTime
-		if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.OrganizationID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
 			return nil, err
 		}
 		k.Scopes = parseArray(scopes)
@@ -94,7 +94,7 @@ func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.U
 func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]APIKey, error) {
 	if cursor != "" {
 		rows, err := r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+			`SELECT id, workspace_id, organization_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
 			 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL AND id < $2
 			 ORDER BY id DESC
 			 LIMIT $3`,
@@ -110,7 +110,7 @@ func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspace
 			var k APIKey
 			var scopes string
 			var lastUsed, expires, revoked sql.NullTime
-			if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
+			if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.OrganizationID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
 				return nil, err
 			}
 			k.Scopes = parseArray(scopes)
@@ -129,7 +129,7 @@ func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspace
 	}
 
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+		`SELECT id, workspace_id, organization_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
 		 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL
 		 ORDER BY id DESC
 		 LIMIT $2`,
@@ -145,7 +145,7 @@ func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspace
 		var k APIKey
 		var scopes string
 		var lastUsed, expires, revoked sql.NullTime
-		if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.OrganizationID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
 			return nil, err
 		}
 		k.Scopes = parseArray(scopes)
@@ -184,6 +184,18 @@ func (r *SQLRepository) UpdateLastUsed(ctx context.Context, id uuid.UUID) error 
 		id,
 	)
 	return err
+}
+
+func (r *SQLRepository) GetWorkspaceOrganization(ctx context.Context, workspaceID uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT organization_id FROM workspaces WHERE id = $1`,
+		workspaceID,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, sharederrors.ErrNotFound
+	}
+	return orgID, err
 }
 
 func pqArray(scopes []string) string {

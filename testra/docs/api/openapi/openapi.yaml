@@ -5,7 +5,7 @@ info:
     Testra — One Platform. Every Test.
     RESTful JSON API for the Testra Quality Engineering Platform.
     All responses use a consistent envelope: `{ "data": ..., "meta": ..., "error": ... }`.
-  version: 0.4.0
+  version: 0.5.0
   contact:
     name: Testra Engineering
 servers:
@@ -43,6 +43,8 @@ tags:
     description: Per-user notification preferences
   - name: Notification Channels
     description: Workspace-scoped email, Slack, Teams and webhook channels
+  - name: Defects
+    description: Bug tracking and defect lifecycle
 
 paths:
   /auth/register:
@@ -931,12 +933,139 @@ paths:
         '403': { $ref: "#/components/responses/Forbidden" }
         '404': { $ref: "#/components/responses/NotFound" }
 
+  /defects:
+    post:
+      tags: [Defects]
+      operationId: createDefect
+      summary: Create a defect
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspace_id, project_id, title]
+              properties:
+                workspace_id: { type: string, format: uuid }
+                project_id: { type: string, format: uuid }
+                test_run_item_id: { type: string, format: uuid, nullable: true }
+                title: { type: string }
+                description: { type: string }
+                severity: { type: string, enum: [low, medium, high, critical], default: medium }
+                priority: { type: string, enum: [low, medium, high, critical], default: medium }
+                status: { type: string, enum: [open, in_progress, resolved, closed, rejected], default: open }
+                assigned_to: { type: string, format: uuid, nullable: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Defect' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Defects]
+      operationId: listDefects
+      summary: List defects for a project with cursor pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Defect' }
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /defects/{id}:
+    get:
+      tags: [Defects]
+      operationId: getDefect
+      summary: Get a defect by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Defect' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Defects]
+      operationId: updateDefect
+      summary: Update a defect
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateDefectRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Defect' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Defects]
+      operationId: deleteDefect
+      summary: Delete a defect
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
 
   parameters:
     IdPath:
@@ -1293,6 +1422,34 @@ components:
         type: { type: string, enum: [email, slack, teams, webhook] }
         name: { type: string }
         config: { type: object, additionalProperties: { type: string } }
+
+    Defect:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        test_run_item_id: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved, closed, rejected] }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        assigned_to: { type: string, format: uuid, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UpdateDefectRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved, closed, rejected] }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        assigned_to: { type: string, format: uuid, nullable: true }
 
   /test-folders:
     post:
@@ -1983,7 +2140,8 @@ components:
         Requires an Idempotency-Key header. Reusing a key with the same payload replays the
         stored response; reusing it with a different payload returns 409 Conflict.
         Zero source code retention — only results and metadata are stored.
-      security: [{ bearerAuth: [] }]
+        Requires a workspace-scoped API key with `runs:ingest` scope; rate limited by key hash.
+      security: [{ apiKeyAuth: [] }]
       parameters:
         - name: Idempotency-Key
           in: header

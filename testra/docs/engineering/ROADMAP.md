@@ -205,11 +205,13 @@
 
 ### Definition of Done
 - [ ] `apitesting` module: request definitions, environments, execution (zero collection retention)
-- [ ] `defects` module: CRUD, linking to runs/cases
+- [x] `defects` module: CRUD, linking to runs/cases, status/severity/priority lifecycle
 - [ ] `integrationhub`: Jira sync, CI webhooks
 - [x] `notification` module: in-app feed, preferences, email/Slack/Teams/webhook channels (completed in Phase 3.5)
 - [ ] Defects and integration hub notifications/channels hardening
-- [ ] Web: API test builder, defect board, notification center
+- [x] Web: defect list/create UI
+- [ ] Web: API test builder
+- [ ] Web: notification center refinements
 - [ ] OpenAPI spec updated
 
 ### Dependencies
@@ -282,12 +284,12 @@
 
 **Goal:** Make the platform safe to deploy and operate.
 
-1. **Wire rate limiting** on `/auth/*` and `/ingest` using Redis-backed token buckets.
-2. **Implement API-key authentication middleware** so CI/CD runners can use scoped keys instead of user JWTs.
+1. ✅ **Wire rate limiting** on `/auth/*` and `/ingest` using Redis-backed token buckets.
+2. ✅ **Implement API-key authentication middleware** so CI/CD runners can use scoped keys instead of user JWTs.
 3. **Harden SSE authentication** for live test-run progress — a query-token workaround is already implemented; replace with a signed SSE token or cookie before public networks.
 4. **Move secrets out of `.env.example`** and add startup validation; integrate with a secrets manager for production.
 5. **Make audit logging durable** — write inside the request transaction or enqueue to a reliable worker queue.
-6. **Add frontend route guards** and stop storing the access token in `localStorage` (move to `httpOnly` cookie or a secure wrapper).
+6. ✅ **Add frontend route guards**; `localStorage` token storage remains and should move to `httpOnly` cookie for production hardening.
 
 **Why this is P0:** These items are prerequisites for any production deployment, SOC 2 readiness, and enterprise sales. Without them, Testra is not a credible B2B SaaS product.
 
@@ -297,8 +299,8 @@
 
 **Goal:** Make the web app reliable and pleasant to use.
 
-1. **Add a global auth state layer** (Zustand or React Context) with token refresh on 401.
-2. **Implement a fetch interceptor** that calls `/auth/refresh` and retries once, then redirects to `/login` on failure.
+1. **Add a global auth state layer** (Zustand or React Context) with token refresh on 401. ✅ Implemented in `lib/api.ts` fetch wrapper.
+2. ✅ **Implement a fetch interceptor** that calls `/auth/refresh` and retries once, then redirects to `/login` on failure.
 3. **Consolidate dashboard route trees** to `/[workspace]` and redirect `/dashboard` to the selected workspace.
 4. **Add global `loading.tsx`, `error.tsx`, and `not-found.tsx`** in the dashboard group.
 5. **Add structured logging and health/readiness endpoints** to the Go API.
@@ -315,9 +317,9 @@
    - `apps/api/internal/notification/` with in-app notifications, preferences, and email/Slack/Teams/webhook channels.
    - `apps/web/app/(dashboard)/dashboard/notifications/page.tsx` list page and `dashboard/settings/notifications/` preferences page.
    - Sidebar bell with unread count badge.
-2. **Defects module (backend + frontend):** Next priority.
-   - `apps/api/internal/defects/` with CRUD, lifecycle, links to test run items, and severity/priority fields.
-   - `apps/web/[workspace]/defects/` list, create, detail, and edit pages.
+2. ✅ **Defects module (backend + frontend):**
+   - `apps/api/internal/defects/` with CRUD, lifecycle, severity/priority fields, and tenant isolation.
+   - `apps/web/app/(dashboard)/[workspace]/defects/` list/create page backed by `/api/v1/defects`.
 3. **Jira/Linear/GitHub Issues integration design:** at minimum design the outbound webhook schema and queue job for defect sync.
 
 **Why this is P2:** Test execution without defect tracking and alerting is incomplete. These two modules close the manual testing workflow and are table stakes for any QA platform.
@@ -529,11 +531,11 @@ Documentation is "done" for a feature when:
 
 | # | Description | Impact | Affected modules | Recommended fix | Priority | Current status |
 |---|-------------|--------|------------------|-----------------|----------|----------------|
-| C1 | **No rate limiting on auth endpoints.** `LocalRateLimiter` is created but never wired to routes. | Account takeover via brute force; DoS risk | `identity`, `shared/middleware` | Wire `LocalRateLimiter` to `/auth/*` and ingest routes; prefer Redis-backed rate limiter for production | P0 | Open |
-| C2 | **No API-key authentication middleware.** CI/CD ingestion requires a user JWT. | Scoped keys are unused, CI pipelines must embed user tokens, keys leaked to CI logs cannot be revoked without disabling the user | `apikeys`, `automationhub`, `shared/middleware` | Build `APIKeyAuth` middleware that looks up `api_keys.key_hash`, validates scopes, and sets tenant context | P0 | Open |
+| C1 | **Rate limiting is now wired** on `/auth/*` and `/ingest`. Redis-backed `LocalRateLimiter` supports per-IP, per-email, and per-API-key hash keys. | Brute force / DoS risk reduced | `identity`, `shared/middleware` | Scale to a distributed Redis rate limiter and add more granular public endpoint rules | P0 | Closed |
+| C2 | **API-key authentication middleware is implemented and wired to `/ingest`.** Scoped keys validate hash, expiry, scopes, and set tenant context. | CI/CD can use revocable keys instead of user JWTs | `apikeys`, `automationhub`, `shared/middleware` | Document `X-API-Key` / `Authorization: ApiKey` usage in CI guide and OpenAPI | P0 | Closed |
 | C3 | **~~SSE progress stream inaccessible from browsers.~~** Query-token auth is implemented: `GET /test-runs/{id}/stream?access_token=${token}` works in browsers. Harden before public networks. | Manual test execution live progress works locally/MVP | `results`, `frontend` | Replace query-token with session cookie or short-lived signed SSE token before public networks | P0 | Closed |
 | C4 | **Default/weak secrets in `.env.example` and no secret management.** Example contains `JWT_SECRET=testratestra` and `DATABASE_URL` with hard-coded password. | Production deployments will use known credentials | `infra`, `config` | Generate secrets in CI/CD or secrets manager; remove defaults; fail fast if secrets are unchanged | P0 | Open |
-| C5 | **No client-side route guards and token stored in `localStorage`.** Unauthenticated users can navigate to `/dashboard/*` and tokens are exposed to XSS. | Data leakage, UX flash, security exposure | `frontend` | Add server-side or client middleware that validates token before rendering; move to `httpOnly` cookie or secure wrapper | P0 | Open |
+| C5 | **Client-side route guards added.** `DashboardLayout` and `AuthLayout` redirect unauthenticated users. Token refresh on 401 is implemented. | `localStorage` still exposes tokens to XSS; risk partially mitigated | `frontend` | Move access token to `httpOnly` cookie or secure wrapper before production launch | P0 | Mitigated |
 | C6 | **Audit logging uses `context.Background()` and no retry/queue.** Events are fired asynchronously with no guarantee of persistence. | Compliance evidence can be silently lost | `audit`, `shared/middleware` | Write audit events synchronously inside the request transaction or enqueue to a durable queue (Redis/Asynq) | P0 | Open |
 
 ---
@@ -546,7 +548,7 @@ Documentation is "done" for a feature when:
 | H2 | **`POST /organizations` and `GET /organizations` lack permission/membership gates.** | Any authenticated user can create or list organizations without restriction | `organization`, `shared/middleware` | Add `RequirePermission("orgs:create")` and filter `GET` by `organization_members.user_id` | P1 | Open |
 | H3 | **Tenant resolution can pick the wrong tenant.** `TenantContext` checks `organization_id`, `workspace_id`, `project_id`, `api_key_id`, `run_id` in a fixed order from body/query; a malicious request can supply a valid member org ID plus a different `workspace_id` belonging to another org. | Cross-tenant data access if other checks are skipped | `shared/middleware`, `shared/tenant` | Resolve tenant from the **least-privileged, most-specific** resource and verify membership before every operation | P1 | Open |
 | H4 | **~~Project key generation mismatch.~~** Frontend now generates uppercase alphanumeric keys matching the backend regex. | Users can create projects with auto-generated keys | `project`, `frontend` | Add unique constraint/index on `(organization_id, key)` | P1 | Closed |
-| H5 | **No token refresh on 401 in the frontend.** Access tokens expire after 15 minutes. | Users are logged out every 15 minutes | `frontend`, `identity` | Add a fetch interceptor that calls `/auth/refresh` on 401 and retries the original request once | P1 | Open |
+| H5 | **Token refresh on 401 is implemented in `lib/api.ts`.** The client stores refresh tokens and retries once after a 401. | Users are no longer logged out every 15 minutes | `frontend`, `identity` | Move token storage to `httpOnly` cookie and add proactive refresh before expiry | P1 | Closed |
 | H6 | **~~MFA QR code rendered as text.~~** Frontend now renders `qr_code` as an `<img src={qr_code} />` data URL. | Users can scan QR code with authenticator apps | `frontend`, `identity` | Add copy-to-clipboard fallback | P1 | Closed |
 | H7 | **No Kubernetes ConfigMap, Secret, probes, or ingress definitions.** | Cannot deploy to production safely; no health checks or secret management | `infra/k8s`, `infra/terraform` | Add Kustomize/Helm charts, `ConfigMap`, `Secret`, liveness/readiness probes, `Ingress`, and resource limits | P1 | Open |
 | H8 | **Terraform scaffold has no resources or modules.** | Infrastructure cannot be provisioned | `infra/terraform` | Implement VPC, EKS, RDS, S3, Redis, Route53, WAF modules | P1 | Open |
@@ -589,8 +591,8 @@ Documentation is "done" for a feature when:
 
 | Priority | What to fix |
 |----------|--------------|
-| **P0 — Critical** | Rate limiting, API-key auth, SSE auth, secrets management, frontend route guards, audit durability |
-| **P1 — High** | Permission-name alignment, org permission gates, tenant resolver, token refresh, K8s/Terraform completion, tests, observability |
+| **P0 — Critical** | ✅ Rate limiting, ✅ API-key auth, SSE auth, secrets management, ✅ frontend route guards + token refresh, audit durability |
+| **P1 — High** | Permission-name alignment, org permission gates, tenant resolver, ✅ token refresh (completed), K8s/Terraform completion, tests, observability |
 | **P2 — Medium** | Route consolidation, global state, OpenAPI completion, worker implementation, settings pages, audit middleware, env vars, Docker app services |
 | **P3+ — Lower** | Bulk import, advanced UX polish, error boundaries, key namespaces, cleanup |
 

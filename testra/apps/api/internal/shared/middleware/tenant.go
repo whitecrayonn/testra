@@ -84,6 +84,7 @@ type WorkspaceOrgResolver interface {
 	ResolveOrgFromAPIKey(ctx context.Context, apiKeyID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromRunItem(ctx context.Context, itemID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromRun(ctx context.Context, runID uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromDefect(ctx context.Context, defectID uuid.UUID) (uuid.UUID, error)
 }
 
 func WorkspaceToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
@@ -133,6 +134,16 @@ func RunToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResol
 			return uuid.Nil, err
 		}
 		return resolver.ResolveOrgFromRun(r.Context(), runID)
+	}
+}
+
+func DefectToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		defectID, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromDefect(r.Context(), defectID)
 	}
 }
 

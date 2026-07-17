@@ -1,10 +1,15 @@
+"use client";
+
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { RouteGuard } from "@/components/auth/route-guard";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-auto bg-slate-50 p-6">{children}</main>
-    </div>
+    <RouteGuard requireAuth redirectTo="/login">
+      <div className="flex h-screen">
+        <Sidebar />
+        <main className="flex-1 overflow-auto bg-slate-50 p-6">{children}</main>
+      </div>
+    </RouteGuard>
   );
 }
