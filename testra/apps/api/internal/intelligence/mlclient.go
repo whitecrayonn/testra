@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/testra/testra/apps/api/internal/metrics"
 )
 
 // MLClient is defined in ports.go.
@@ -30,65 +32,83 @@ type httpMLClient struct {
 	client  *http.Client
 }
 
-func (c *httpMLClient) PredictFlaky(ctx context.Context, input PredictionInput) (PredictionResult, error) {
+func (c *httpMLClient) PredictFlaky(ctx context.Context, input PredictionInput) (result PredictionResult, err error) {
+	start := time.Now()
+	defer func() {
+		status := "success"
+		if err != nil {
+			status = "error"
+		}
+		metrics.RecordMLCall("predict_flaky", status, time.Since(start))
+	}()
+
 	payload, err := json.Marshal(input)
 	if err != nil {
-		return PredictionResult{}, err
+		return
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/predict-flaky", bytes.NewReader(payload))
 	if err != nil {
-		return PredictionResult{}, err
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return PredictionResult{}, err
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return PredictionResult{}, fmt.Errorf("ml service returned %d: %s", resp.StatusCode, string(body))
+		err = fmt.Errorf("ml service returned %d: %s", resp.StatusCode, string(body))
+		return
 	}
 
-	var result PredictionResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return PredictionResult{}, err
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return
 	}
-	return result, nil
+	return
 }
 
-func (c *httpMLClient) ClassifyFailure(ctx context.Context, errorMessage string, stackTrace string) (ClassificationResult, error) {
+func (c *httpMLClient) ClassifyFailure(ctx context.Context, errorMessage string, stackTrace string) (result ClassificationResult, err error) {
+	start := time.Now()
+	defer func() {
+		status := "success"
+		if err != nil {
+			status = "error"
+		}
+		metrics.RecordMLCall("classify_failure", status, time.Since(start))
+	}()
+
 	payload, err := json.Marshal(map[string]string{
 		"error_message": errorMessage,
 		"stack_trace":   stackTrace,
 	})
 	if err != nil {
-		return ClassificationResult{}, err
+		return
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/classify-failure", bytes.NewReader(payload))
 	if err != nil {
-		return ClassificationResult{}, err
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return ClassificationResult{}, err
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return ClassificationResult{}, fmt.Errorf("ml service returned %d: %s", resp.StatusCode, string(body))
+		err = fmt.Errorf("ml service returned %d: %s", resp.StatusCode, string(body))
+		return
 	}
 
-	var result ClassificationResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return ClassificationResult{}, err
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return
 	}
-	return result, nil
+	return
 }
 
 // localMLClient provides deterministic, explainable heuristics without external calls.

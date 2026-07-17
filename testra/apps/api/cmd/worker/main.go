@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/testra/testra/apps/api/internal/billing"
 	"github.com/testra/testra/apps/api/internal/integrationhub"
 	"github.com/testra/testra/apps/api/internal/intelligence"
+	"github.com/testra/testra/apps/api/internal/metrics"
 	"github.com/testra/testra/apps/api/internal/notification"
 	"github.com/testra/testra/apps/api/internal/queue"
 	"github.com/testra/testra/apps/api/internal/shared/config"
@@ -53,6 +55,18 @@ func main() {
 		integrationhub: integrationhubModule,
 		billing:        billingModule,
 	}
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = "9090"
+	}
+	go func() {
+		addr := ":" + metricsPort
+		log.Printf("worker metrics server listening on %s", addr)
+		if err := http.ListenAndServe(addr, metrics.Handler(database)); err != nil {
+			log.Printf("metrics server error: %v", err)
+		}
+	}()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -134,7 +148,14 @@ func (r *Runner) processOne(ctx context.Context) (bool, error) {
 	workCtx := db.WithTx(ctx, tx)
 	workCtx = db.WithTenantID(workCtx, job.TenantID)
 
+	start := time.Now()
 	if err := r.processJob(workCtx, job); err != nil {
+		status := "retry"
+		if job.Attempts+1 >= job.MaxAttempts {
+			status = "dead_letter"
+		}
+		metrics.RecordJob(job.JobType, status, time.Since(start))
+
 		if markErr := queue.MarkFailed(ctx, tx, job.ID, job.Attempts+1, job.MaxAttempts, err.Error()); markErr != nil {
 			return false, fmt.Errorf("mark failed %s: %w", job.ID, markErr)
 		}
@@ -144,6 +165,8 @@ func (r *Runner) processOne(ctx context.Context) (bool, error) {
 		tx = nil
 		return false, fmt.Errorf("job %s failed: %w", job.ID, err)
 	}
+
+	metrics.RecordJob(job.JobType, "success", time.Since(start))
 
 	if err := queue.MarkDone(ctx, tx, job.ID); err != nil {
 		return false, fmt.Errorf("mark done %s: %w", job.ID, err)
