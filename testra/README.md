@@ -4,6 +4,14 @@
 
 This monorepo contains the complete Testra platform: a modular monolith Go backend, Next.js web application, Python ML inference service, shared libraries, and infrastructure as code.
 
+## Documentation
+
+- [Documentation Index](docs/README.md) — where every document lives and its canonical status.
+- [Engineering Handbook](docs/BIBLICAL_TESTRA.md) — architecture, rules, do-not-break list, and canonical sources.
+- [Roadmap](docs/engineering/ROADMAP.md) — what is complete and what is planned.
+- [OpenAPI Contract](docs/api/openapi/openapi.yaml) — the authoritative HTTP API surface.
+- [Documentation Reports](docs/reports/) — audit, consolidation, and release reports.
+
 ## Repository Layout
 
 ```

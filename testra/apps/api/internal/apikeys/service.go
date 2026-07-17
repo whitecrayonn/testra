@@ -25,16 +25,35 @@ type CreateInput struct {
 	Name        string
 	Scopes      []string
 	CreatedBy   uuid.UUID
+	ExpiresAt   *time.Time
 }
 
 type CreateResult struct {
-	APIKey    APIKey
-	RawKey    string
+	APIKey APIKey
+	RawKey string
 }
+
+const (
+	DefaultExpiryDays = 90
+	MaxExpiryDays     = 365
+)
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, error) {
 	if input.Name == "" || input.WorkspaceID == uuid.Nil {
 		return CreateResult{}, sharederrors.ErrInvalidInput
+	}
+
+	now := time.Now().UTC()
+	maxExpiry := now.Add(MaxExpiryDays * 24 * time.Hour)
+
+	var expiresAt time.Time
+	if input.ExpiresAt != nil {
+		expiresAt = *input.ExpiresAt
+		if expiresAt.After(maxExpiry) {
+			return CreateResult{}, sharederrors.ErrInvalidInput
+		}
+	} else {
+		expiresAt = now.Add(DefaultExpiryDays * 24 * time.Hour)
 	}
 
 	rawKey, err := generateAPIKey()
@@ -52,8 +71,9 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, 
 		KeyHash:     hash,
 		KeyPrefix:   prefix,
 		Scopes:      input.Scopes,
+		ExpiresAt:   &expiresAt,
 		CreatedBy:   input.CreatedBy,
-		CreatedAt:   time.Now().UTC(),
+		CreatedAt:   now,
 	}
 
 	if err := s.repo.Create(ctx, &key); err != nil {
@@ -65,6 +85,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, 
 
 func (s *Service) ListForWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]APIKey, error) {
 	return s.repo.ListForWorkspace(ctx, workspaceID)
+}
+
+func (s *Service) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]APIKey, error) {
+	return s.repo.ListForWorkspacePaginated(ctx, workspaceID, cursor, limit)
 }
 
 func (s *Service) Revoke(ctx context.Context, id uuid.UUID) error {

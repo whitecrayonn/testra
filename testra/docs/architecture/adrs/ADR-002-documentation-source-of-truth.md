@@ -13,7 +13,7 @@ Adopt the following documentation boundaries:
 
 - OpenAPI is authoritative for documented HTTP contracts.
 - Migrations and implementation are authoritative for actual schema/runtime behavior.
-- `PHASES.md` and progress reports are authoritative for implementation status.
+- `ROADMAP.md` and progress reports are authoritative for implementation status.
 - ADRs are authoritative for accepted architectural decisions and deviations.
 - Architecture diagrams describe approved logical relationships and must label planned/assumed elements.
 - Operational guides define required controls, not evidence that controls are deployed.

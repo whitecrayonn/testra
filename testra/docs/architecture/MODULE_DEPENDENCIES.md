@@ -1,5 +1,15 @@
 # Testra Module Dependency Documentation
 
+**Purpose:** Document module ownership, dependency graph, and Clean Architecture dependency rules.
+**Owner:** CTO / Engineering Lead
+**Scope:** Module dependency graph and cycle-prevention rules.
+**Source of Truth:** MODULE_DEPENDENCIES.md for approved logical architecture; implementation must be checked per phase review.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`ENGINEERING_STANDARDS.md`](../engineering/ENGINEERING_STANDARDS.md)
+- [`SYSTEM_FLOWS.md`](SYSTEM_FLOWS.md)
+
 ## Architectural Rule
 
 Testra is a Go modular monolith with Clean Architecture boundaries. Each module owns its domain and communicates through consumer-defined ports. Modules must not import another module's internal implementation details.
@@ -46,3 +56,9 @@ flowchart TD
 - Is an ADR required for a new cross-cutting dependency?
 
 The module list and dependency direction are approved logical architecture. Exact package-level dependencies must continue to be checked against implementation during each phase review, and any new cross-cutting dependency requires an ADR before implementation.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`ENGINEERING_STANDARDS.md`](../engineering/ENGINEERING_STANDARDS.md) — coding and review standards
+- [`SYSTEM_FLOWS.md`](SYSTEM_FLOWS.md) — system and sequence diagrams

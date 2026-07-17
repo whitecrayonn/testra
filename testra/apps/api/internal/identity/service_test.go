@@ -15,15 +15,17 @@ type fakeRepo struct {
 	users           map[uuid.UUID]*User
 	usersByEmail    map[string]*User
 	resetTokens     map[string]*PasswordResetToken
+	refreshTokens   map[string]*RefreshToken
 	mfaUpdates      int
 	passwordUpdates int
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{
-		users:        make(map[uuid.UUID]*User),
-		usersByEmail: make(map[string]*User),
-		resetTokens:  make(map[string]*PasswordResetToken),
+		users:         make(map[uuid.UUID]*User),
+		usersByEmail:  make(map[string]*User),
+		resetTokens:   make(map[string]*PasswordResetToken),
+		refreshTokens: make(map[string]*RefreshToken),
 	}
 }
 
@@ -94,8 +96,43 @@ func (r *fakeRepo) MarkResetTokenUsed(ctx context.Context, tokenID uuid.UUID) er
 	return sharederrors.ErrNotFound
 }
 
+func (r *fakeRepo) CreateRefreshToken(ctx context.Context, token *RefreshToken) error {
+	r.refreshTokens[token.TokenHash] = token
+	return nil
+}
+
+func (r *fakeRepo) GetRefreshTokenByHash(ctx context.Context, hash string) (*RefreshToken, error) {
+	t, ok := r.refreshTokens[hash]
+	if !ok {
+		return nil, sharederrors.ErrNotFound
+	}
+	return t, nil
+}
+
+func (r *fakeRepo) RevokeRefreshToken(ctx context.Context, tokenID uuid.UUID, replacedBy uuid.UUID) error {
+	for _, t := range r.refreshTokens {
+		if t.ID == tokenID {
+			now := time.Now().UTC()
+			t.RevokedAt = &now
+			t.ReplacedBy = &replacedBy
+			return nil
+		}
+	}
+	return sharederrors.ErrNotFound
+}
+
+func (r *fakeRepo) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {
+	for _, t := range r.refreshTokens {
+		if t.FamilyID == familyID {
+			now := time.Now().UTC()
+			t.RevokedAt = &now
+		}
+	}
+	return nil
+}
+
 func newTestService(repo *fakeRepo) *Service {
-	return NewService(repo, "test-secret", 168*time.Hour)
+	return NewService(repo, "test-secret", 15*time.Minute, 30*24*time.Hour, 90*24*time.Hour, SMTPConfig{})
 }
 
 func seedUser(repo *fakeRepo, email, plainPass string) *User {
@@ -116,13 +153,13 @@ func seedUser(repo *fakeRepo, email, plainPass string) *User {
 func TestLoginWithMFAEnabled_RequiresCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa@test.com", "testpass123")
+	user := seedUser(repo, "mfa@test.com", "testpass123456")
 	user.MFAEnabled = true
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa@test.com",
-		Password: "testpass123",
+		Password: "testpass123456",
 		MFACode:  "",
 	})
 	if err != sharederrors.ErrMFARequired {
@@ -133,7 +170,7 @@ func TestLoginWithMFAEnabled_RequiresCode(t *testing.T) {
 func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa2@test.com", "testpass123")
+	user := seedUser(repo, "mfa2@test.com", "testpass123456")
 	user.MFAEnabled = true
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "mfa2@test.com"})
@@ -141,7 +178,7 @@ func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa2@test.com",
-		Password: "testpass123",
+		Password: "testpass123456",
 		MFACode:  "000000",
 	})
 	if err != sharederrors.ErrInvalidCredential {
@@ -152,7 +189,7 @@ func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa3@test.com", "testpass123")
+	user := seedUser(repo, "mfa3@test.com", "testpass123456")
 	user.MFAEnabled = true
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "mfa3@test.com"})
@@ -162,7 +199,7 @@ func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa3@test.com",
-		Password: "testpass123",
+		Password: "testpass123456",
 		MFACode:  code,
 	})
 	if err != nil {
@@ -173,11 +210,11 @@ func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 func TestLoginWithoutMFA(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	seedUser(repo, "plain@test.com", "testpass123")
+	seedUser(repo, "plain@test.com", "testpass123456")
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "plain@test.com",
-		Password: "testpass123",
+		Password: "testpass123456",
 	})
 	if err != nil {
 		t.Fatalf("expected nil error for non-mfa login, got %v", err)
@@ -187,7 +224,7 @@ func TestLoginWithoutMFA(t *testing.T) {
 func TestSetupMFA_AlreadyEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "setup@test.com", "testpass123")
+	user := seedUser(repo, "setup@test.com", "testpass123456")
 	user.MFAEnabled = true
 
 	_, err := svc.SetupMFA(context.Background(), user.ID)
@@ -199,7 +236,7 @@ func TestSetupMFA_AlreadyEnabled(t *testing.T) {
 func TestSetupMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "setup2@test.com", "testpass123")
+	user := seedUser(repo, "setup2@test.com", "testpass123456")
 
 	result, err := svc.SetupMFA(context.Background(), user.ID)
 	if err != nil {
@@ -225,7 +262,7 @@ func TestSetupMFA_Success(t *testing.T) {
 func TestVerifyMFA_NoSecretSetup(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify@test.com", "testpass123")
+	user := seedUser(repo, "verify@test.com", "testpass123456")
 
 	err := svc.VerifyMFA(context.Background(), user.ID, "123456")
 	if err != sharederrors.ErrInvalidInput {
@@ -236,7 +273,7 @@ func TestVerifyMFA_NoSecretSetup(t *testing.T) {
 func TestVerifyMFA_AlreadyEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify2@test.com", "testpass123")
+	user := seedUser(repo, "verify2@test.com", "testpass123456")
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 	user.MFAEnabled = true
 
@@ -249,7 +286,7 @@ func TestVerifyMFA_AlreadyEnabled(t *testing.T) {
 func TestVerifyMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify3@test.com", "testpass123")
+	user := seedUser(repo, "verify3@test.com", "testpass123456")
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "verify3@test.com"})
 	user.MFASecret = key.Secret()
@@ -268,7 +305,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 func TestDisableMFA_NotEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "disable@test.com", "testpass123")
+	user := seedUser(repo, "disable@test.com", "testpass123456")
 
 	err := svc.DisableMFA(context.Background(), user.ID, "")
 	if err != sharederrors.ErrInvalidInput {
@@ -279,7 +316,7 @@ func TestDisableMFA_NotEnabled(t *testing.T) {
 func TestDisableMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "disable2@test.com", "testpass123")
+	user := seedUser(repo, "disable2@test.com", "testpass123456")
 	user.MFAEnabled = true
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 
@@ -313,7 +350,7 @@ func TestRequestPasswordReset_UserNotFound_ReturnsEmpty(t *testing.T) {
 func TestRequestPasswordReset_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	seedUser(repo, "reset@test.com", "testpass123")
+	seedUser(repo, "reset@test.com", "testpass123456")
 
 	token, err := svc.RequestPasswordReset(context.Background(), RequestPasswordResetInput{
 		Email: "reset@test.com",
@@ -335,7 +372,7 @@ func TestResetPassword_InvalidToken(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       "invalidtoken",
-		NewPassword: "newpass",
+		NewPassword: "newpassword123",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -345,7 +382,7 @@ func TestResetPassword_InvalidToken(t *testing.T) {
 func TestResetPassword_ExpiredToken(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "expired@test.com", "testpass123")
+	user := seedUser(repo, "expired@test.com", "testpass123456")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -360,7 +397,7 @@ func TestResetPassword_ExpiredToken(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpass",
+		NewPassword: "newpassword123",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -370,7 +407,7 @@ func TestResetPassword_ExpiredToken(t *testing.T) {
 func TestResetPassword_AlreadyUsed(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "used@test.com", "testpass123")
+	user := seedUser(repo, "used@test.com", "testpass123456")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -386,7 +423,7 @@ func TestResetPassword_AlreadyUsed(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpass",
+		NewPassword: "newpassword123",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -396,7 +433,7 @@ func TestResetPassword_AlreadyUsed(t *testing.T) {
 func TestResetPassword_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "success@test.com", "testpass123")
+	user := seedUser(repo, "success@test.com", "testpass123456")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -411,7 +448,7 @@ func TestResetPassword_Success(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpass",
+		NewPassword: "newpassword123",
 	})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)

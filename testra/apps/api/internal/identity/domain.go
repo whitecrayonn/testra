@@ -25,3 +25,15 @@ type PasswordResetToken struct {
 	UsedAt    *time.Time
 	CreatedAt time.Time
 }
+
+type RefreshToken struct {
+	ID                uuid.UUID
+	UserID            uuid.UUID
+	TokenHash         string
+	FamilyID          uuid.UUID
+	ExpiresAt         time.Time
+	AbsoluteExpiresAt time.Time
+	RevokedAt         *time.Time
+	ReplacedBy        *uuid.UUID
+	CreatedAt         time.Time
+}

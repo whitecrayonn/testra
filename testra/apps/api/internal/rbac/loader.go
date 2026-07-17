@@ -2,16 +2,16 @@ package rbac
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 )
 
 type SQLPermissionLoader struct {
-	db *sql.DB
+	db db.DBTX
 }
 
-func NewSQLPermissionLoader(db *sql.DB) *SQLPermissionLoader {
+func NewSQLPermissionLoader(db db.DBTX) *SQLPermissionLoader {
 	return &SQLPermissionLoader{db: db}
 }
 

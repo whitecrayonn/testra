@@ -9,6 +9,7 @@ import (
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
+	"github.com/testra/testra/apps/api/internal/shared/pagination"
 )
 
 type Handler struct {
@@ -89,7 +90,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgs, err := h.service.ListForUser(r.Context(), userID)
+	params := pagination.ParseParams(r)
+	orgs, err := h.service.ListForUserPaginated(r.Context(), userID, params.Cursor, params.Limit)
 	if err != nil {
 		mapError(w, err)
 		return
@@ -99,7 +101,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for i, org := range orgs {
 		resp[i] = mapOrgResponse(&org)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
+
+	meta := pagination.Meta{HasMore: len(orgs) == params.Limit}
+	if meta.HasMore && len(orgs) > 0 {
+		nextCursor, err := pagination.EncodeCursor(orgs[len(orgs)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
+	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }
 
 func mapError(w http.ResponseWriter, err error) {

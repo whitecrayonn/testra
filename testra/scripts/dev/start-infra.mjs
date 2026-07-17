@@ -12,12 +12,8 @@ function run(cmd, args, opts = {}) {
 }
 
 function hasCommand(cmd) {
-  try {
-    spawnSync(`${cmd} --version`, { stdio: "ignore", shell: true });
-    return true;
-  } catch {
-    return false;
-  }
+  const r = spawnSync(`${cmd} --version`, { stdio: "ignore", shell: true });
+  return r.status === 0;
 }
 
 function checkService(name, checkFn) {

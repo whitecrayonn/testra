@@ -11,4 +11,7 @@ var (
 	ErrInternal          = errors.New("internal error")
 	ErrInvalidCredential = errors.New("invalid credentials")
 	ErrMFARequired       = errors.New("mfa code required")
+	ErrTokenExpired      = errors.New("token expired")
+	ErrTokenRevoked      = errors.New("token revoked")
+	ErrTooManyRequests   = errors.New("too many requests")
 )

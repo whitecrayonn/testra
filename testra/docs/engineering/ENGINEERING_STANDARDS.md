@@ -1,7 +1,16 @@
 # Testra — Engineering Standards
 
+**Purpose:** Define coding, testing, infrastructure, security, and review standards for backend, frontend, and operations.
+**Owner:** CTO / Engineering Lead
+**Scope:** Coding standards for Go, TypeScript, SQL, API, database, security, infrastructure, and review workflows.
 **Status:** Active
 **Last Updated:** July 2026
+**Source of Truth:** ENGINEERING_STANDARDS.md for coding and process standards.
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`ONBOARDING.md`](ONBOARDING.md)
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)
+- [`SECURITY_CHECKLIST.md`](../security/SECURITY_CHECKLIST.md)
 
 ---
 
@@ -57,11 +66,11 @@ Each domain module in `internal/<domain>/` contains:
 - **TypeScript:** `strict: true`, no `any`, no `// @ts-ignore`
 - **Framework:** Next.js 15 App Router
 - **Styling:** TailwindCSS 4 + shadcn/ui
-- **Server state:** TanStack Query
-- **Client state:** Zustand
+- **Server state:** Server Components + lightweight API client (TanStack Query planned)
+- **Client state:** React `useState` / `useContext` (Zustand or TanStack Store under evaluation)
 - **Forms:** React Hook Form + Zod
-- **Tables:** TanStack Table
-- **Charts:** Tremor / Recharts
+- **Tables:** TanStack Table (planned)
+- **Charts:** Tremor / Recharts (planned)
 - **Imports:** absolute paths via `@/` alias (tsconfig paths)
 - **Server Components by default**; Client Components only for interactivity (`"use client"`)
 - **No inline styles**; use Tailwind classes
@@ -69,8 +78,8 @@ Each domain module in `internal/<domain>/` contains:
 
 ### 2.3 Testing
 
-- Vitest for unit tests
-- React Testing Library for component tests
+- Vitest for unit tests (planned)
+- React Testing Library for component tests (planned)
 - Playwright for E2E (future)
 - `pnpm turbo run typecheck` must pass
 
@@ -233,8 +242,8 @@ MVP targets are defined in ADR-008: read API p95 ≤ 300 ms, write API p95 ≤ 5
 
 ### 9.1 Engineering Docs
 
-- `docs/engineering/MASTER_DEVELOPMENT_GUIDE.md` — governance (update only when governance changes)
-- `docs/engineering/PHASES.md` — roadmap (update when phases change)
+- `docs/engineering/ONBOARDING.md` — governance, onboarding, and contributor rules (update only when governance changes)
+- `docs/engineering/ROADMAP.md` — roadmap, phases, and technical debt (update when phases change)
 - `docs/engineering/ENGINEERING_STANDARDS.md` — standards (update only when standards change)
 - `docs/engineering/progress/` — session reports (append-only)
 
@@ -304,8 +313,18 @@ MVP targets are defined in ADR-008: read API p95 ≤ 300 ms, write API p95 ≤ 5
 
 ### 11.2 Author Checklist
 
-- [ ] Self-review completed (see MASTER_DEVELOPMENT_GUIDE §6)
-- [ ] DoD met (see MASTER_DEVELOPMENT_GUIDE §5)
+- [ ] Self-review completed (see ONBOARDING.md §6)
+- [ ] DoD met (see ONBOARDING.md §5)
 - [ ] `make test && make lint` pass locally
-- [ ] `PHASES.md` updated if phase status changed
+- [ ] `ROADMAP.md` updated if phase status changed
 - [ ] Progress report saved if session produced meaningful work
+
+---
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — engineering handbook, canonical sources, and do-not-break list.
+- [`ONBOARDING.md`](ONBOARDING.md) — contributor workflow, DoD, self-review, and getting started.
+- [`API_DESIGN_GUIDELINES.md`](../api/API_DESIGN_GUIDELINES.md) — REST, OpenAPI, versioning, and idempotency conventions.
+- [`SECURITY_CHECKLIST.md`](../security/SECURITY_CHECKLIST.md) — security review checklist.
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md) — deployment, infrastructure, and rollback guidance.

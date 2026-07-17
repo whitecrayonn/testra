@@ -5,7 +5,7 @@ info:
     Testra — One Platform. Every Test.
     RESTful JSON API for the Testra Quality Engineering Platform.
     All responses use a consistent envelope: `{ "data": ..., "meta": ..., "error": ... }`.
-  version: 0.1.0
+  version: 0.4.0
   contact:
     name: Testra Engineering
 servers:
@@ -31,6 +31,18 @@ tags:
     description: Password reset request and confirmation
   - name: API Keys
     description: Scoped API keys for automation and integrations
+  - name: Test Folders
+    description: Hierarchical folders for organizing test suites and cases
+  - name: Test Suites
+    description: Collections of related test cases
+  - name: Test Cases
+    description: Test case management with versioning and full-text search
+  - name: Notifications
+    description: In-app notifications and delivery
+  - name: Notification Preferences
+    description: Per-user notification preferences
+  - name: Notification Channels
+    description: Workspace-scoped email, Slack, Teams and webhook channels
 
 paths:
   /auth/register:
@@ -47,7 +59,7 @@ paths:
               required: [email, password, name]
               properties:
                 email: { type: string, format: email }
-                password: { type: string, minLength: 8 }
+                password: { type: string, minLength: 12, description: Minimum 12 characters }
                 name: { type: string }
       responses:
         "201":
@@ -81,6 +93,33 @@ paths:
       responses:
         "200":
           description: Authenticated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/AuthResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Exchange a refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: New access and refresh tokens
           content:
             application/json:
               schema:
@@ -140,6 +179,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Organization" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     get:
       tags: [Organizations]
       operationId: listOrganizations
@@ -181,6 +221,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Organization" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /workspaces:
     post:
@@ -212,6 +253,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Workspace" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     get:
       tags: [Workspaces]
       operationId: listWorkspaces
@@ -258,6 +300,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Workspace" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /projects:
     post:
@@ -293,6 +336,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Project" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     get:
       tags: [Projects]
       operationId: listProjects
@@ -339,6 +383,7 @@ paths:
                     properties:
                       data: { $ref: "#/components/schemas/Project" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /auth/mfa/setup:
     post:
@@ -513,6 +558,11 @@ paths:
                 scopes:
                   type: array
                   items: { type: string }
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Optional expiry (default 90 days, max 365 days)
       responses:
         "201":
           description: API key created; raw key is shown once
@@ -531,6 +581,7 @@ paths:
                           raw_key: { type: string }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     get:
       tags: [API Keys]
       operationId: listAPIKeys
@@ -557,6 +608,7 @@ paths:
                         items: { $ref: "#/components/schemas/APIKey" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /api-keys/{id}:
     delete:
@@ -584,6 +636,300 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: List notifications for the current user
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: read
+          in: query
+          schema: { type: boolean }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Notification" }
+                      meta: { $ref: "#/components/schemas/PaginationMeta" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Notifications]
+      operationId: createNotification
+      summary: Create a notification for a user
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateNotificationRequest" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Notification" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      operationId: getUnreadCount
+      summary: Count unread notifications
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      unread_count: { type: integer }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+
+  /notifications/{id}:
+    patch:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      summary: Mark a notification as read or unread
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                read: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: updated }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '404': { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Notifications]
+      operationId: deleteNotification
+      summary: Delete a notification
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: deleted }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '404': { $ref: "#/components/responses/NotFound" }
+
+  /notification-preferences:
+    get:
+      tags: [Notification Preferences]
+      operationId: getNotificationPreferences
+      summary: Get the current user's notification preferences
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [Notification Preferences]
+      operationId: updateNotificationPreferences
+      summary: Update notification preferences
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdatePreferencesRequest" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+
+  /notification-channels:
+    get:
+      tags: [Notification Channels]
+      operationId: listNotificationChannels
+      summary: List notification channels for a workspace
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/NotificationChannel" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Notification Channels]
+      operationId: createNotificationChannel
+      summary: Create a notification channel
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateChannelRequest" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationChannel" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+
+  /notification-channels/{id}:
+    put:
+      tags: [Notification Channels]
+      operationId: updateNotificationChannel
+      summary: Update a notification channel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateChannelRequest" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationChannel" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '404': { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Notification Channels]
+      operationId: deleteNotificationChannel
+      summary: Delete a notification channel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: deleted }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '404': { $ref: "#/components/responses/NotFound" }
 
 components:
   securitySchemes:
@@ -620,6 +966,16 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
 
   schemas:
     Envelope:
@@ -645,11 +1001,13 @@ components:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         name: { type: string }
+        mfa_enabled: { type: boolean }
 
     AuthResult:
       type: object
       properties:
-        token: { type: string }
+        token: { type: string, description: JWT access token (15 min expiry) }
+        refresh_token: { type: string, description: Opaque refresh token for token rotation }
         user: { $ref: "#/components/schemas/User" }
 
     Organization:
@@ -686,5 +1044,967 @@ components:
         scopes:
           type: array
           items: { type: string }
+        expires_at: { type: string, format: date-time, nullable: true }
         last_used_at: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }
+
+    PaginationMeta:
+      type: object
+      properties:
+        next_cursor:
+          type: string
+          nullable: true
+          description: Base64-encoded cursor for the next page; null if no more results
+        has_more:
+          type: boolean
+          description: Whether more results exist beyond the current page
+
+    TestFolder:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        parent_id: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TestSuite:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        folder_id: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TestStep:
+      type: object
+      properties:
+        order: { type: integer }
+        action: { type: string }
+        expected: { type: string }
+        test_data: { type: string }
+
+    TestCase:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        suite_id: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        description: { type: string }
+        preconditions: { type: string }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/TestStep' }
+        status:
+          type: string
+          enum: [draft, active, deprecated]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        tags:
+          type: array
+          items: { type: string }
+        version: { type: integer }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TestCaseVersion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        test_case_id: { type: string, format: uuid }
+        version: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        preconditions: { type: string }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/TestStep' }
+        changed_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+
+    TestRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        suite_id: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        status: { type: string, enum: [pending, running, passed, failed, skipped, cancelled] }
+        total: { type: integer }
+        passed: { type: integer }
+        failed: { type: integer }
+        skipped: { type: integer }
+        blocked: { type: integer }
+        duration_ms: { type: integer, format: int64 }
+        source: { type: string, enum: [manual, ci, api] }
+        created_by: { type: string, format: uuid }
+        started_at: { type: string, format: date-time, nullable: true }
+        completed_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TestRunItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        run_id: { type: string, format: uuid }
+        test_case_id: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        status: { type: string, enum: [pending, running, passed, failed, skipped, blocked] }
+        duration_ms: { type: integer, format: int64 }
+        error_message: { type: string }
+        stack_trace: { type: string }
+        artifacts:
+          type: array
+          items: { type: string }
+        sort_order: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateRunRequest:
+      type: object
+      required: [workspace_id, project_id, name]
+      properties:
+        workspace_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        suite_id: { type: string, format: uuid }
+        name: { type: string }
+        test_case_ids:
+          type: array
+          items: { type: string, format: uuid }
+        source: { type: string, enum: [manual, ci, api] }
+
+    UpdateRunStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [pending, running, passed, failed, skipped, cancelled] }
+
+    UpdateItemStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [pending, running, passed, failed, skipped, blocked] }
+        duration_ms: { type: integer, format: int64 }
+        error_message: { type: string }
+        stack_trace: { type: string }
+
+    IngestRequest:
+      type: object
+      required: [workspace_id, project_id, name, format, payload]
+      properties:
+        workspace_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        suite_id: { type: string, format: uuid }
+        name: { type: string }
+        format: { type: string, enum: [junit, playwright, cypress] }
+        payload: { type: string, description: Raw test result payload (JUnit XML, Playwright JSON, or Cypress JSON) }
+
+    IngestResult:
+      type: object
+      properties:
+        run_id: { type: string, format: uuid }
+        total: { type: integer }
+        passed: { type: integer }
+        failed: { type: integer }
+        skipped: { type: integer }
+        duration_ms: { type: integer, format: int64 }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        type: { type: string, enum: [system, test_run_completed, defect_assigned, mention] }
+        title: { type: string }
+        body: { type: string }
+        link: { type: string }
+        read: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateNotificationRequest:
+      type: object
+      required: [user_id, type, title]
+      properties:
+        user_id: { type: string, format: uuid }
+        type: { type: string, enum: [system, test_run_completed, defect_assigned, mention] }
+        title: { type: string }
+        body: { type: string }
+        link: { type: string }
+
+    NotificationPreferences:
+      type: object
+      properties:
+        organization_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        in_app_enabled: { type: boolean }
+        email_enabled: { type: boolean }
+        slack_enabled: { type: boolean }
+        teams_enabled: { type: boolean }
+        webhook_enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UpdatePreferencesRequest:
+      type: object
+      properties:
+        in_app_enabled: { type: boolean }
+        email_enabled: { type: boolean }
+        slack_enabled: { type: boolean }
+        teams_enabled: { type: boolean }
+        webhook_enabled: { type: boolean }
+
+    NotificationChannel:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        type: { type: string, enum: [email, slack, teams, webhook] }
+        name: { type: string }
+        config: { type: object, additionalProperties: { type: string } }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateChannelRequest:
+      type: object
+      required: [workspace_id, type, name, config]
+      properties:
+        workspace_id: { type: string, format: uuid }
+        type: { type: string, enum: [email, slack, teams, webhook] }
+        name: { type: string }
+        config: { type: object, additionalProperties: { type: string } }
+
+    UpdateChannelRequest:
+      type: object
+      properties:
+        type: { type: string, enum: [email, slack, teams, webhook] }
+        name: { type: string }
+        config: { type: object, additionalProperties: { type: string } }
+
+  /test-folders:
+    post:
+      tags: [Test Folders]
+      operationId: createTestFolder
+      summary: Create a test folder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspace_id, name]
+              properties:
+                workspace_id: { type: string, format: uuid }
+                parent_id: { type: string, format: uuid, nullable: true }
+                name: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestFolder' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Test Folders]
+      operationId: listTestFolders
+      summary: List test folders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: parent_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TestFolder' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-folders/{id}:
+    get:
+      tags: [Test Folders]
+      operationId: getTestFolder
+      summary: Get a test folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestFolder' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Test Folders]
+      operationId: updateTestFolder
+      summary: Update a test folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestFolder' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Test Folders]
+      operationId: deleteTestFolder
+      summary: Delete a test folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-suites:
+    post:
+      tags: [Test Suites]
+      operationId: createTestSuite
+      summary: Create a test suite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspace_id, name]
+              properties:
+                workspace_id: { type: string, format: uuid }
+                folder_id: { type: string, format: uuid, nullable: true }
+                name: { type: string }
+                description: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestSuite' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Test Suites]
+      operationId: listTestSuites
+      summary: List test suites
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: folder_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TestSuite' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-suites/{id}:
+    get:
+      tags: [Test Suites]
+      operationId: getTestSuite
+      summary: Get a test suite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestSuite' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Test Suites]
+      operationId: updateTestSuite
+      summary: Update a test suite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestSuite' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Test Suites]
+      operationId: deleteTestSuite
+      summary: Delete a test suite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-cases:
+    post:
+      tags: [Test Cases]
+      operationId: createTestCase
+      summary: Create a test case
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspace_id, project_id, title]
+              properties:
+                workspace_id: { type: string, format: uuid }
+                project_id: { type: string, format: uuid }
+                suite_id: { type: string, format: uuid, nullable: true }
+                title: { type: string }
+                description: { type: string }
+                preconditions: { type: string }
+                steps:
+                  type: array
+                  items: { $ref: '#/components/schemas/TestStep' }
+                status:
+                  type: string
+                  enum: [draft, active, deprecated]
+                priority:
+                  type: string
+                  enum: [low, medium, high, critical]
+                tags:
+                  type: array
+                  items: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestCase' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Test Cases]
+      operationId: listTestCases
+      summary: List test cases with cursor pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: suite_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TestCase' }
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-cases/search:
+    get:
+      tags: [Test Cases]
+      operationId: searchTestCases
+      summary: Full-text search across test cases
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TestCase' }
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-cases/{id}:
+    get:
+      tags: [Test Cases]
+      operationId: getTestCase
+      summary: Get a test case
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestCase' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Test Cases]
+      operationId: updateTestCase
+      summary: Update a test case (creates a version snapshot)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                suite_id: { type: string, format: uuid, nullable: true }
+                title: { type: string }
+                description: { type: string }
+                preconditions: { type: string }
+                steps:
+                  type: array
+                  items: { $ref: '#/components/schemas/TestStep' }
+                status:
+                  type: string
+                  enum: [draft, active, deprecated]
+                priority:
+                  type: string
+                  enum: [low, medium, high, critical]
+                tags:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestCase' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Test Cases]
+      operationId: deleteTestCase
+      summary: Delete a test case
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-cases/{id}/versions:
+    get:
+      tags: [Test Cases]
+      operationId: listTestCaseVersions
+      summary: List version history for a test case
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TestCaseVersion' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # --- Phase 3: Execution & Results ---
+
+  /test-runs:
+    post:
+      tags: [Test Runs]
+      summary: Create a test run
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRunRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TestRun' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Test Runs]
+      summary: List test runs for a project
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TestRun' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-runs/{id}:
+    get:
+      tags: [Test Runs]
+      summary: Get a test run by ID
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TestRun' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Test Runs]
+      summary: Update test run status
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRunStatusRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TestRun' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Test Runs]
+      summary: Delete a test run
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-runs/{id}/items:
+    get:
+      tags: [Test Runs]
+      summary: List test run items
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TestRunItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /test-runs/{id}/stream:
+    get:
+      tags: [Test Runs]
+      summary: SSE stream for live run progress
+      description: |
+        Streams `RunProgressEvent` messages as server-sent events. Because
+        browsers cannot set headers on `EventSource` connections, the JWT must
+        be supplied in the `access_token` query parameter.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: access_token
+          in: query
+          required: false
+          description: JWT access token used by browser EventSource clients in place of the Authorization header.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: object
+                properties:
+                  run_id: { type: string, format: uuid }
+                  item_id: { type: string, format: uuid }
+                  status: { type: string }
+                  total: { type: integer }
+                  passed: { type: integer }
+                  failed: { type: integer }
+                  skipped: { type: integer }
+                  blocked: { type: integer }
+                  progress: { type: number, format: float }
+
+  /test-run-items/{id}:
+    put:
+      tags: [Test Runs]
+      summary: Update a test run item status
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateItemStatusRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TestRunItem' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /ingest:
+    post:
+      tags: [Ingestion]
+      summary: Ingest CI/CD test results (JUnit XML, Playwright/Cypress JSON)
+      description: |
+        Accepts a JSON body containing metadata (workspace_id, project_id, name, format)
+        alongside the raw test result payload. Supported formats: junit, playwright, cypress.
+        Requires an Idempotency-Key header. Reusing a key with the same payload replays the
+        stored response; reusing it with a different payload returns 409 Conflict.
+        Zero source code retention — only results and metadata are stored.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+          description: UUID used to deduplicate ingestion requests for 24 hours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IngestRequest' }
+      responses:
+        '201':
+          description: Ingested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/IngestResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }

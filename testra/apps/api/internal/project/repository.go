@@ -6,15 +6,16 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 )
 
 type SQLRepository struct {
-	db *sql.DB
+	db db.DBTX
 }
 
-func NewSQLRepository(db *sql.DB) *SQLRepository {
-	return &SQLRepository{db: db}
+func NewSQLRepository(sqlDB *sql.DB) *SQLRepository {
+	return &SQLRepository{db: db.Wrap(sqlDB)}
 }
 
 func (r *SQLRepository) Create(ctx context.Context, project *Project) error {
@@ -63,6 +64,54 @@ func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.U
 		 WHERE workspace_id = $1
 		 ORDER BY created_at DESC`,
 		workspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []Project
+	for rows.Next() {
+		var p Project
+		if err := rows.Scan(&p.ID, &p.WorkspaceID, &p.Name, &p.Key, &p.Description, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		projects = append(projects, p)
+	}
+	return projects, rows.Err()
+}
+
+func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]Project, error) {
+	if cursor != "" {
+		rows, err := r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, name, key, description, created_at, updated_at FROM projects
+			 WHERE workspace_id = $1 AND id < $2
+			 ORDER BY id DESC
+			 LIMIT $3`,
+			workspaceID, cursor, limit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var projects []Project
+		for rows.Next() {
+			var p Project
+			if err := rows.Scan(&p.ID, &p.WorkspaceID, &p.Name, &p.Key, &p.Description, &p.CreatedAt, &p.UpdatedAt); err != nil {
+				return nil, err
+			}
+			projects = append(projects, p)
+		}
+		return projects, rows.Err()
+	}
+
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, workspace_id, name, key, description, created_at, updated_at FROM projects
+		 WHERE workspace_id = $1
+		 ORDER BY id DESC
+		 LIMIT $2`,
+		workspaceID, limit,
 	)
 	if err != nil {
 		return nil, err

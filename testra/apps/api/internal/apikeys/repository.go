@@ -6,15 +6,16 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 )
 
 type SQLRepository struct {
-	db *sql.DB
+	db db.DBTX
 }
 
-func NewSQLRepository(db *sql.DB) *SQLRepository {
-	return &SQLRepository{db: db}
+func NewSQLRepository(sqlDB *sql.DB) *SQLRepository {
+	return &SQLRepository{db: db.Wrap(sqlDB)}
 }
 
 func (r *SQLRepository) Create(ctx context.Context, key *APIKey) error {
@@ -61,6 +62,78 @@ func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.U
 		 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL
 		 ORDER BY created_at DESC`,
 		workspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var keys []APIKey
+	for rows.Next() {
+		var k APIKey
+		var scopes string
+		var lastUsed, expires, revoked sql.NullTime
+		if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
+			return nil, err
+		}
+		k.Scopes = parseArray(scopes)
+		if lastUsed.Valid {
+			k.LastUsedAt = &lastUsed.Time
+		}
+		if expires.Valid {
+			k.ExpiresAt = &expires.Time
+		}
+		if revoked.Valid {
+			k.RevokedAt = &revoked.Time
+		}
+		keys = append(keys, k)
+	}
+	return keys, rows.Err()
+}
+
+func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]APIKey, error) {
+	if cursor != "" {
+		rows, err := r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+			 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL AND id < $2
+			 ORDER BY id DESC
+			 LIMIT $3`,
+			workspaceID, cursor, limit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var keys []APIKey
+		for rows.Next() {
+			var k APIKey
+			var scopes string
+			var lastUsed, expires, revoked sql.NullTime
+			if err := rows.Scan(&k.ID, &k.WorkspaceID, &k.Name, &k.KeyHash, &k.KeyPrefix, &scopes, &lastUsed, &expires, &revoked, &k.CreatedBy, &k.CreatedAt); err != nil {
+				return nil, err
+			}
+			k.Scopes = parseArray(scopes)
+			if lastUsed.Valid {
+				k.LastUsedAt = &lastUsed.Time
+			}
+			if expires.Valid {
+				k.ExpiresAt = &expires.Time
+			}
+			if revoked.Valid {
+				k.RevokedAt = &revoked.Time
+			}
+			keys = append(keys, k)
+		}
+		return keys, rows.Err()
+	}
+
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, workspace_id, name, key_hash, key_prefix, scopes::text, last_used_at, expires_at, revoked_at, created_by, created_at
+		 FROM api_keys WHERE workspace_id = $1 AND revoked_at IS NULL
+		 ORDER BY id DESC
+		 LIMIT $2`,
+		workspaceID, limit,
 	)
 	if err != nil {
 		return nil, err

@@ -1,5 +1,15 @@
 # Testra Security Checklist
 
+**Purpose:** Provide a security checklist for every security-sensitive change and before production launch.
+**Owner:** Security / CTO
+**Scope:** Identity, data, application, and operations security controls.
+**Source of Truth:** SECURITY_CHECKLIST.md for security review; ADR-007 for security standards.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`ADR-007-security-standards.md`](../architecture/adrs/ADR-007-security-standards.md)
+- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md)
+
 Use this checklist for every security-sensitive change and before production launch.
 
 ## Identity and Access
@@ -40,3 +50,9 @@ Use this checklist for every security-sensitive change and before production lau
 - [ ] Production readiness and release checklists are complete.
 
 **Note:** ADR-001 records the accepted hybrid authentication direction and explicitly makes security ownership a Testra responsibility.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`ADR-007-security-standards.md`](../architecture/adrs/ADR-007-security-standards.md) — security standards ADR
+- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md) — go-live gates

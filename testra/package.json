@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "Testra Intelligent Quality Engineering Platform monorepo",
   "scripts": {
-    "dev": "node scripts/dev/start-infra.mjs && turbo run dev",
+    "dev": "node scripts/dev/start-infra.mjs && turbo run dev --filter=\"!@testra/ml\"",
     "dev:all": "node scripts/dev/start-infra.mjs && turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",

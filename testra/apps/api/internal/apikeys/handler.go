@@ -10,6 +10,7 @@ import (
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
+	"github.com/testra/testra/apps/api/internal/shared/pagination"
 )
 
 type Handler struct {
@@ -21,19 +22,21 @@ func NewHandler(service *Service) *Handler {
 }
 
 type apiKeyResponse struct {
-	ID          string    `json:"id"`
-	WorkspaceID string    `json:"workspace_id"`
-	Name        string    `json:"name"`
-	KeyPrefix   string    `json:"key_prefix"`
-	Scopes      []string  `json:"scopes"`
+	ID          string     `json:"id"`
+	WorkspaceID string     `json:"workspace_id"`
+	Name        string     `json:"name"`
+	KeyPrefix   string     `json:"key_prefix"`
+	Scopes      []string   `json:"scopes"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 type createAPIKeyRequest struct {
-	WorkspaceID string   `json:"workspace_id"`
-	Name        string   `json:"name"`
-	Scopes      []string `json:"scopes"`
+	WorkspaceID string     `json:"workspace_id"`
+	Name        string     `json:"name"`
+	Scopes      []string   `json:"scopes"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 }
 
 type createAPIKeyResponse struct {
@@ -48,6 +51,7 @@ func mapAPIKeyResponse(k APIKey) apiKeyResponse {
 		Name:        k.Name,
 		KeyPrefix:   k.KeyPrefix,
 		Scopes:      k.Scopes,
+		ExpiresAt:   k.ExpiresAt,
 		LastUsedAt:  k.LastUsedAt,
 		CreatedAt:   k.CreatedAt,
 	}
@@ -76,6 +80,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: workspaceID,
 		Name:        req.Name,
 		Scopes:      req.Scopes,
+		ExpiresAt:   req.ExpiresAt,
 		CreatedBy:   userID,
 	})
 	if err != nil {
@@ -102,7 +107,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	keys, err := h.service.ListForWorkspace(r.Context(), workspaceID)
+	params := pagination.ParseParams(r)
+	keys, err := h.service.ListForWorkspacePaginated(r.Context(), workspaceID, params.Cursor, params.Limit)
 	if err != nil {
 		mapError(w, err)
 		return
@@ -112,7 +118,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for i, k := range keys {
 		resp[i] = mapAPIKeyResponse(k)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
+
+	meta := pagination.Meta{HasMore: len(keys) == params.Limit}
+	if meta.HasMore && len(keys) > 0 {
+		nextCursor, err := pagination.EncodeCursor(keys[len(keys)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
+	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }
 
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {

@@ -6,15 +6,16 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 )
 
 type SQLRepository struct {
-	db *sql.DB
+	db db.DBTX
 }
 
-func NewSQLRepository(db *sql.DB) *SQLRepository {
-	return &SQLRepository{db: db}
+func NewSQLRepository(sqlDB *sql.DB) *SQLRepository {
+	return &SQLRepository{db: db.Wrap(sqlDB)}
 }
 
 func (r *SQLRepository) Create(ctx context.Context, workspace *Workspace) error {
@@ -63,6 +64,54 @@ func (r *SQLRepository) ListForOrganization(ctx context.Context, orgID uuid.UUID
 		 WHERE organization_id = $1
 		 ORDER BY created_at DESC`,
 		orgID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var workspaces []Workspace
+	for rows.Next() {
+		var w Workspace
+		if err := rows.Scan(&w.ID, &w.OrganizationID, &w.Name, &w.Slug, &w.CreatedAt, &w.UpdatedAt); err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, w)
+	}
+	return workspaces, rows.Err()
+}
+
+func (r *SQLRepository) ListForOrganizationPaginated(ctx context.Context, orgID uuid.UUID, cursor string, limit int) ([]Workspace, error) {
+	if cursor != "" {
+		rows, err := r.db.QueryContext(ctx,
+			`SELECT id, organization_id, name, slug, created_at, updated_at FROM workspaces
+			 WHERE organization_id = $1 AND id < $2
+			 ORDER BY id DESC
+			 LIMIT $3`,
+			orgID, cursor, limit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var workspaces []Workspace
+		for rows.Next() {
+			var w Workspace
+			if err := rows.Scan(&w.ID, &w.OrganizationID, &w.Name, &w.Slug, &w.CreatedAt, &w.UpdatedAt); err != nil {
+				return nil, err
+			}
+			workspaces = append(workspaces, w)
+		}
+		return workspaces, rows.Err()
+	}
+
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, organization_id, name, slug, created_at, updated_at FROM workspaces
+		 WHERE organization_id = $1
+		 ORDER BY id DESC
+		 LIMIT $2`,
+		orgID, limit,
 	)
 	if err != nil {
 		return nil, err

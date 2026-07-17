@@ -6,22 +6,21 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 	"github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 )
 
 const (
-	permKey   contextKey = "permissions"
-	tenantKey contextKey = "tenant_id"
+	permKey contextKey = "permissions"
 )
 
 func WithTenantID(ctx context.Context, tenantID uuid.UUID) context.Context {
-	return context.WithValue(ctx, tenantKey, tenantID)
+	return db.WithTenantID(ctx, tenantID)
 }
 
 func TenantIDFromContext(ctx context.Context) (uuid.UUID, bool) {
-	v, ok := ctx.Value(tenantKey).(uuid.UUID)
-	return v, ok
+	return db.TenantIDFromContext(ctx)
 }
 
 func WithPermissions(ctx context.Context, perms []string) context.Context {

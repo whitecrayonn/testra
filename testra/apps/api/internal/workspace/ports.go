@@ -11,6 +11,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Workspace, error)
 	GetBySlug(ctx context.Context, orgID uuid.UUID, slug string) (*Workspace, error)
 	ListForOrganization(ctx context.Context, orgID uuid.UUID) ([]Workspace, error)
+	ListForOrganizationPaginated(ctx context.Context, orgID uuid.UUID, cursor string, limit int) ([]Workspace, error)
 	ListForUser(ctx context.Context, userID uuid.UUID) ([]Workspace, error)
 	AddMember(ctx context.Context, member *Member) error
 }

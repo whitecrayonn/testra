@@ -16,19 +16,13 @@ type AuthConfig struct {
 func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			header := r.Header.Get("Authorization")
-			if header == "" {
+			token := extractBearerToken(r)
+			if token == "" {
 				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
 				return
 			}
 
-			parts := strings.SplitN(header, " ", 2)
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
-				return
-			}
-
-			claims, err := jwt.Parse(parts[1], cfg.JWTSecret)
+			claims, err := jwt.Parse(token, cfg.JWTSecret)
 			if err != nil {
 				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
 				return
@@ -38,4 +32,21 @@ func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func extractBearerToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	if header != "" {
+		parts := strings.SplitN(header, " ", 2)
+		if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+			return parts[1]
+		}
+	}
+
+	// EventSource cannot send custom headers, so clients may pass a short-lived
+	// JWT via the access_token query parameter for SSE endpoints.
+	if token := r.URL.Query().Get("access_token"); token != "" {
+		return token
+	}
+	return r.URL.Query().Get("token")
 }

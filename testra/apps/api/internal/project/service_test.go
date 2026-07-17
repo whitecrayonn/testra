@@ -47,6 +47,19 @@ func (f *fakeRepository) ListForWorkspace(_ context.Context, workspaceID uuid.UU
 	return result, nil
 }
 
+func (f *fakeRepository) ListForWorkspacePaginated(_ context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]Project, error) {
+	var result []Project
+	for _, p := range f.projects {
+		if p.WorkspaceID == workspaceID {
+			result = append(result, *p)
+		}
+	}
+	if limit > 0 && len(result) > limit {
+		result = result[:limit]
+	}
+	return result, nil
+}
+
 func TestServiceCreate(t *testing.T) {
 	workspaceID := uuid.New()
 

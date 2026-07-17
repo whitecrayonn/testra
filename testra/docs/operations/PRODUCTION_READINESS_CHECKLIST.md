@@ -1,5 +1,16 @@
 # Testra Production Readiness Checklist
 
+**Purpose:** Provide a go-live checklist covering product, security, reliability, delivery, and approvals.
+**Owner:** Platform / SRE Lead / CTO
+**Scope:** Production readiness gates before launch.
+**Source of Truth:** PRODUCTION_READINESS_CHECKLIST.md for launch gates; evidence must exist, not merely be planned.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`RELEASE_CHECKLIST.md`](../release/RELEASE_CHECKLIST.md)
+- [`SECURITY_CHECKLIST.md`](../security/SECURITY_CHECKLIST.md)
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)
+
 ## Product and Architecture
 
 - [ ] MVP scope and phase completion are explicitly approved.
@@ -39,3 +50,10 @@
 - [ ] Product/business owner
 
 A checked box means evidence exists, not merely that the feature is planned.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`RELEASE_CHECKLIST.md`](../release/RELEASE_CHECKLIST.md) — release execution checklist
+- [`SECURITY_CHECKLIST.md`](../security/SECURITY_CHECKLIST.md) — security review checklist
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md) — deployment strategy

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -14,12 +14,12 @@ import { apiFetch, ApiError } from "@/lib/api";
 
 const resetSchema = z.object({
   token: z.string().min(1, "Token is required"),
-  new_password: z.string().min(8, "Password must be at least 8 characters"),
+  new_password: z.string().min(12, "Password must be at least 12 characters"),
 });
 
 type ResetValues = z.infer<typeof resetSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [serverError, setServerError] = useState("");
@@ -28,7 +28,6 @@ export default function ResetPasswordPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ResetValues>({
     resolver: zodResolver(resetSchema),
@@ -101,5 +100,13 @@ export default function ResetPasswordPage() {
         </Link>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<Card className="w-full max-w-md p-8 text-center text-slate-500">Loading...</Card>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

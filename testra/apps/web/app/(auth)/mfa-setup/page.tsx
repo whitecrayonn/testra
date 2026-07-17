@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,7 +114,18 @@ export default function MFASetupPage() {
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Scan this QR code:</p>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-            <p className="font-mono text-sm break-all text-slate-600">{setupData.qr_code}</p>
+            {setupData.qr_code ? (
+              <Image
+                src={setupData.qr_code}
+                alt="MFA QR code"
+                width={192}
+                height={192}
+                unoptimized
+                className="mx-auto h-48 w-48"
+              />
+            ) : (
+              <p className="text-sm text-slate-600">No QR code available</p>
+            )}
           </div>
         </div>
         <div className="space-y-2">

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
 type Service struct {
@@ -25,7 +26,7 @@ type CreateInput struct {
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, error) {
-	if input.Name == "" || input.Slug == "" {
+	if input.Name == "" {
 		return nil, sharederrors.ErrInvalidInput
 	}
 	if input.OrganizationID == uuid.Nil {
@@ -33,6 +34,9 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, er
 	}
 
 	slug := strings.ToLower(strings.TrimSpace(input.Slug))
+	if slug == "" {
+		slug = validation.Slugify(input.Name)
+	}
 
 	existing, err := s.repo.GetBySlug(ctx, input.OrganizationID, slug)
 	if err != nil && err != sharederrors.ErrNotFound {
@@ -74,6 +78,10 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (*Workspace, error) {
 
 func (s *Service) ListForOrganization(ctx context.Context, orgID uuid.UUID) ([]Workspace, error) {
 	return s.repo.ListForOrganization(ctx, orgID)
+}
+
+func (s *Service) ListForOrganizationPaginated(ctx context.Context, orgID uuid.UUID, cursor string, limit int) ([]Workspace, error) {
+	return s.repo.ListForOrganizationPaginated(ctx, orgID, cursor, limit)
 }
 
 func (s *Service) ListForUser(ctx context.Context, userID uuid.UUID) ([]Workspace, error) {

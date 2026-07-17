@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
+	"github.com/testra/testra/apps/api/internal/shared/pagination"
 )
 
 type Handler struct {
@@ -99,7 +100,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projects, err := h.service.ListForWorkspace(r.Context(), workspaceID)
+	params := pagination.ParseParams(r)
+	projects, err := h.service.ListForWorkspacePaginated(r.Context(), workspaceID, params.Cursor, params.Limit)
 	if err != nil {
 		mapError(w, err)
 		return
@@ -109,7 +111,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for i, p := range projects {
 		resp[i] = mapProjectResponse(&p)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
+
+	meta := pagination.Meta{HasMore: len(projects) == params.Limit}
+	if meta.HasMore && len(projects) > 0 {
+		nextCursor, err := pagination.EncodeCursor(projects[len(projects)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
+	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }
 
 func mapError(w http.ResponseWriter, err error) {

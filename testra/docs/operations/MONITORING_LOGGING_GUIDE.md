@@ -1,5 +1,16 @@
 # Testra Monitoring and Logging Guide
 
+**Purpose:** Define observability goals, required signals, logging rules, alerting, and retention.
+**Owner:** Platform / SRE Lead
+**Scope:** Metrics, logs, traces, dashboards, alerting, and retention.
+**Source of Truth:** MONITORING_LOGGING_GUIDE.md for observability requirements; ADR-005 for retention.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`ADR-005-backup-disaster-recovery.md`](../architecture/adrs/ADR-005-backup-disaster-recovery.md)
+- [`ADR-008-performance-targets.md`](../architecture/adrs/ADR-008-performance-targets.md)
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)
+
 ## Observability Goals
 
 Observe availability, latency, correctness, tenant isolation, queue health, storage health, and security events without collecting customer source code or sensitive payloads.
@@ -28,3 +39,10 @@ Retention is fixed by ADR-005: application logs are 30 days hot and 90 days arch
 ## Operational Review
 
 Every release checks dashboards and alerts. Alerting must include the ADR-008 API latency/query targets, queue and ClickHouse ingestion thresholds, backup age/failure, authentication abuse, and cross-tenant authorization signals. Every incident reviews whether detection was timely, actionable, and privacy-safe.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`ADR-008-performance-targets.md`](../architecture/adrs/ADR-008-performance-targets.md) — performance targets ADR
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md) — deployment strategy
+- [`DISASTER_RECOVERY_GUIDE.md`](DISASTER_RECOVERY_GUIDE.md) — backup and recovery

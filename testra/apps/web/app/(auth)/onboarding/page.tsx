@@ -11,6 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch, ApiError } from "@/lib/api";
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const onboardingSchema = z.object({
   org_name: z.string().min(1, "Organization name is required"),
   workspace_name: z.string().min(1, "Workspace name is required"),
@@ -21,7 +31,7 @@ type OnboardingValues = z.infer<typeof onboardingSchema>;
 export default function OnboardingPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
-  const [step, setStep] = useState(1);
+  const [step] = useState(1);
 
   const {
     register,
@@ -36,15 +46,22 @@ export default function OnboardingPage() {
     try {
       const org = await apiFetch<{ id: string; name: string }>("/api/v1/organizations", {
         method: "POST",
-        body: JSON.stringify({ name: values.org_name }),
+        body: JSON.stringify({ name: values.org_name, slug: slugify(values.org_name) }),
       });
 
       const workspace = await apiFetch<{ id: string; name: string }>("/api/v1/workspaces", {
         method: "POST",
-        body: JSON.stringify({ organization_id: org.id, name: values.workspace_name }),
+        body: JSON.stringify({ organization_id: org.id, name: values.workspace_name, slug: slugify(values.workspace_name) }),
       });
 
-      router.push(`/dashboard`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("testra_organization_id", org.id);
+        localStorage.setItem("testra_organization_name", org.name);
+        localStorage.setItem("testra_workspace_id", workspace.id);
+        localStorage.setItem("testra_workspace_name", workspace.name);
+      }
+
+      router.push("/dashboard");
     } catch (err) {
       if (err instanceof ApiError) {
         setServerError(err.message);

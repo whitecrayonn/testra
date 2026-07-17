@@ -23,9 +23,17 @@ func main() {
 	defer database.Close()
 
 	router := server.New(server.Config{
-		DB:        database,
-		JWTSecret: cfg.JWTSecret,
-		JWTExpiry: time.Duration(cfg.JWTExpiryHours) * time.Hour,
+		DB:                  database,
+		JWTSecret:           cfg.JWTSecret,
+		JWTExpiry:           time.Duration(cfg.JWTExpiryMinutes) * time.Minute,
+		RefreshExpiryDays:   cfg.RefreshExpiryDays,
+		RefreshAbsoluteDays: cfg.RefreshAbsoluteDays,
+		RedisAddr:           cfg.RedisAddr,
+		SMTPHost:            cfg.SMTPHost,
+		SMTPPort:            cfg.SMTPPort,
+		SMTPFrom:            cfg.SMTPFrom,
+		CORSAllowedOrigins:  cfg.CORSAllowedOrigins,
+		IdempotencyKeyTTL:   time.Duration(cfg.IdempotencyKeyTTLMinutes) * time.Minute,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

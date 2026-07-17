@@ -1,5 +1,15 @@
 # Testra Troubleshooting Guide
 
+**Purpose:** Provide symptom-based triage, safety rules, escalation, and incident closure guidance.
+**Owner:** Platform / SRE Lead
+**Scope:** Incident triage, symptom matrix, safety rules, escalation, and closure.
+**Source of Truth:** TROUBLESHOOTING_GUIDE.md for triage and escalation.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`MONITORING_LOGGING_GUIDE.md`](MONITORING_LOGGING_GUIDE.md)
+- [`ONBOARDING.md`](../engineering/ONBOARDING.md)
+
 ## General Triage
 
 1. Capture environment, timestamp, endpoint/job, request ID, tenant scope, and symptom.
@@ -33,3 +43,9 @@ Escalate immediately for cross-tenant exposure, credential compromise, data loss
 ## Closure
 
 Record root cause, customer impact, detection gap, mitigation, permanent fix, and follow-up owner. Add a regression test or documentation update where appropriate.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`MONITORING_LOGGING_GUIDE.md`](MONITORING_LOGGING_GUIDE.md) — observability requirements
+- [`ONBOARDING.md`](../engineering/ONBOARDING.md) — contributor workflow and common pitfalls

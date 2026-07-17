@@ -70,3 +70,7 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (*Project, error) {
 func (s *Service) ListForWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]Project, error) {
 	return s.repo.ListForWorkspace(ctx, workspaceID)
 }
+
+func (s *Service) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]Project, error) {
+	return s.repo.ListForWorkspacePaginated(ctx, workspaceID, cursor, limit)
+}

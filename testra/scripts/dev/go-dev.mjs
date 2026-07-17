@@ -11,6 +11,11 @@ if (!cmdPath) {
 const cwd = process.cwd();
 const airToml = resolve(cwd, ".air.toml");
 
+if (process.platform === "win32" && !process.env.GOCACHE) {
+  const localAppData = process.env.LOCALAPPDATA || resolve(process.env.USERPROFILE || "", "AppData", "Local");
+  process.env.GOCACHE = resolve(localAppData, "go-build");
+}
+
 function hasAir() {
   try {
     execSync("air -v", { stdio: "ignore", shell: true });

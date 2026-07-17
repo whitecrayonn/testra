@@ -16,4 +16,9 @@ type Repository interface {
 	CreateResetToken(ctx context.Context, token *PasswordResetToken) error
 	GetResetTokenByHash(ctx context.Context, hash string) (*PasswordResetToken, error)
 	MarkResetTokenUsed(ctx context.Context, tokenID uuid.UUID) error
+
+	CreateRefreshToken(ctx context.Context, token *RefreshToken) error
+	GetRefreshTokenByHash(ctx context.Context, hash string) (*RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, tokenID uuid.UUID, replacedBy uuid.UUID) error
+	RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
 }

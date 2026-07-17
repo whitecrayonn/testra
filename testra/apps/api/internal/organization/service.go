@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
 type Service struct {
@@ -24,11 +25,14 @@ type CreateInput struct {
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*Organization, error) {
-	if input.Name == "" || input.Slug == "" {
+	if input.Name == "" {
 		return nil, sharederrors.ErrInvalidInput
 	}
 
 	slug := strings.ToLower(strings.TrimSpace(input.Slug))
+	if slug == "" {
+		slug = validation.Slugify(input.Name)
+	}
 
 	existing, err := s.repo.GetBySlug(ctx, slug)
 	if err != nil && err != sharederrors.ErrNotFound {
@@ -70,6 +74,10 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (*Organization, error) 
 
 func (s *Service) ListForUser(ctx context.Context, userID uuid.UUID) ([]Organization, error) {
 	return s.repo.ListForUser(ctx, userID)
+}
+
+func (s *Service) ListForUserPaginated(ctx context.Context, userID uuid.UUID, cursor string, limit int) ([]Organization, error) {
+	return s.repo.ListForUserPaginated(ctx, userID, cursor, limit)
 }
 
 func (s *Service) AddMember(ctx context.Context, orgID, userID uuid.UUID, role string) error {

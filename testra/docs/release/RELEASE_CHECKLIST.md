@@ -1,5 +1,16 @@
 # Testra Release Checklist
 
+**Purpose:** Provide a release execution checklist covering planning, validation, staging, production, and rollback.
+**Owner:** Engineering / Release Lead
+**Scope:** Release planning, validation, staging, production, rollback, and forward fix.
+**Source of Truth:** RELEASE_CHECKLIST.md for release execution.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md)
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)
+- [`ROADMAP.md`](../engineering/ROADMAP.md)
+
 ## Planning
 
 - [ ] Release scope maps to an approved phase and owning module.
@@ -37,3 +48,10 @@
 - [ ] Schema compatibility is confirmed.
 - [ ] Forward-fix procedure is defined for irreversible migrations.
 - [ ] Customer and internal communication path is ready.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md) — go-live gates
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md) — deployment strategy
+- [`ROADMAP.md`](../engineering/ROADMAP.md) — implementation phases

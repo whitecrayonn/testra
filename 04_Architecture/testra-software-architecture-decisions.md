@@ -6,6 +6,8 @@
 **Date:** July 2026  
 **Classification:** Internal — Confidential
 
+> **Important:** This document is a pre-implementation draft. It contains proposed alternatives (for example, Clerk/WorkOS identity, Docker Compose local development, a managed-platform MVP, and Meilisearch) that conflict with the accepted ADRs in `testra/docs/architecture/adrs/` and the implemented code. Do not use this document as a source of truth. The canonical architecture reference is `testra/docs/BIBLICAL_TESTRA.md` and the accepted ADRs are the authoritative decisions.
+
 ---
 
 ## Purpose

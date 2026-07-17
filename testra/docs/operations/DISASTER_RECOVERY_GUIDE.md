@@ -1,5 +1,16 @@
 # Testra Disaster Recovery Guide
 
+**Purpose:** Define recovery objectives, backup requirements, recovery procedure, and testing for Testra services.
+**Owner:** Platform / SRE Lead
+**Scope:** Backup, restore, RPO/RTO, recovery procedure, and testing.
+**Source of Truth:** DISASTER_RECOVERY_GUIDE.md and ADR-005 for recovery policy.
+**Last Updated:** July 2026
+**Related documents:**
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
+- [`ADR-005-backup-disaster-recovery.md`](../architecture/adrs/ADR-005-backup-disaster-recovery.md)
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)
+- [`MONITORING_LOGGING_GUIDE.md`](MONITORING_LOGGING_GUIDE.md)
+
 ## Recovery Scope
 
 Recover the authoritative PostgreSQL data first, then Redis coordination, ClickHouse analytical data, object storage artifacts, application artifacts, and external integrations. PostgreSQL is the transactional source of truth; ClickHouse and Redis are not interchangeable backups.
@@ -43,3 +54,10 @@ Audit records are retained 7 years for enterprise governance and at least 2 year
 ## Testing
 
 Run restore drills at least before production launch and periodically afterward. A backup is untrusted until a restore has been demonstrated and measured.
+
+## See Also
+
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`ADR-005-backup-disaster-recovery.md`](../architecture/adrs/ADR-005-backup-disaster-recovery.md) — backup and recovery ADR
+- [`DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md) — deployment strategy
+- [`MONITORING_LOGGING_GUIDE.md`](MONITORING_LOGGING_GUIDE.md) — observability requirements

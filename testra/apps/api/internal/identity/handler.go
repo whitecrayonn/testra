@@ -30,8 +30,9 @@ type loginRequest struct {
 }
 
 type authResponse struct {
-	Token string `json:"token"`
-	User  userResponse `json:"user"`
+	Token        string       `json:"token"`
+	RefreshToken string       `json:"refresh_token"`
+	User         userResponse `json:"user"`
 }
 
 type userResponse struct {
@@ -68,8 +69,9 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apihttp.JSON(w, http.StatusCreated, authResponse{
-		Token: result.Token,
-		User:  mapUserResponse(result.User),
+		Token:        result.Token,
+		RefreshToken: result.RefreshToken,
+		User:         mapUserResponse(result.User),
 	})
 }
 
@@ -91,8 +93,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apihttp.JSON(w, http.StatusOK, authResponse{
-		Token: result.Token,
-		User:  mapUserResponse(result.User),
+		Token:        result.Token,
+		RefreshToken: result.RefreshToken,
+		User:         mapUserResponse(result.User),
 	})
 }
 
@@ -231,6 +234,32 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	apihttp.JSON(w, http.StatusOK, map[string]any{"status": "password_reset"})
 }
 
+type refreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	var req refreshRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+		return
+	}
+
+	result, err := h.service.RefreshToken(r.Context(), RefreshTokenInput{
+		RefreshToken: req.RefreshToken,
+	})
+	if err != nil {
+		mapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusOK, authResponse{
+		Token:        result.Token,
+		RefreshToken: result.RefreshToken,
+		User:         mapUserResponse(result.User),
+	})
+}
+
 func mapError(w http.ResponseWriter, err error) {
 	switch err {
 	case sharederrors.ErrConflict:
@@ -243,6 +272,12 @@ func mapError(w http.ResponseWriter, err error) {
 		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
 	case sharederrors.ErrInvalidInput:
 		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+	case sharederrors.ErrTokenExpired:
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "TOKEN_EXPIRED", err.Error())
+	case sharederrors.ErrTokenRevoked:
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "TOKEN_REVOKED", err.Error())
+	case sharederrors.ErrTooManyRequests:
+		apihttp.ErrorJSON(w, http.StatusTooManyRequests, "TOO_MANY_REQUESTS", err.Error())
 	default:
 		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 	}
