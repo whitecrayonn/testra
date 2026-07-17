@@ -19,7 +19,7 @@ spec:
             - containerPort: 3000
           env:
             - name: NEXT_PUBLIC_API_URL
-              value: "http://testra-api/api/v1"
+              value: "http://testra-api"
 ---
 apiVersion: v1
 kind: Service

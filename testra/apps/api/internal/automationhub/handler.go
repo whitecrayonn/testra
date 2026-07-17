@@ -94,7 +94,7 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:   uid,
 	})
 	if err != nil {
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", err.Error())
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "internal server error")
 		return
 	}
 

@@ -1,3 +1,18 @@
+CREATE SCHEMA IF NOT EXISTS app;
+
+CREATE OR REPLACE FUNCTION app.current_tenant() RETURNS UUID AS $$
+DECLARE
+    tenant text := current_setting('app.tenant_id', true);
+BEGIN
+    IF tenant IS NULL OR tenant = '' THEN
+        RETURN NULL;
+    END IF;
+    RETURN tenant::uuid;
+EXCEPTION WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE IF NOT EXISTS queue_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     queue_name TEXT NOT NULL DEFAULT 'default',
@@ -20,4 +35,4 @@ CREATE INDEX idx_queue_jobs_queue_status ON queue_jobs(queue_name, status, sched
 ALTER TABLE queue_jobs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation_queue_jobs ON queue_jobs
-    USING (app.current_tenant() = tenant_id);
+    USING (tenant_id = app.current_tenant() OR app.current_tenant() IS NULL);

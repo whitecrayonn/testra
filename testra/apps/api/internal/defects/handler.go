@@ -298,6 +298,6 @@ func mapError(w http.ResponseWriter, err error) {
 	case sharederrors.ErrUnauthorized:
 		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
 	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", err.Error())
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "internal server error")
 	}
 }

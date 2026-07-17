@@ -29,7 +29,18 @@ func Enqueue(ctx context.Context, db *sql.DB, tenantID uuid.UUID, queueName, job
 	if err != nil {
 		return err
 	}
-	_, err = db.ExecContext(ctx,
+
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire db connection: %w", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", tenantID.String()); err != nil {
+		return fmt.Errorf("set tenant context: %w", err)
+	}
+
+	_, err = conn.ExecContext(ctx,
 		`INSERT INTO queue_jobs (queue_name, job_type, payload, status, tenant_id, scheduled_at, created_at, updated_at)
 		 VALUES ($1, $2, $3, 'pending', $4, NOW(), NOW(), NOW())`,
 		queueName, jobType, payloadJSON, tenantID)

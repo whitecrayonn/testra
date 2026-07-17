@@ -2,13 +2,13 @@ resource "aws_ecr_repository" "testra" {
   for_each = toset(var.service_names)
 
   name                 = "testra-${each.value}-${var.environment}"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
-  force_delete = true
+  force_delete = false
 }
 
 resource "aws_ecr_lifecycle_policy" "testra" {

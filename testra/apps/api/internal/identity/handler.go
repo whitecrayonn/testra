@@ -279,6 +279,6 @@ func mapError(w http.ResponseWriter, err error) {
 	case sharederrors.ErrTooManyRequests:
 		apihttp.ErrorJSON(w, http.StatusTooManyRequests, "TOO_MANY_REQUESTS", err.Error())
 	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}
 }

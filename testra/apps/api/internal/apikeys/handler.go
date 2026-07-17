@@ -159,6 +159,6 @@ func mapError(w http.ResponseWriter, err error) {
 	case sharederrors.ErrInvalidCredential:
 		apihttp.ErrorJSON(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", err.Error())
 	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}
 }

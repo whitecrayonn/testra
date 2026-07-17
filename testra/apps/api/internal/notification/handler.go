@@ -451,6 +451,6 @@ func mapError(w http.ResponseWriter, err error) {
 	case sharederrors.ErrForbidden:
 		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
 	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}
 }
