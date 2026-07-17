@@ -20,6 +20,9 @@ type Config struct {
 	SMTPFrom                 string
 	CORSAllowedOrigins       string
 	IdempotencyKeyTTLMinutes int
+	MLServiceURL             string
+	StripeSecretKey          string
+	StripePriceID            string
 }
 
 func Load() Config {
@@ -38,6 +41,9 @@ func Load() Config {
 		SMTPFrom:                 getEnv("SMTP_FROM", "noreply@testra.local"),
 		CORSAllowedOrigins:       getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"),
 		IdempotencyKeyTTLMinutes: getEnvInt("IDEMPOTENCY_KEY_TTL_MINUTES", 1440),
+		MLServiceURL:             getEnv("ML_SERVICE_URL", ""),
+		StripeSecretKey:          getEnv("STRIPE_SECRET_KEY", ""),
+		StripePriceID:            getEnv("STRIPE_PRICE_ID", ""),
 	}
 }
 

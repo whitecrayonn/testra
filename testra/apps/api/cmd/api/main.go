@@ -34,6 +34,9 @@ func main() {
 		SMTPFrom:            cfg.SMTPFrom,
 		CORSAllowedOrigins:  cfg.CORSAllowedOrigins,
 		IdempotencyKeyTTL:   time.Duration(cfg.IdempotencyKeyTTLMinutes) * time.Minute,
+		MLServiceURL:        cfg.MLServiceURL,
+		StripeSecretKey:     cfg.StripeSecretKey,
+		StripePriceID:       cfg.StripePriceID,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

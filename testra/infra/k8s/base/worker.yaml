@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testra-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testra-worker
+  template:
+    metadata:
+      labels:
+        app: testra-worker
+    spec:
+      containers:
+        - name: worker
+          image: testra-worker:latest
+          envFrom:
+            - configMapRef:
+                name: testra-config
+            - secretRef:
+                name: testra-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testra-worker
+spec:
+  selector:
+    app: testra-worker
+  ports:
+    - port: 80
+      targetPort: 8080

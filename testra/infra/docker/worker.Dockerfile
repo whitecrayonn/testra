@@ -1,8 +1,8 @@
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
-COPY apps/worker/go.mod apps/worker/go.sum ./
+COPY apps/api/go.mod apps/api/go.sum ./
 RUN go mod download
-COPY apps/worker/. .
+COPY apps/api/. .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/testra-worker ./cmd/worker
 
 FROM alpine:latest

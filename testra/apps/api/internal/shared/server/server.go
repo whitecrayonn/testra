@@ -11,11 +11,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
+	"github.com/testra/testra/apps/api/internal/analytics"
 	"github.com/testra/testra/apps/api/internal/apikeys"
 	"github.com/testra/testra/apps/api/internal/audit"
 	"github.com/testra/testra/apps/api/internal/automationhub"
+	"github.com/testra/testra/apps/api/internal/billing"
 	"github.com/testra/testra/apps/api/internal/defects"
 	"github.com/testra/testra/apps/api/internal/identity"
+	"github.com/testra/testra/apps/api/internal/integrationhub"
+	"github.com/testra/testra/apps/api/internal/intelligence"
 	"github.com/testra/testra/apps/api/internal/notification"
 	"github.com/testra/testra/apps/api/internal/organization"
 	"github.com/testra/testra/apps/api/internal/project"
@@ -42,6 +46,9 @@ type Config struct {
 	SMTPFrom            string
 	CORSAllowedOrigins  string
 	IdempotencyKeyTTL   time.Duration
+	MLServiceURL        string
+	StripeSecretKey     string
+	StripePriceID       string
 }
 
 type apiKeyValidatorAdapter struct {
@@ -101,6 +108,10 @@ func New(cfg Config) http.Handler {
 	defectsModule := defects.NewModule(cfg.DB)
 	notificationModule := notification.NewModule(cfg.DB, cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPFrom)
 	automationHubModule := automationhub.NewModule(resultsModule.Repository)
+	analyticsModule := analytics.New(cfg.DB)
+	intelligenceModule := intelligence.New(cfg.DB, cfg.MLServiceURL)
+	integrationhubModule := integrationhub.New(cfg.DB)
+	billingModule := billing.New(cfg.DB, cfg.StripeSecretKey)
 	dbHandle := db.Wrap(cfg.DB)
 
 	tenantResolver := tenant.NewResolver(dbHandle)
@@ -422,52 +433,52 @@ func New(cfg Config) http.Handler {
 				).Put("/test-run-items/{id}", resultsModule.Handler.UpdateItemStatus)
 			})
 
-		r.Group(func(r chi.Router) {
-			r.Use(sharedmiddleware.TenantContext(cfg.DB,
-				sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromBody("project_id"), tenantResolver),
-				tenantResolver,
-			))
-			r.With(
-				sharedmiddleware.RequirePermission(rbacCfg, "defects:create"),
-				sharedmiddleware.AuditLog("defect.create", "defect",
-					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
-					func(r *http.Request) string { return "" },
-					auditLogFn,
-				),
-			).Post("/defects", defectsModule.Create)
-		})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromBody("project_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "defects:create"),
+					sharedmiddleware.AuditLog("defect.create", "defect",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/defects", defectsModule.Create)
+			})
 
-		r.Group(func(r chi.Router) {
-			r.Use(sharedmiddleware.TenantContext(cfg.DB,
-				sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromQuery("project_id"), tenantResolver),
-				tenantResolver,
-			))
-			r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects", defectsModule.List)
-		})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromQuery("project_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects", defectsModule.List)
+			})
 
-		r.Group(func(r chi.Router) {
-			r.Use(sharedmiddleware.TenantContext(cfg.DB,
-				sharedmiddleware.DefectToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
-				tenantResolver,
-			))
-			r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects/{id}", defectsModule.Get)
-			r.With(
-				sharedmiddleware.RequirePermission(rbacCfg, "defects:update"),
-				sharedmiddleware.AuditLog("defect.update", "defect",
-					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
-					func(r *http.Request) string { return chi.URLParam(r, "id") },
-					auditLogFn,
-				),
-			).Put("/defects/{id}", defectsModule.Update)
-			r.With(
-				sharedmiddleware.RequirePermission(rbacCfg, "defects:delete"),
-				sharedmiddleware.AuditLog("defect.delete", "defect",
-					func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
-					func(r *http.Request) string { return chi.URLParam(r, "id") },
-					auditLogFn,
-				),
-			).Delete("/defects/{id}", defectsModule.Delete)
-		})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.DefectToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "defects:read")).Get("/defects/{id}", defectsModule.Get)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "defects:update"),
+					sharedmiddleware.AuditLog("defect.update", "defect",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return chi.URLParam(r, "id") },
+						auditLogFn,
+					),
+				).Put("/defects/{id}", defectsModule.Update)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "defects:delete"),
+					sharedmiddleware.AuditLog("defect.delete", "defect",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return chi.URLParam(r, "id") },
+						auditLogFn,
+					),
+				).Delete("/defects/{id}", defectsModule.Delete)
+			})
 
 			// --- Notification Center ---
 			r.Group(func(r chi.Router) {
@@ -517,6 +528,103 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Delete("/notification-channels/{id}", notificationModule.Handler.DeleteChannel)
+			})
+
+			// --- Analytics ---
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:create")).Post("/analytics/dashboards", analyticsModule.Handler.CreateDashboard)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/dashboards", analyticsModule.Handler.ListDashboards)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/summary", analyticsModule.Handler.GetSummary)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/trends", analyticsModule.Handler.GetTrends)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/dashboards/{id}", analyticsModule.Handler.GetDashboard)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:update")).Put("/analytics/dashboards/{id}", analyticsModule.Handler.UpdateDashboard)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:delete")).Delete("/analytics/dashboards/{id}", analyticsModule.Handler.DeleteDashboard)
+			})
+
+			// --- Intelligence ---
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "intelligence:create")).Post("/intelligence/predict-flaky", intelligenceModule.Handler.PredictFlaky)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "intelligence:create")).Post("/intelligence/classify-failure", intelligenceModule.Handler.ClassifyFailure)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "intelligence:read")).Get("/intelligence/flaky-tests", intelligenceModule.Handler.ListPredictions)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "intelligence:read")).Get("/intelligence/failure-clusters", intelligenceModule.Handler.ListClusters)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "intelligence:read")).Get("/intelligence/flaky-tests/{id}", intelligenceModule.Handler.GetPrediction)
+			})
+
+			// --- Integration Hub ---
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:create")).Post("/integrations", integrationhubModule.Handler.CreateIntegration)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:create")).Post("/integrations/dispatch", integrationhubModule.Handler.DispatchEvent)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:read")).Get("/integrations", integrationhubModule.Handler.ListIntegrations)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:read")).Get("/integration-events", integrationhubModule.Handler.ListEvents)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:read")).Get("/integrations/{id}", integrationhubModule.Handler.GetIntegration)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Put("/integrations/{id}", integrationhubModule.Handler.UpdateIntegration)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:delete")).Delete("/integrations/{id}", integrationhubModule.Handler.DeleteIntegration)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Post("/integrations/{id}/test", integrationhubModule.Handler.TestIntegration)
+			})
+
+			// --- Billing ---
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "billing:update")).Put("/billing/subscription", billingModule.Handler.UpdateSubscription)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "billing:read")).Get("/billing/subscription", billingModule.Handler.GetSubscription)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "billing:read")).Get("/billing/invoices", billingModule.Handler.ListInvoices)
 			})
 		})
 	})

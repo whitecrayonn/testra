@@ -14,6 +14,7 @@ const settingsItems = [
   { href: "/dashboard/settings/roles", label: "Roles" },
   { href: "/dashboard/settings/api-keys", label: "API Keys" },
   { href: "/dashboard/settings/notifications", label: "Notifications" },
+  { href: "/dashboard/settings/integrations", label: "Integrations" },
   { href: "/dashboard/settings/audit-logs", label: "Audit Logs" },
   { href: "/dashboard/settings/billing", label: "Billing" },
 ];

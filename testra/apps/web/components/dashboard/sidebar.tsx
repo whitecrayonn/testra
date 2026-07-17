@@ -15,6 +15,7 @@ import {
   PlayCircle,
   Bug,
   Bell,
+  Brain,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/dashboard/test-cases", label: "Test Cases", icon: TestTube },
   { href: "/dashboard/test-runs", label: "Runs", icon: PlayCircle },
   { href: "/dashboard/defects", label: "Defects", icon: Bug },
+  { href: "/dashboard/flaky-tests", label: "Flaky tests", icon: Brain },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testra-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: testra-web
+  template:
+    metadata:
+      labels:
+        app: testra-web
+    spec:
+      containers:
+        - name: web
+          image: testra-web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://testra-api/api/v1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testra-web
+spec:
+  selector:
+    app: testra-web
+  ports:
+    - port: 80
+      targetPort: 3000
