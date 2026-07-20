@@ -21,14 +21,14 @@ type FlakyPrediction struct {
 }
 
 type FailureCluster struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
+	ID           uuid.UUID
+	WorkspaceID  uuid.UUID
 	ClusterLabel string
-	Pattern     string
-	SampleError string
-	Count       int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Pattern      string
+	SampleError  string
+	Count        int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type PredictionInput struct {

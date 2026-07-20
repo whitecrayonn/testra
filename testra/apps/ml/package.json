@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node ../../scripts/dev/ml-dev.mjs",
-    "test": "pytest",
-    "lint": "ruff check ."
+    "test": "node ../../scripts/dev/ml-run.mjs pytest",
+    "lint": "node ../../scripts/dev/ml-run.mjs ruff check ."
   }
 }

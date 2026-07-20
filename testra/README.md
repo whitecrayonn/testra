@@ -2,7 +2,7 @@
 
 **One Platform. Every Test.**
 
-This monorepo contains the complete Testra platform: a modular monolith Go backend, Next.js web application, Python ML inference service, shared libraries, and infrastructure as code.
+This monorepo contains the complete Testra platform: a modular monolith Go backend, Next.js web application, Python ML inference service, shared libraries, and deployment runbooks.
 
 ## Documentation
 
@@ -26,8 +26,7 @@ testra/
 │   ├── shared/     # Shared TypeScript types and utilities
 │   ├── ui/         # Shared React component library
 │   └── sdk/        # Official Testra TypeScript SDK
-├── infra/          # Terraform, Kubernetes, Docker (optional)
-├── docs/           # OpenAPI specs, ADRs, runbooks
+├── docs/           # OpenAPI specs, ADRs, runbooks, deployment guides
 └── scripts/        # Development and automation scripts
 ```
 
@@ -49,7 +48,7 @@ Testra uses a **Native Development Environment** — no Docker is required. See 
 | MinIO | latest | [binary](https://min.io/download) — S3-compatible local storage |
 | ClickHouse | 24+ | **Optional** — not needed until Phase 3 |
 
-Docker is **optional**. Docker files remain in `infra/docker/` for developers who prefer containerized workflows, but Docker Desktop is not required.
+Docker is **not used**. All services run natively on the local machine or as systemd services on a single Ubuntu VPS.
 
 ### One-command setup
 
@@ -139,10 +138,10 @@ cp .env.example .env
 
 ## Technology Stack
 
-- **Backend**: Go 1.23, PostgreSQL 16, Redis 7, ClickHouse 24
+- **Backend**: Go 1.24, PostgreSQL 16, Redis 7, ClickHouse 24
 - **Frontend**: Next.js 15, React 18, TypeScript 5, TailwindCSS 3
 - **ML**: Python 3.12, FastAPI, scikit-learn, XGBoost
-- **Infrastructure**: Native development (no Docker required); Ubuntu VM + systemd for MVP; AWS managed services and Kubernetes for future scale
+- **Infrastructure**: Native local development; production target is a single Ubuntu VPS with systemd, nginx, PostgreSQL, Redis, and Let's Encrypt. Cloud-managed services and container orchestration are not planned for MVP.
 
 ## Architecture Principles
 

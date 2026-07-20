@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Organization,
 	}
 
 	existing, err := s.repo.GetBySlug(ctx, slug)
-	if err != nil && err != sharederrors.ErrNotFound {
+	if err != nil && !errors.Is(err, sharederrors.ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {

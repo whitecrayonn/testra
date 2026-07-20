@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pquerna/otp/totp"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/jwt"
 	"github.com/testra/testra/apps/api/internal/shared/password"
 )
 
@@ -131,8 +132,22 @@ func (r *fakeRepo) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.U
 	return nil
 }
 
+func (r *fakeRepo) RevokeAllUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	for _, t := range r.refreshTokens {
+		if t.UserID == userID {
+			now := time.Now().UTC()
+			t.RevokedAt = &now
+		}
+	}
+	return nil
+}
+
 func newTestService(repo *fakeRepo) *Service {
-	return NewService(repo, "test-secret", 15*time.Minute, 30*24*time.Hour, 90*24*time.Hour, SMTPConfig{})
+	tm, err := jwt.NewTestManager("test-issuer", "test-audience")
+	if err != nil {
+		panic(err)
+	}
+	return NewService(repo, tm, 15*time.Minute, 30*24*time.Hour, 90*24*time.Hour, SMTPConfig{})
 }
 
 func seedUser(repo *fakeRepo, email, plainPass string) *User {
@@ -153,13 +168,13 @@ func seedUser(repo *fakeRepo, email, plainPass string) *User {
 func TestLoginWithMFAEnabled_RequiresCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa@test.com", "testpass123456")
+	user := seedUser(repo, "mfa@test.com", "TestPass123!@#")
 	user.MFAEnabled = true
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa@test.com",
-		Password: "testpass123456",
+		Password: "TestPass123!@#",
 		MFACode:  "",
 	})
 	if err != sharederrors.ErrMFARequired {
@@ -170,7 +185,7 @@ func TestLoginWithMFAEnabled_RequiresCode(t *testing.T) {
 func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa2@test.com", "testpass123456")
+	user := seedUser(repo, "mfa2@test.com", "TestPass123!@#")
 	user.MFAEnabled = true
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "mfa2@test.com"})
@@ -178,7 +193,7 @@ func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa2@test.com",
-		Password: "testpass123456",
+		Password: "TestPass123!@#",
 		MFACode:  "000000",
 	})
 	if err != sharederrors.ErrInvalidCredential {
@@ -189,7 +204,7 @@ func TestLoginWithMFAEnabled_WrongCode(t *testing.T) {
 func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "mfa3@test.com", "testpass123456")
+	user := seedUser(repo, "mfa3@test.com", "TestPass123!@#")
 	user.MFAEnabled = true
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "mfa3@test.com"})
@@ -199,7 +214,7 @@ func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "mfa3@test.com",
-		Password: "testpass123456",
+		Password: "TestPass123!@#",
 		MFACode:  code,
 	})
 	if err != nil {
@@ -207,14 +222,64 @@ func TestLoginWithMFAEnabled_ValidCode(t *testing.T) {
 	}
 }
 
+func TestMFARepeatedFailuresLockout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "lockout@test.com", "TestPass123!@#")
+	user.MFAEnabled = true
+	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: user.Email})
+	user.MFASecret = key.Secret()
+
+	// 5 consecutive wrong MFA codes should lock the account.
+	for i := 0; i < mfaMaxAttempts; i++ {
+		_, err := svc.Login(context.Background(), LoginInput{
+			Email:    user.Email,
+			Password: "TestPass123!@#",
+			MFACode:  "000000",
+		})
+		if err != sharederrors.ErrInvalidCredential {
+			t.Fatalf("attempt %d: expected ErrInvalidCredential, got %v", i+1, err)
+		}
+	}
+
+	_, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+		MFACode:  "000000",
+	})
+	if err != sharederrors.ErrTooManyRequests {
+		t.Fatalf("expected ErrTooManyRequests after max attempts, got %v", err)
+	}
+}
+
+func TestVerifyMFARepeatedFailuresLockout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "verify-lockout@test.com", "TestPass123!@#")
+	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: user.Email})
+	user.MFASecret = key.Secret()
+
+	for i := 0; i < mfaMaxAttempts; i++ {
+		err := svc.VerifyMFA(context.Background(), user.ID, "000000")
+		if err != sharederrors.ErrInvalidCredential {
+			t.Fatalf("attempt %d: expected ErrInvalidCredential, got %v", i+1, err)
+		}
+	}
+
+	err := svc.VerifyMFA(context.Background(), user.ID, "000000")
+	if err != sharederrors.ErrTooManyRequests {
+		t.Fatalf("expected ErrTooManyRequests, got %v", err)
+	}
+}
+
 func TestLoginWithoutMFA(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	seedUser(repo, "plain@test.com", "testpass123456")
+	seedUser(repo, "plain@test.com", "TestPass123!@#")
 
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    "plain@test.com",
-		Password: "testpass123456",
+		Password: "TestPass123!@#",
 	})
 	if err != nil {
 		t.Fatalf("expected nil error for non-mfa login, got %v", err)
@@ -224,7 +289,7 @@ func TestLoginWithoutMFA(t *testing.T) {
 func TestSetupMFA_AlreadyEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "setup@test.com", "testpass123456")
+	user := seedUser(repo, "setup@test.com", "TestPass123!@#")
 	user.MFAEnabled = true
 
 	_, err := svc.SetupMFA(context.Background(), user.ID)
@@ -236,7 +301,7 @@ func TestSetupMFA_AlreadyEnabled(t *testing.T) {
 func TestSetupMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "setup2@test.com", "testpass123456")
+	user := seedUser(repo, "setup2@test.com", "TestPass123!@#")
 
 	result, err := svc.SetupMFA(context.Background(), user.ID)
 	if err != nil {
@@ -262,7 +327,7 @@ func TestSetupMFA_Success(t *testing.T) {
 func TestVerifyMFA_NoSecretSetup(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify@test.com", "testpass123456")
+	user := seedUser(repo, "verify@test.com", "TestPass123!@#")
 
 	err := svc.VerifyMFA(context.Background(), user.ID, "123456")
 	if err != sharederrors.ErrInvalidInput {
@@ -273,7 +338,7 @@ func TestVerifyMFA_NoSecretSetup(t *testing.T) {
 func TestVerifyMFA_AlreadyEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify2@test.com", "testpass123456")
+	user := seedUser(repo, "verify2@test.com", "TestPass123!@#")
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 	user.MFAEnabled = true
 
@@ -286,7 +351,7 @@ func TestVerifyMFA_AlreadyEnabled(t *testing.T) {
 func TestVerifyMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "verify3@test.com", "testpass123456")
+	user := seedUser(repo, "verify3@test.com", "TestPass123!@#")
 
 	key, _ := totp.Generate(totp.GenerateOpts{Issuer: "Testra", AccountName: "verify3@test.com"})
 	user.MFASecret = key.Secret()
@@ -305,7 +370,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 func TestDisableMFA_NotEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "disable@test.com", "testpass123456")
+	user := seedUser(repo, "disable@test.com", "TestPass123!@#")
 
 	err := svc.DisableMFA(context.Background(), user.ID, "")
 	if err != sharederrors.ErrInvalidInput {
@@ -316,11 +381,16 @@ func TestDisableMFA_NotEnabled(t *testing.T) {
 func TestDisableMFA_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "disable2@test.com", "testpass123456")
+	user := seedUser(repo, "disable2@test.com", "TestPass123!@#")
 	user.MFAEnabled = true
 	user.MFASecret = "JBSWY3DPEHPK3PXP"
 
-	err := svc.DisableMFA(context.Background(), user.ID, "")
+	code, err := totp.GenerateCode(user.MFASecret, time.Now())
+	if err != nil {
+		t.Fatalf("generate totp: %v", err)
+	}
+
+	err = svc.DisableMFA(context.Background(), user.ID, code)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -329,6 +399,19 @@ func TestDisableMFA_Success(t *testing.T) {
 	}
 	if user.MFASecret != "" {
 		t.Fatal("expected mfa secret to be cleared")
+	}
+}
+
+func TestDisableMFA_MissingCode(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "disable3@test.com", "TestPass123!@#")
+	user.MFAEnabled = true
+	user.MFASecret = "JBSWY3DPEHPK3PXP"
+
+	err := svc.DisableMFA(context.Background(), user.ID, "")
+	if err != sharederrors.ErrMFARequired {
+		t.Fatalf("expected ErrMFARequired, got %v", err)
 	}
 }
 
@@ -350,7 +433,7 @@ func TestRequestPasswordReset_UserNotFound_ReturnsEmpty(t *testing.T) {
 func TestRequestPasswordReset_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	seedUser(repo, "reset@test.com", "testpass123456")
+	seedUser(repo, "reset@test.com", "TestPass123!@#")
 
 	token, err := svc.RequestPasswordReset(context.Background(), RequestPasswordResetInput{
 		Email: "reset@test.com",
@@ -372,7 +455,7 @@ func TestResetPassword_InvalidToken(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       "invalidtoken",
-		NewPassword: "newpassword123",
+		NewPassword: "NewPass123!@#",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -382,7 +465,7 @@ func TestResetPassword_InvalidToken(t *testing.T) {
 func TestResetPassword_ExpiredToken(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "expired@test.com", "testpass123456")
+	user := seedUser(repo, "expired@test.com", "TestPass123!@#")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -397,7 +480,7 @@ func TestResetPassword_ExpiredToken(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpassword123",
+		NewPassword: "NewPass123!@#",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -407,7 +490,7 @@ func TestResetPassword_ExpiredToken(t *testing.T) {
 func TestResetPassword_AlreadyUsed(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "used@test.com", "testpass123456")
+	user := seedUser(repo, "used@test.com", "TestPass123!@#")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -423,7 +506,7 @@ func TestResetPassword_AlreadyUsed(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpassword123",
+		NewPassword: "NewPass123!@#",
 	})
 	if err != sharederrors.ErrInvalidCredential {
 		t.Fatalf("expected ErrInvalidCredential, got %v", err)
@@ -433,7 +516,7 @@ func TestResetPassword_AlreadyUsed(t *testing.T) {
 func TestResetPassword_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
-	user := seedUser(repo, "success@test.com", "testpass123456")
+	user := seedUser(repo, "success@test.com", "TestPass123!@#")
 
 	rawToken, _ := generateResetToken()
 	hash := hashToken(rawToken)
@@ -448,7 +531,7 @@ func TestResetPassword_Success(t *testing.T) {
 
 	err := svc.ResetPassword(context.Background(), ResetPasswordInput{
 		Token:       rawToken,
-		NewPassword: "newpassword123",
+		NewPassword: "NewPass123!@#",
 	})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
@@ -458,5 +541,89 @@ func TestResetPassword_Success(t *testing.T) {
 	}
 	if token.UsedAt == nil {
 		t.Fatal("expected token to be marked as used")
+	}
+}
+
+func TestRefreshTokenReuse(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "reuse@test.com", "TestPass123!@#")
+
+	result, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	// First refresh consumes the token and issues a replacement.
+	_, err = svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result.RefreshToken})
+	if err != nil {
+		t.Fatalf("first refresh: %v", err)
+	}
+
+	// Reusing the original token must revoke the family.
+	_, err = svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result.RefreshToken})
+	if err != sharederrors.ErrTokenRevoked {
+		t.Fatalf("expected ErrTokenRevoked on reuse, got %v", err)
+	}
+}
+
+func TestLogout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "logout@test.com", "TestPass123!@#")
+
+	result, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	if err := svc.Logout(context.Background(), result.RefreshToken); err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+
+	if _, err := svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result.RefreshToken}); err != sharederrors.ErrTokenRevoked {
+		t.Fatalf("expected ErrTokenRevoked after logout, got %v", err)
+	}
+}
+
+func TestLogoutAllDevices(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "logoutall@test.com", "TestPass123!@#")
+
+	result1, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login 1: %v", err)
+	}
+
+	_, err = svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result1.RefreshToken})
+	if err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+
+	// A new login on another device produces a separate family.
+	result2, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login 2: %v", err)
+	}
+
+	if err := svc.LogoutAllDevices(context.Background(), user.ID); err != nil {
+		t.Fatalf("logout all: %v", err)
+	}
+
+	if _, err := svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result2.RefreshToken}); err != sharederrors.ErrTokenRevoked {
+		t.Fatalf("expected ErrTokenRevoked after logout all, got %v", err)
 	}
 }

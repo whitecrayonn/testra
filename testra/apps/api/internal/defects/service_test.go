@@ -180,4 +180,56 @@ func TestServiceListRequiresProject(t *testing.T) {
 	}
 }
 
+func TestServiceGetNotFound(t *testing.T) {
+	svc := NewService(newFakeRepository())
+	_, err := svc.Get(context.Background(), uuid.New())
+	if err != sharederrors.ErrNotFound {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestServiceUpdateClearsOptionalRelations(t *testing.T) {
+	repo := newFakeRepository()
+	svc := NewService(repo)
+	wsID := uuid.New()
+	projID := uuid.New()
+	userID := uuid.New()
+	assigned := uuid.New()
+	itemID := uuid.New()
+
+	d, err := svc.Create(context.Background(), CreateInput{
+		WorkspaceID:   wsID,
+		ProjectID:     projID,
+		Title:         "Bug",
+		CreatedBy:     userID,
+		AssignedTo:    &assigned,
+		TestRunItemID: &itemID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if d.AssignedTo == nil || *d.AssignedTo != assigned {
+		t.Fatal("expected assigned user to be set")
+	}
+	if d.TestRunItemID == nil || *d.TestRunItemID != itemID {
+		t.Fatal("expected test run item to be set")
+	}
+
+	nilUUID := uuid.Nil
+	updated, err := svc.Update(context.Background(), d.ID, UpdateInput{
+		Title:         strPtr("Bug updated"),
+		AssignedTo:    &nilUUID,
+		TestRunItemID: &nilUUID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if updated.AssignedTo != nil {
+		t.Errorf("expected assigned_to to be cleared, got %v", updated.AssignedTo)
+	}
+	if updated.TestRunItemID != nil {
+		t.Errorf("expected test_run_item_id to be cleared, got %v", updated.TestRunItemID)
+	}
+}
+
 func strPtr(s string) *string { return &s }

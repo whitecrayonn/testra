@@ -27,7 +27,10 @@ func ParseParams(r *http.Request) Params {
 	q := r.URL.Query()
 	limit := DefaultLimit
 	if l := q.Get("limit"); l != "" {
-		if n, err := strconv.Atoi(l); err == nil && n > 0 && n <= MaxLimit {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 {
+			if n > MaxLimit {
+				n = MaxLimit
+			}
 			limit = n
 		}
 	}

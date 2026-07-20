@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@testra/config": "workspace:*",
+    "eslint": "^9.9.0",
     "typescript": "^5.5.3"
   }
 }

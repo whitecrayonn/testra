@@ -50,8 +50,8 @@ func (s *Service) GetFolder(ctx context.Context, id uuid.UUID) (*TestFolder, err
 	return s.repo.GetFolderByID(ctx, id)
 }
 
-func (s *Service) ListFolders(ctx context.Context, workspaceID uuid.UUID, parentID *uuid.UUID) ([]TestFolder, error) {
-	return s.repo.ListFolders(ctx, workspaceID, parentID)
+func (s *Service) ListFolders(ctx context.Context, workspaceID uuid.UUID, parentID *uuid.UUID, cursor string, limit int) ([]TestFolder, error) {
+	return s.repo.ListFolders(ctx, workspaceID, parentID, cursor, limit)
 }
 
 type UpdateFolderInput struct {
@@ -113,8 +113,8 @@ func (s *Service) GetSuite(ctx context.Context, id uuid.UUID) (*TestSuite, error
 	return s.repo.GetSuiteByID(ctx, id)
 }
 
-func (s *Service) ListSuites(ctx context.Context, workspaceID uuid.UUID, folderID *uuid.UUID) ([]TestSuite, error) {
-	return s.repo.ListSuites(ctx, workspaceID, folderID)
+func (s *Service) ListSuites(ctx context.Context, workspaceID uuid.UUID, folderID *uuid.UUID, cursor string, limit int) ([]TestSuite, error) {
+	return s.repo.ListSuites(ctx, workspaceID, folderID, cursor, limit)
 }
 
 type UpdateSuiteInput struct {
@@ -167,6 +167,9 @@ func (s *Service) CreateCase(ctx context.Context, input CreateCaseInput) (*TestC
 	}
 	if input.CreatedBy == uuid.Nil {
 		return nil, sharederrors.ErrInvalidInput
+	}
+	if err := validateSteps(input.Steps); err != nil {
+		return nil, err
 	}
 
 	status := input.Status
@@ -246,6 +249,12 @@ func (s *Service) UpdateCase(ctx context.Context, id uuid.UUID, input UpdateCase
 	if input.Priority != "" && !isValidPriority(input.Priority) {
 		return nil, sharederrors.ErrInvalidInput
 	}
+	if input.ChangedBy == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	if err := validateSteps(input.Steps); err != nil {
+		return nil, err
+	}
 
 	var result *TestCase
 
@@ -302,8 +311,8 @@ func (s *Service) DeleteCase(ctx context.Context, id uuid.UUID) error {
 	return s.repo.DeleteCase(ctx, id)
 }
 
-func (s *Service) ListVersions(ctx context.Context, caseID uuid.UUID) ([]TestCaseVersion, error) {
-	return s.repo.ListVersions(ctx, caseID)
+func (s *Service) ListVersions(ctx context.Context, caseID uuid.UUID, cursor string, limit int) ([]TestCaseVersion, error) {
+	return s.repo.ListVersions(ctx, caseID, cursor, limit)
 }
 
 func isValidStatus(s TestCaseStatus) bool {
@@ -320,4 +329,23 @@ func isValidPriority(p TestCasePriority) bool {
 		return true
 	}
 	return false
+}
+
+func validateSteps(steps []TestStep) error {
+	for i, s := range steps {
+		if s.Order <= 0 {
+			return sharederrors.ErrInvalidInput
+		}
+		if strings.TrimSpace(s.Action) == "" {
+			return sharederrors.ErrInvalidInput
+		}
+		if strings.TrimSpace(s.Expected) == "" {
+			return sharederrors.ErrInvalidInput
+		}
+		// Consecutive order indices are required for deterministic responses.
+		if i > 0 && s.Order != steps[i-1].Order+1 {
+			return sharederrors.ErrInvalidInput
+		}
+	}
+	return nil
 }

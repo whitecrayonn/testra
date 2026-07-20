@@ -26,10 +26,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const testJWTSecret = "integration-test-jwt-secret-do-not-use"
+var (
+	testTokenManager = func() *jwt.Manager {
+		m, err := jwt.NewTestManager("integration-issuer", "integration-audience")
+		if err != nil {
+			panic(err)
+		}
+		return m
+	}()
 
-var ownerRoleID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
-var viewerRoleID = uuid.MustParse("00000000-0000-0000-0000-000000000004")
+	ownerRoleID  = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	viewerRoleID = uuid.MustParse("00000000-0000-0000-0000-000000000004")
+)
 
 type testTenant struct {
 	UserID      uuid.UUID
@@ -135,7 +143,7 @@ func openTestDB(t *testing.T) *sql.DB {
 func newTestServer(db *sql.DB) http.Handler {
 	return server.New(server.Config{
 		DB:                  db,
-		JWTSecret:           testJWTSecret,
+		JWTManager:          testTokenManager,
 		JWTExpiry:           time.Hour,
 		RefreshExpiryDays:   30,
 		RefreshAbsoluteDays: 90,
@@ -216,7 +224,7 @@ func newTenant(t *testing.T, db *sql.DB, roleID uuid.UUID) *testTenant {
 		t.Fatalf("insert role_assignment: %v", err)
 	}
 
-	token, err := jwt.Sign(userID, email, testJWTSecret, time.Hour)
+	token, err := testTokenManager.Sign(userID, email, time.Hour)
 	if err != nil {
 		t.Fatalf("sign token: %v", err)
 	}

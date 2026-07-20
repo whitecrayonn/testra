@@ -8,7 +8,7 @@ The **Testra API** is a Go modular-monolith backend that exposes the `/api/v1` R
 - `internal/shared/server/server.go` — route and middleware wiring.
 - `internal/<module>/` — domain modules (identity, organization, workspace, project, apikeys, testmanagement, results, automationhub, notification, audit, rbac).
 - `migrations/` — `golang-migrate` SQL migrations.
-- `Dockerfile`, `go.mod`, `go.sum` — build and dependency files.
+- `go.mod`, `go.sum` — build and dependency files.
 
 ## Running locally
 

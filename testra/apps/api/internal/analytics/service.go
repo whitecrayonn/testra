@@ -147,6 +147,36 @@ func (s *Service) AggregateMetrics(ctx context.Context, workspaceID uuid.UUID, p
 	return nil
 }
 
+func (s *Service) GetMetrics(ctx context.Context, filter MetricsFilter) (*Metrics, error) {
+	if filter.WorkspaceID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	if filter.Limit == 0 {
+		filter.Limit = 10
+	}
+	return s.repo.GetMetrics(ctx, filter)
+}
+
+func (s *Service) GetRecentActivity(ctx context.Context, filter MetricsFilter) ([]Activity, error) {
+	if filter.WorkspaceID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	if filter.Limit == 0 {
+		filter.Limit = 20
+	}
+	return s.repo.GetRecentActivity(ctx, filter)
+}
+
+func (s *Service) GetMetricsCSV(ctx context.Context, filter MetricsFilter) ([][]string, error) {
+	if filter.WorkspaceID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	if filter.Limit == 0 {
+		filter.Limit = 10
+	}
+	return s.repo.GetMetricsCSV(ctx, filter)
+}
+
 // Input structs
 
 type CreateDashboardInput struct {

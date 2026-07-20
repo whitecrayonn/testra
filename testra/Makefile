@@ -1,4 +1,5 @@
-.PHONY: dev build test lint typecheck clean migrate
+.PHONY: dev build test lint typecheck clean migrate \
+  go-build go-vet go-test go-fmt go-race
 
 dev:
 	pnpm dev
@@ -20,3 +21,18 @@ clean:
 
 migrate:
 	go run ./apps/api/cmd/migrator
+
+go-build:
+	cd apps/api && go build ./...
+
+go-vet:
+	cd apps/api && go vet ./...
+
+go-test:
+	cd apps/api && go test ./...
+
+go-race:
+	cd apps/api && go test -race ./...
+
+go-fmt:
+	cd apps/api && gofmt -w .

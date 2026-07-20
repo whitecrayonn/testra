@@ -2,11 +2,13 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
@@ -39,7 +41,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, er
 	}
 
 	existing, err := s.repo.GetBySlug(ctx, input.OrganizationID, slug)
-	if err != nil && err != sharederrors.ErrNotFound {
+	if err != nil && !errors.Is(err, sharederrors.ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {
@@ -58,6 +60,17 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, er
 	if err := s.repo.Create(ctx, workspace); err != nil {
 		return nil, err
 	}
+
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     "workspace.created",
+		TenantID: workspace.OrganizationID.String(),
+		Payload: map[string]interface{}{
+			"workspace_id":    workspace.ID.String(),
+			"organization_id": workspace.OrganizationID.String(),
+			"name":            workspace.Name,
+			"slug":            workspace.Slug,
+		},
+	})
 
 	member := &Member{
 		WorkspaceID: workspace.ID,

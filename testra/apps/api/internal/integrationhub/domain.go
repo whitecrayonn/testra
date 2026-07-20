@@ -9,31 +9,41 @@ import (
 type IntegrationType string
 
 const (
-	TypeJira    IntegrationType = "jira"
-	TypeGitHub  IntegrationType = "github"
-	TypeGitLab  IntegrationType = "gitlab"
-	TypeSlack   IntegrationType = "slack"
-	TypeWebhook IntegrationType = "webhook"
+	TypeJira        IntegrationType = "jira"
+	TypeGitHub      IntegrationType = "github"
+	TypeGitLab      IntegrationType = "gitlab"
+	TypeBitbucket   IntegrationType = "bitbucket"
+	TypeAzureDevOps IntegrationType = "azure_devops"
+	TypeLinear      IntegrationType = "linear"
+	TypeSlack       IntegrationType = "slack"
+	TypeDiscord     IntegrationType = "discord"
+	TypeSMTP        IntegrationType = "smtp"
+	TypeWebhook     IntegrationType = "webhook"
 )
 
 func IsValidIntegrationType(s string) bool {
 	switch IntegrationType(s) {
-	case TypeJira, TypeGitHub, TypeGitLab, TypeSlack, TypeWebhook:
+	case TypeJira, TypeGitHub, TypeGitLab, TypeBitbucket, TypeAzureDevOps, TypeLinear, TypeSlack, TypeDiscord, TypeSMTP, TypeWebhook:
 		return true
 	}
 	return false
 }
 
 type Integration struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	Type        IntegrationType
-	Name        string
-	Config      map[string]string
-	Enabled     bool
-	CreatedBy   uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           uuid.UUID
+	WorkspaceID  uuid.UUID
+	Type         IntegrationType
+	Name         string
+	Config       map[string]string
+	Enabled      bool
+	HealthStatus string // healthy, degraded, error, unknown
+	LastTestedAt *time.Time
+	LastError    string
+	SyncStatus   string // synced, pending, error
+	RetryCount   int
+	CreatedBy    uuid.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type IntegrationEvent struct {
@@ -44,6 +54,7 @@ type IntegrationEvent struct {
 	Payload       map[string]interface{}
 	Status        string
 	ExternalID    string
+	RetryCount    int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 )
 
 type Service struct {
@@ -80,6 +81,19 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Defect, error
 	if err := s.repo.Create(ctx, d); err != nil {
 		return nil, err
 	}
+
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     "defect.created",
+		TenantID: d.WorkspaceID.String(),
+		Payload: map[string]interface{}{
+			"defect_id":    d.ID.String(),
+			"project_id":   d.ProjectID.String(),
+			"workspace_id": d.WorkspaceID.String(),
+			"title":        d.Title,
+			"status":       string(d.Status),
+		},
+	})
+
 	return d, nil
 }
 
@@ -141,16 +155,37 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (
 		d.Status = *input.Status
 	}
 	if input.AssignedTo != nil {
-		d.AssignedTo = input.AssignedTo
+		if *input.AssignedTo == uuid.Nil {
+			d.AssignedTo = nil
+		} else {
+			d.AssignedTo = input.AssignedTo
+		}
 	}
 	if input.TestRunItemID != nil {
-		d.TestRunItemID = input.TestRunItemID
+		if *input.TestRunItemID == uuid.Nil {
+			d.TestRunItemID = nil
+		} else {
+			d.TestRunItemID = input.TestRunItemID
+		}
 	}
 
 	d.UpdatedAt = time.Now().UTC()
 	if err := s.repo.Update(ctx, d); err != nil {
 		return nil, err
 	}
+
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     "defect.updated",
+		TenantID: d.WorkspaceID.String(),
+		Payload: map[string]interface{}{
+			"defect_id":    d.ID.String(),
+			"project_id":   d.ProjectID.String(),
+			"workspace_id": d.WorkspaceID.String(),
+			"title":        d.Title,
+			"status":       string(d.Status),
+		},
+	})
+
 	return d, nil
 }
 

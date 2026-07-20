@@ -2,12 +2,14 @@ package project
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 )
 
 var keyPattern = regexp.MustCompile(`^[A-Z][A-Z0-9]{1,9}$`)
@@ -38,7 +40,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Project, erro
 	}
 
 	existing, err := s.repo.GetByKey(ctx, input.WorkspaceID, key)
-	if err != nil && err != sharederrors.ErrNotFound {
+	if err != nil && !errors.Is(err, sharederrors.ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {
@@ -59,6 +61,17 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Project, erro
 	if err := s.repo.Create(ctx, project); err != nil {
 		return nil, err
 	}
+
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     "project.created",
+		TenantID: project.WorkspaceID.String(),
+		Payload: map[string]interface{}{
+			"project_id":   project.ID.String(),
+			"workspace_id": project.WorkspaceID.String(),
+			"key":          project.Key,
+			"name":         project.Name,
+		},
+	})
 
 	return project, nil
 }

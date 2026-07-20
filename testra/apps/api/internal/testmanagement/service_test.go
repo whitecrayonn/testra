@@ -35,7 +35,7 @@ func (f *fakeRepository) GetFolderByID(_ context.Context, id uuid.UUID) (*TestFo
 	return nil, sharederrors.ErrNotFound
 }
 
-func (f *fakeRepository) ListFolders(_ context.Context, workspaceID uuid.UUID, parentID *uuid.UUID) ([]TestFolder, error) {
+func (f *fakeRepository) ListFolders(_ context.Context, workspaceID uuid.UUID, parentID *uuid.UUID, cursor string, limit int) ([]TestFolder, error) {
 	var result []TestFolder
 	for _, folder := range f.folders {
 		if folder.WorkspaceID == workspaceID {
@@ -77,7 +77,7 @@ func (f *fakeRepository) GetSuiteByID(_ context.Context, id uuid.UUID) (*TestSui
 	return nil, sharederrors.ErrNotFound
 }
 
-func (f *fakeRepository) ListSuites(_ context.Context, workspaceID uuid.UUID, folderID *uuid.UUID) ([]TestSuite, error) {
+func (f *fakeRepository) ListSuites(_ context.Context, workspaceID uuid.UUID, folderID *uuid.UUID, cursor string, limit int) ([]TestSuite, error) {
 	var result []TestSuite
 	for _, suite := range f.suites {
 		if suite.WorkspaceID == workspaceID {
@@ -163,7 +163,7 @@ func (f *fakeRepository) CreateVersion(_ context.Context, version *TestCaseVersi
 	return nil
 }
 
-func (f *fakeRepository) ListVersions(_ context.Context, caseID uuid.UUID) ([]TestCaseVersion, error) {
+func (f *fakeRepository) ListVersions(_ context.Context, caseID uuid.UUID, cursor string, limit int) ([]TestCaseVersion, error) {
 	var result []TestCaseVersion
 	for _, v := range f.versions {
 		if v.TestCaseID == caseID {
@@ -429,7 +429,7 @@ func TestServiceUpdateCaseCreatesVersion(t *testing.T) {
 		t.Errorf("expected status active, got %s", updated.Status)
 	}
 
-	versions, err := service.ListVersions(context.Background(), tc.ID)
+	versions, err := service.ListVersions(context.Background(), tc.ID, "", 100)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -506,5 +506,90 @@ func TestServiceUpdateSuiteNotFound(t *testing.T) {
 	_, err := service.UpdateSuite(context.Background(), uuid.New(), UpdateSuiteInput{Name: "Updated"})
 	if err != sharederrors.ErrNotFound {
 		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestServiceCreateCaseInvalidSteps(t *testing.T) {
+	wsID := uuid.New()
+	projID := uuid.New()
+	userID := uuid.New()
+	service := NewService(newFakeRepository())
+
+	cases := []CreateCaseInput{
+		{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			Title:       "Missing action",
+			CreatedBy:   userID,
+			Steps:       []TestStep{{Order: 1, Action: "", Expected: "pass"}},
+		},
+		{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			Title:       "Missing expected",
+			CreatedBy:   userID,
+			Steps:       []TestStep{{Order: 1, Action: "click", Expected: ""}},
+		},
+		{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			Title:       "Non-consecutive order",
+			CreatedBy:   userID,
+			Steps:       []TestStep{{Order: 1, Action: "a", Expected: "b"}, {Order: 3, Action: "c", Expected: "d"}},
+		},
+		{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			Title:       "Zero order",
+			CreatedBy:   userID,
+			Steps:       []TestStep{{Order: 0, Action: "a", Expected: "b"}},
+		},
+	}
+
+	for _, input := range cases {
+		_, err := service.CreateCase(context.Background(), input)
+		if err != sharederrors.ErrInvalidInput {
+			t.Errorf("expected ErrInvalidInput for input %+v, got %v", input, err)
+		}
+	}
+}
+
+func TestServiceUpdateCaseRequiresChangedBy(t *testing.T) {
+	repo := newFakeRepository()
+	service := NewService(repo)
+	wsID := uuid.New()
+	projID := uuid.New()
+	userID := uuid.New()
+
+	tc, err := service.CreateCase(context.Background(), CreateCaseInput{
+		WorkspaceID: wsID,
+		ProjectID:   projID,
+		Title:       "Original",
+		CreatedBy:   userID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = service.UpdateCase(context.Background(), tc.ID, UpdateCaseInput{Title: "Updated"})
+	if err != sharederrors.ErrInvalidInput {
+		t.Errorf("expected ErrInvalidInput for missing ChangedBy, got %v", err)
+	}
+}
+
+func TestMapCaseResponseDoesNotMutateTags(t *testing.T) {
+	tc := &TestCase{
+		ID:          uuid.New(),
+		WorkspaceID: uuid.New(),
+		ProjectID:   uuid.New(),
+		Title:       "Case",
+		Status:      TestCaseStatusDraft,
+		Priority:    TestCasePriorityMedium,
+		Tags:        nil,
+		CreatedBy:   uuid.New(),
+	}
+	_ = mapCaseResponse(tc)
+	if tc.Tags != nil {
+		t.Errorf("mapCaseResponse mutated Tags; want nil, got %v", tc.Tags)
 	}
 }

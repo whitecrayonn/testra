@@ -42,3 +42,28 @@ export interface NotificationChannel {
   created_at: string;
   updated_at: string;
 }
+
+export interface NotificationTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  event_type: string;
+  channel_type: "email" | "slack" | "teams" | "webhook" | "in_app";
+  subject: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationHistory {
+  id: string;
+  organization_id: string;
+  notification_id: string;
+  channel_id?: string;
+  channel_type: string;
+  status: "pending" | "sent" | "failed";
+  error_message: string;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
+}

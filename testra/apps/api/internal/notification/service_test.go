@@ -2,6 +2,12 @@ package notification
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/smtp"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -111,7 +117,7 @@ func (f *fakeRepo) GetChannel(_ context.Context, id uuid.UUID) (*NotificationCha
 	return nil, sharederrors.ErrNotFound
 }
 
-func (f *fakeRepo) ListChannels(_ context.Context, workspaceID uuid.UUID) ([]NotificationChannel, error) {
+func (f *fakeRepo) ListChannels(_ context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]NotificationChannel, error) {
 	var out []NotificationChannel
 	for _, ch := range f.channels {
 		if ch.WorkspaceID == workspaceID {
@@ -137,8 +143,25 @@ func (f *fakeRepo) DeleteChannel(_ context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (f *fakeRepo) CreateTemplate(_ context.Context, t *NotificationTemplate) error { return nil }
+func (f *fakeRepo) GetTemplate(_ context.Context, id uuid.UUID) (*NotificationTemplate, error) {
+	return nil, sharederrors.ErrNotFound
+}
+func (f *fakeRepo) ListTemplates(_ context.Context, orgID uuid.UUID, eventType, channelType string, limit int) ([]NotificationTemplate, error) {
+	return nil, nil
+}
+func (f *fakeRepo) UpdateTemplate(_ context.Context, t *NotificationTemplate) error { return nil }
+func (f *fakeRepo) DeleteTemplate(_ context.Context, id uuid.UUID) error            { return nil }
+func (f *fakeRepo) CreateHistory(_ context.Context, h *NotificationHistory) error   { return nil }
+func (f *fakeRepo) UpdateHistory(_ context.Context, h *NotificationHistory) error   { return nil }
+func (f *fakeRepo) ListHistory(_ context.Context, notificationID uuid.UUID, limit int) ([]NotificationHistory, error) {
+	return nil, nil
+}
+
 func newTestService() *Service {
-	return NewService(newFakeRepo(), SMTPConfig{})
+	s := NewService(newFakeRepo(), SMTPConfig{})
+	s.urlValidator = nil
+	return s
 }
 
 func TestCreateNotification(t *testing.T) {
@@ -249,7 +272,7 @@ func TestChannels(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	channels, err := svc.ListChannels(context.Background(), wsID)
+	channels, err := svc.ListChannels(context.Background(), wsID, "", 100)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -325,5 +348,117 @@ func TestListNotifications(t *testing.T) {
 	}
 	if len(list) != 3 {
 		t.Errorf("expected 3 notifications, got %d", len(list))
+	}
+}
+
+func TestDispatchHTTPRetriesOnFailure(t *testing.T) {
+	var attempts int64
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt64(&attempts, 1)
+		if c < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	svc := newTestService()
+	svc.httpClient = ts.Client()
+
+	attemptsOut, err := svc.dispatchHTTP(context.Background(), NotificationChannel{
+		Config: map[string]string{"url": ts.URL},
+	}, SendInput{Title: "hi", Body: "body", Type: "system"})
+	if err != nil {
+		t.Fatalf("expected dispatch to succeed after retries: %v", err)
+	}
+	_ = attemptsOut
+	if attempts != 3 {
+		t.Fatalf("expected 3 attempts, got %d", attempts)
+	}
+}
+
+func TestDispatchHTTPGivesUpAfterMaxAttempts(t *testing.T) {
+	var attempts int64
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&attempts, 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer ts.Close()
+
+	svc := newTestService()
+	svc.httpClient = ts.Client()
+
+	_, err := svc.dispatchHTTP(context.Background(), NotificationChannel{
+		Config: map[string]string{"url": ts.URL},
+	}, SendInput{Title: "hi", Body: "body", Type: "system"})
+	if err == nil {
+		t.Fatal("expected dispatch to fail after max attempts")
+	}
+	if attempts != 3 {
+		t.Fatalf("expected 3 attempts, got %d", attempts)
+	}
+}
+
+func TestDispatchEmailRetriesOnFailure(t *testing.T) {
+	var attempts int64
+	svc := newTestService()
+	svc.smtp = SMTPConfig{Host: "localhost", From: "test@example.com"}
+	svc.smtpSender = func(addr string, _ smtp.Auth, from string, to []string, msg []byte) error {
+		atomic.AddInt64(&attempts, 1)
+		if attempts < 3 {
+			return errors.New("temporary smtp failure")
+		}
+		return nil
+	}
+
+	attemptsOut, err := svc.dispatchEmail(context.Background(), NotificationChannel{
+		Config: map[string]string{"to": "user@example.com"},
+	}, SendInput{Title: "hi", Body: "body", Type: "system"})
+	if err != nil {
+		t.Fatalf("expected email dispatch to succeed after retries: %v", err)
+	}
+	_ = attemptsOut
+	if attempts != 3 {
+		t.Fatalf("expected 3 attempts, got %d", attempts)
+	}
+}
+
+type fakeSecretProvider map[string]string
+
+func (f fakeSecretProvider) Get(key string) (string, error) {
+	v, ok := f[key]
+	if !ok {
+		return "", fmt.Errorf("secret %q not found", key)
+	}
+	return v, nil
+}
+
+func TestDispatchEmailUsesPlainAuthFromSecretProvider(t *testing.T) {
+	svc := newTestService()
+	svc.smtp = SMTPConfig{
+		Host:           "smtp.example.com",
+		Port:           "587",
+		From:           "from@example.com",
+		Username:       "user@example.com",
+		SecretProvider: fakeSecretProvider{"SMTP_PASSWORD": "hunter2"},
+		PasswordSecret: "SMTP_PASSWORD",
+	}
+
+	var gotAuth smtp.Auth
+	svc.smtpSender = func(addr string, auth smtp.Auth, from string, to []string, msg []byte) error {
+		gotAuth = auth
+		return nil
+	}
+
+	attemptsOut, err := svc.dispatchEmail(context.Background(), NotificationChannel{
+		Config: map[string]string{"to": "user@example.com"},
+	}, SendInput{Title: "hi", Body: "body", Type: "system"})
+	if err != nil {
+		t.Fatalf("expected email dispatch to succeed: %v", err)
+	}
+	_ = attemptsOut
+	if gotAuth == nil {
+		t.Fatal("expected smtp.Auth to be set")
 	}
 }

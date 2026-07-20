@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,7 +17,8 @@ type RateLimiter interface {
 }
 
 type RateLimitConfig struct {
-	Limiter RateLimiter
+	Limiter    RateLimiter
+	FailClosed bool
 }
 
 type RateLimitRule struct {
@@ -26,14 +29,24 @@ type RateLimitRule struct {
 func RateLimit(cfg RateLimitConfig, keyFn func(*http.Request) string, rule RateLimitRule) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if cfg.Limiter == nil {
+			key := keyFn(r)
+
+			limiter := cfg.Limiter
+			if limiter == nil {
+				if cfg.FailClosed {
+					apihttp.ErrorJSON(w, http.StatusServiceUnavailable, "RATE_LIMIT_UNAVAILABLE", "rate limiter unavailable")
+					return
+				}
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			key := keyFn(r)
-			allowed, err := cfg.Limiter.Allow(r.Context(), key, rule.Limit, rule.Window)
+			allowed, err := limiter.Allow(r.Context(), key, rule.Limit, rule.Window)
 			if err != nil {
+				if cfg.FailClosed {
+					apihttp.ErrorJSON(w, http.StatusServiceUnavailable, "RATE_LIMIT_UNAVAILABLE", "rate limiter unavailable")
+					return
+				}
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -51,7 +64,7 @@ func RateLimit(cfg RateLimitConfig, keyFn func(*http.Request) string, rule RateL
 
 func RateLimitByIP() func(*http.Request) string {
 	return func(r *http.Request) string {
-		return "rl:ip:" + r.RemoteAddr
+		return "rl:ip:" + realClientIP(r)
 	}
 }
 
@@ -59,7 +72,7 @@ func RateLimitByEmail(field string) func(*http.Request) string {
 	return func(r *http.Request) string {
 		email := r.URL.Query().Get(field)
 		if email == "" {
-			return "rl:ip:" + r.RemoteAddr
+			return "rl:ip:" + realClientIP(r)
 		}
 		return "rl:email:" + email
 	}
@@ -70,8 +83,36 @@ func RateLimitByAPIKey() func(*http.Request) string {
 		if key := extractAPIKey(r); key != "" {
 			return "rl:apikey:" + hashAPIKey(key)
 		}
-		return "rl:ip:" + r.RemoteAddr
+		return "rl:ip:" + realClientIP(r)
 	}
+}
+
+// realClientIP returns the best-effort client IP for rate limiting. It trusts
+// X-Forwarded-For and X-Real-Ip when present, and strips the source port from
+// RemoteAddr so that ephemeral ports do not fragment per-client buckets.
+func realClientIP(r *http.Request) string {
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		if i := strings.Index(forwarded, ","); i >= 0 {
+			forwarded = strings.TrimSpace(forwarded[:i])
+		}
+		if host := stripPort(forwarded); host != "" {
+			return host
+		}
+	}
+	if realIP := r.Header.Get("X-Real-Ip"); realIP != "" {
+		if host := stripPort(realIP); host != "" {
+			return host
+		}
+	}
+	return stripPort(r.RemoteAddr)
+}
+
+func stripPort(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	return host
 }
 
 type LocalRateLimiter struct {

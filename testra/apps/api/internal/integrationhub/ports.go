@@ -14,7 +14,15 @@ type Repository interface {
 	DeleteIntegration(ctx context.Context, id uuid.UUID) error
 
 	CreateEvent(ctx context.Context, e *IntegrationEvent) error
-	ListEvents(ctx context.Context, workspaceID uuid.UUID, limit int) ([]IntegrationEvent, error)
+	UpdateEvent(ctx context.Context, e *IntegrationEvent) error
+	GetEvent(ctx context.Context, id uuid.UUID) (*IntegrationEvent, error)
+	ListEvents(ctx context.Context, workspaceID uuid.UUID, status string, limit int) ([]IntegrationEvent, error)
+	ListEventsByStatus(ctx context.Context, workspaceID uuid.UUID, status string, limit int) ([]IntegrationEvent, error)
+}
+
+// WebhookVerifier is implemented by providers that can verify incoming webhook signatures.
+type WebhookVerifier interface {
+	VerifyWebhook(i *Integration, body []byte, signature string) error
 }
 
 type Adapter interface {

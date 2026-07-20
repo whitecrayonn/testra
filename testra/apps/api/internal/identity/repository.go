@@ -163,3 +163,11 @@ func (r *SQLRepository) RevokeRefreshTokenFamily(ctx context.Context, familyID u
 	)
 	return err
 }
+
+func (r *SQLRepository) RevokeAllUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`,
+		userID,
+	)
+	return err
+}

@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -32,5 +33,10 @@ func (s *Service) Log(ctx context.Context, input LogInput) {
 		IPAddress:  input.IPAddress,
 		Metadata:   input.Metadata,
 	}
-	_ = s.repo.Insert(ctx, event)
+	// Audit events are compliance evidence: never drop failures silently.
+	// Persistence errors are logged so lost events are observable (C6).
+	if err := s.repo.Insert(ctx, event); err != nil {
+		log.Printf("audit: failed to persist event action=%q resource=%q resource_id=%q user_id=%s: %v",
+			input.Action, input.Resource, input.ResourceID, input.UserID, err)
+	}
 }

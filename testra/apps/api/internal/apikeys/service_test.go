@@ -103,6 +103,7 @@ func TestServiceCreate(t *testing.T) {
 	_, err = svc.Create(context.Background(), CreateInput{
 		WorkspaceID: wsID,
 		Name:        "",
+		Scopes:      []string{"runs:ingest"},
 		CreatedBy:   userID,
 	})
 	if err != sharederrors.ErrInvalidInput {
@@ -183,10 +184,21 @@ func TestServiceRevokeAndList(t *testing.T) {
 	res, err := svc.Create(context.Background(), CreateInput{
 		WorkspaceID: wsID,
 		Name:        "Key",
+		Scopes:      []string{"runs:ingest"},
 		CreatedBy:   userID,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = svc.Create(context.Background(), CreateInput{
+		WorkspaceID: wsID,
+		Name:        "Bad scope",
+		Scopes:      []string{"unknown:scope"},
+		CreatedBy:   userID,
+	})
+	if err != sharederrors.ErrInvalidInput {
+		t.Fatalf("expected invalid input for unknown scope, got %v", err)
 	}
 
 	keys, err := svc.ListForWorkspace(context.Background(), wsID)

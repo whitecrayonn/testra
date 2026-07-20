@@ -112,19 +112,8 @@ c:/Private/project/
 │   │   ├── ui/                       # Shared React component library
 │   │   ├── config/                   # Shared tooling configs
 │   │   └── sdk/                      # Official Testra client SDK (planned)
-│   ├── infra/
-│   │   ├── docker/                   # Docker Compose and image files
-│   │   ├── k8s/                      # Kubernetes / Helm artifacts (future)
-│   │   └── terraform/                # Terraform modules (future)
-│   ├── docs/
-│   │   ├── api/                      # OpenAPI and API conventions
-│   │   ├── architecture/             # ADRs, ERD, system flows
-│   │   ├── engineering/              # Onboarding, phases, standards
-│   │   ├── operations/               # Runbooks, monitoring, DR
-│   │   ├── security/                 # Security checklists
-│   │   ├── reports/                  # Generated reports and reviews
-│   │   └── BIBLICAL_TESTRA.md        # This handbook
-│   ├── scripts/                      # Automation and helper scripts
+│   ├── docs/                       # OpenAPI specs, ADRs, runbooks, deployment guides
+│   ├── scripts/                    # Development and automation scripts
 │   ├── .github/workflows/            # CI/CD pipelines
 │   ├── Makefile                      # Common development tasks
 │   ├── pnpm-workspace.yaml           # JS workspace definition
@@ -154,9 +143,9 @@ c:/Private/project/
 | `testra/packages/ui` | Shared React / shadcn/ui components. | Adding or modifying reusable UI. | Do not import app-specific code. |
 | `testra/packages/config` | Shared ESLint, TypeScript, and tooling configs. | Changing repo-wide tooling. | Do not put runtime code here. |
 | `testra/packages/sdk` | Generated TypeScript SDK. | After OpenAPI contracts stabilize. | Do not hand-write API wrappers that duplicate the SDK. |
-| `testra/infra/docker` | Optional Docker Compose and images. | Changing local container alternatives. | Docker is not the default local workflow (ADR-009). |
-| `testra/infra/k8s` | Future Kubernetes manifests. | Planning production scale. | Do not deploy unless approved. |
-| `testra/infra/terraform` | Future cloud provisioning. | Infrastructure rollout. | Do not commit state or secrets. |
+| `testra/native services` | Optional native services and images. | Changing local container alternatives. | Docker is not the default local workflow (ADR-009). |
+| `testra/single VPS deployment runbooks` | Future systemd service unit files and nginx site configurations. | Planning production scale. | Do not deploy unless approved. |
+| `testra/single VPS deployment runbooks` | Future cloud provisioning. | Infrastructure rollout. | Do not commit state or secrets. |
 | `testra/docs` | Canonical documentation. | Updating architecture, API, runbooks, or this handbook. | Do not duplicate content. Update BIBLICAL instead of creating parallel docs. |
 | `testra/scripts` | Automation and helper scripts. | Adding dev/prod automation. | Do not put one-off hacks here. |
 | `.github/workflows` | CI/CD pipelines. | Changing build, test, lint, or deploy gates. | Do not disable checks to bypass failures. |
@@ -188,7 +177,7 @@ Testra is a unified quality engineering platform for teams that want to manage t
 
 | Layer | Technology | Role | Status |
 |-------|------------|------|--------|
-| Backend runtime | Go 1.23+ | API, business logic, workers | [Implemented] |
+| Backend runtime | Go 1.24+ | API, business logic, workers | [Implemented] |
 | HTTP router | chi/v5 | REST route tree and middleware | [Implemented] |
 | Frontend framework | Next.js 15+ (App Router) | Web application and dashboards | [Implemented] |
 | Frontend language | TypeScript 5+ | Type safety across web and SDK | [Implemented] |
@@ -198,7 +187,7 @@ Testra is a unified quality engineering platform for teams that want to manage t
 | Primary database | PostgreSQL 16+ | Transactional data, tenant isolation, audit | [Implemented] |
 | Analytics database | ClickHouse 24+ | Time-series results and events | [Planned] |
 | Cache / queue | Redis 7+ | Sessions, rate limits, job queues | [Implemented] skeleton, queues [Planned] |
-| Object storage | S3-compatible (MinIO / AWS S3) | Attachments, exports, artifacts | [Implemented] config |
+| Object storage | S3-compatible (local MinIO) | Attachments, exports, artifacts | [Implemented] config |
 | Background jobs | Asynq over Redis | Async ingestion and ML pipelines | [Planned] |
 | Real-time | Server-Sent Events (SSE) | Live test run progress | [Implemented] |
 | ML runtime | Python 3.12+ with FastAPI | ML inference service | [Implemented] skeleton |
@@ -207,8 +196,8 @@ Testra is a unified quality engineering platform for teams that want to manage t
 | Package management | pnpm + Go modules + go.work | Workspace and dependency management | [Implemented] |
 | CI/CD | GitHub Actions | Lint, test, build, integration tests | [Implemented] |
 | Local development | Native services (PostgreSQL, Redis, Mailpit, MinIO) | Local workflow per ADR-009 | [Implemented] |
-| Containerization | Docker / Docker Compose (optional) | Local alternative and deployment artifacts | [Implemented] optional |
-| Infrastructure as Code | Terraform / Kubernetes manifests | Cloud provisioning | [Planned] |
+| Containerization | Not used | Docker/Kubernetes are not part of the local or MVP deployment model | [Rejected] |
+| Infrastructure as Code | systemd unit files and nginx site configurations | Single-Ubuntu-VPS deployment runbooks | [Planned] |
 | Observability | OpenTelemetry, Prometheus, Grafana, Loki | Metrics, logs, traces | [Planned] |
 
 ---
@@ -269,7 +258,7 @@ flowchart LR
 ### Deployment shape
 
 - **Local and MVP production** use native services behind Nginx on an Ubuntu VM (ADR-003, ADR-009).
-- **Future scale** moves to managed Kubernetes (EKS/GKE) with Terraform and Cloudflare for CDN/WAF.
+- **Future scale** moves to single Ubuntu VPS or a future managed option with single-Ubuntu-VPS systemd services and Let's Encrypt / optional CDN for CDN/WAF.
 - The logical request flow is the same in all environments.
 
 ---
@@ -360,7 +349,7 @@ flowchart TD
     end
 
     subgraph Infrastructure
-        Infra[infra/docker k8s terraform]
+        Infra[systemd / nginx on single Ubuntu VPS]
         Docs[docs/]
     end
 
@@ -386,7 +375,7 @@ flowchart TD
 - **API depends on Shared, Database, Redis, S3, and optionally ML.** The Go API owns the business logic and all persistence.
 - **ML is a separate runtime.** The Python service is called by the API for inference and may read from object storage. It does not own transactional state.
 - **Workers are planned.** The Go worker will consume Redis/Asynq jobs and write analytical facts to ClickHouse. It does not own core transactional state.
-- **Infrastructure is a deployment concern.** `infra/docker`, `infra/k8s`, and `infra/terraform` describe where and how the application runs; they do not contain business logic.
+- **Infrastructure is a deployment concern.** `native services`, `single VPS deployment runbooks`, and `single VPS deployment runbooks` describe where and how the application runs; they do not contain business logic.
 - **Documentation is a peer dependency.** Docs guide implementation; they do not change runtime behavior.
 
 ---
@@ -754,6 +743,7 @@ Tenant resolution and RLS are non-negotiable. No repository call may run on a co
 | Test Runs | CRUD | /test-runs, /test-runs/{id}, /test-runs/{id}/items, /test-runs/{id}/stream | `runs:*` |
 | Run Items | PUT | /test-run-items/{id} | `runs:update` |
 | Ingest | POST | /ingest | `runs:ingest`, `Idempotency-Key` required, currently JWT only (API-key auth pending) |
+| API Testing | CRUD | /api-collections, /api-folders, /api-environments, /api-requests, /api-requests/search, /api-requests/{id}/history, /api-executions | `api_testing:*` (`api_testing:execute` for POST /api-executions) + `Idempotency-Key` on mutating endpoints, `AuditLog` on writes |
 | Notifications | GET | /notifications | `notifications:read` |
 | Notifications | POST | /notifications | `notifications:create` + AuditLog |
 | Notifications | GET | /notifications/unread-count | `notifications:read` |
@@ -848,22 +838,22 @@ Per ADR-009, the official local workflow uses native services:
 - PostgreSQL 16+, Redis 7+, Mailpit, MinIO.
 - Go, Node.js, pnpm, Python installed locally.
 - `pnpm dev` checks services, applies migrations, and starts API, web, worker, and ML services.
-- Docker Compose remains available under `testra/infra/docker/` as an optional alternative.
+- All services must be installed and running locally; no Docker is used.
 
 ### MVP production [Approved]
 
 - Ubuntu VM with systemd and Nginx reverse proxy.
 - PostgreSQL, Redis, and S3-compatible object store.
 - Go API and Next.js web as systemd services.
-- TLS terminated by Nginx or Cloudflare.
+- TLS terminated by Nginx with a Let's Encrypt certificate (certbot).
 - Migrations applied via `testra/apps/api/cmd/migrator/main.go` in CI/CD, never manually in production.
 
 ### Future [Planned]
 
-- AWS/GCP managed Kubernetes (EKS/GKE).
-- Separate worker and ML pods.
-- Terraform for repeatable infrastructure.
-- Multi-region clusters for APAC data residency.
+- Future scale may move to a managed platform, but the default is still a single Ubuntu VPS.
+- Separate worker and ML processes can run on the same VPS or be split later.
+- systemd unit files and shell scripts for repeatable deployment.
+- Multi-region deployment is not planned for MVP.
 
 ---
 
@@ -1009,7 +999,7 @@ flowchart LR
 | 3.5 — Product UX Completion | Completed | Settings pages, placeholders, responsive UI, accessibility, build/lint/typecheck passes. |
 | 4 — API Testing & Defects | Planned | API test definitions and execution, defects, Jira sync, notification channels. |
 | 5 — Dashboard, Analytics & Launch | Planned | ClickHouse analytics, SDK generation, staging/production deployment. |
-| 6 — V2 Intelligence | Planned | Flaky detection, failure classification, risk scores, Meilisearch, Stripe, WorkOS SSO, Kubernetes. |
+| 6 — V2 Intelligence | Planned | Flaky detection, failure classification, risk scores, Meilisearch, Stripe, WorkOS SSO, single-Ubuntu-VPS systemd services. |
 
 ---
 
@@ -1025,13 +1015,13 @@ flowchart LR
 | ClickHouse for analytics | Planned | Cost-effective high-ingest analytical queries once result volume justifies it. |
 | Asynq workers over Redis | Planned | Async ingestion, ML pipelines, and scheduled jobs without a separate queue system. |
 | Generated TypeScript SDK | Planned | Created from OpenAPI once contracts stabilize. |
-| Kubernetes + Terraform production | Planned | Scale, observability, and multi-region data residency. |
+| single-Ubuntu-VPS systemd services + single-Ubuntu-VPS systemd services production | Planned | Scale, observability, and multi-region data residency. |
 | Meilisearch for search | Deferred | PostgreSQL full-text search is sufficient for MVP; Meilisearch adds operational cost. |
 | Stripe billing | Deferred | Billing is not part of MVP launch scope. |
 | WorkOS SSO | Deferred | Conditional on enterprise deals; self-hosted path remains default. |
 | Clerk / managed identity provider | Rejected | Adds vendor cost and operational risk; self-hosted auth aligns with privacy-first principles. |
 | Microservices for MVP | Rejected | Distributed-system overhead exceeds solo-developer bandwidth and does not solve a current problem. |
-| Docker Compose as default local environment | Rejected | Native services are faster and simpler; Docker remains optional. |
+| native services as default local environment | Rejected | Native services are faster and simpler; Docker remains optional. |
 | External LLM features | Rejected | Violates transparent ML and no external LLM principles. |
 
 ---

@@ -54,7 +54,7 @@ export default function ApiKeysSettingsPage() {
     setError(null);
     setPlaintext(null);
     try {
-      const result = await createAPIKey({ workspace_id: workspaceId, name: name.trim() });
+      const result = await createAPIKey({ workspace_id: workspaceId, name: name.trim(), scopes: ["runs:ingest"] });
       setKeys((prev) => [...prev, result.api_key]);
       setPlaintext(result.raw_key);
       setName("");

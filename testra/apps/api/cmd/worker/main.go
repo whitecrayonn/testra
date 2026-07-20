@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testra/testra/apps/api/internal/analytics"
+	"github.com/testra/testra/apps/api/internal/audit"
 	"github.com/testra/testra/apps/api/internal/billing"
 	"github.com/testra/testra/apps/api/internal/integrationhub"
 	"github.com/testra/testra/apps/api/internal/intelligence"
@@ -23,6 +25,7 @@ import (
 	"github.com/testra/testra/apps/api/internal/queue"
 	"github.com/testra/testra/apps/api/internal/shared/config"
 	"github.com/testra/testra/apps/api/internal/shared/db"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 )
 
 func main() {
@@ -35,35 +38,51 @@ func main() {
 	defer database.Close()
 
 	smtpCfg := notification.SMTPConfig{
-		Host: cfg.SMTPHost,
-		Port: cfg.SMTPPort,
-		From: cfg.SMTPFrom,
+		Host:           cfg.SMTPHost,
+		Port:           cfg.SMTPPort,
+		From:           cfg.SMTPFrom,
+		Username:       cfg.SMTPUsername,
+		SecretProvider: cfg.SecretProvider(),
+		PasswordSecret: cfg.SMTPPasswordSecret,
 	}
 
-	notificationModule := notification.NewModule(database, smtpCfg.Host, smtpCfg.Port, smtpCfg.From)
+	notificationModule := notification.NewModule(database, smtpCfg.Host, smtpCfg.Port, smtpCfg.From, smtpCfg.Username, smtpCfg.SecretProvider, smtpCfg.PasswordSecret)
 	analyticsModule := analytics.New(database)
 	intelligenceModule := intelligence.New(database, cfg.MLServiceURL)
-	integrationhubModule := integrationhub.New(database)
+	dbHandle := db.Wrap(database)
+	auditSvc := audit.NewModule(dbHandle).Service
+	eventBus := eventbus.New(256)
+	integrationhubModule := integrationhub.New(database, auditSvc, eventBus)
 	billingModule := billing.New(database, cfg.StripeSecretKey)
 
 	runner := &Runner{
-		db:             database,
-		pollInterval:   getPollInterval(),
-		notification:   notificationModule,
-		analytics:      analyticsModule,
-		intelligence:   intelligenceModule,
-		integrationhub: integrationhubModule,
-		billing:        billingModule,
+		db:              database,
+		pollInterval:    getPollInterval(),
+		cleanupInterval: getCleanupInterval(),
+		jobRetention:    getJobRetention(),
+		notification:    notificationModule,
+		analytics:       analyticsModule,
+		intelligence:    intelligenceModule,
+		integrationhub:  integrationhubModule,
+		billing:         billingModule,
 	}
 
 	metricsPort := os.Getenv("METRICS_PORT")
 	if metricsPort == "" {
 		metricsPort = "9090"
 	}
+	addr := ":" + metricsPort
+	log.Printf("worker metrics server listening on %s", addr)
+	metricsSrv := &http.Server{
+		Addr:              addr,
+		Handler:           metrics.Handler(database),
+		ReadHeaderTimeout: 2 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 	go func() {
-		addr := ":" + metricsPort
-		log.Printf("worker metrics server listening on %s", addr)
-		if err := http.ListenAndServe(addr, metrics.Handler(database)); err != nil {
+		if err := metricsSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("metrics server error: %v", err)
 		}
 	}()
@@ -74,6 +93,12 @@ func main() {
 	log.Println("Testra background worker started")
 	runner.Run(ctx)
 	log.Println("Testra background worker stopped")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := metricsSrv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("metrics server shutdown error: %v", err)
+	}
 }
 
 func getPollInterval() time.Duration {
@@ -88,43 +113,122 @@ func getPollInterval() time.Duration {
 	return time.Duration(secs) * time.Second
 }
 
+func getCleanupInterval() time.Duration {
+	s := os.Getenv("WORKER_CLEANUP_INTERVAL_SECONDS")
+	if s == "" {
+		s = "300"
+	}
+	secs, err := strconv.Atoi(s)
+	if err != nil || secs < 1 {
+		secs = 300
+	}
+	return time.Duration(secs) * time.Second
+}
+
+func getJobRetention() time.Duration {
+	s := os.Getenv("WORKER_JOB_RETENTION_HOURS")
+	if s == "" {
+		s = "24"
+	}
+	hours, err := strconv.Atoi(s)
+	if err != nil || hours < 1 {
+		hours = 24
+	}
+	return time.Duration(hours) * time.Hour
+}
+
 type Runner struct {
-	db             *sql.DB
-	pollInterval   time.Duration
-	notification   *notification.Module
-	analytics      *analytics.Module
-	intelligence   *intelligence.Module
-	integrationhub *integrationhub.Module
-	billing        *billing.Module
+	db              *sql.DB
+	pollInterval    time.Duration
+	cleanupInterval time.Duration
+	jobRetention    time.Duration
+	notification    *notification.Module
+	analytics       *analytics.Module
+	intelligence    *intelligence.Module
+	integrationhub  *integrationhub.Module
+	billing         *billing.Module
 }
 
 func (r *Runner) Run(ctx context.Context) {
-	ticker := time.NewTicker(r.pollInterval)
-	defer ticker.Stop()
+	cleanupInterval := r.cleanupInterval
+	if cleanupInterval <= 0 {
+		cleanupInterval = 5 * time.Minute
+	}
+	cleanupTicker := time.NewTicker(cleanupInterval)
+	defer cleanupTicker.Stop()
+
+	nextPoll := r.pollInterval
+	if nextPoll <= 0 {
+		nextPoll = 5 * time.Second
+	}
+	maxBackoff := 60 * time.Second
+	if r.pollInterval > maxBackoff {
+		maxBackoff = r.pollInterval
+	}
 
 	// Run an initial pass immediately.
-	r.processBatch(ctx)
+	worked := r.processBatch(ctx)
+	if worked {
+		nextPoll = r.pollInterval
+	}
+
+	timer := time.NewTimer(nextPoll)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			r.processBatch(ctx)
+		case <-cleanupTicker.C:
+			r.cleanup(ctx)
+			continue
+		case <-timer.C:
+			worked := r.processBatch(ctx)
+			if worked {
+				nextPoll = r.pollInterval
+			} else {
+				nextPoll *= 2
+				if nextPoll > maxBackoff {
+					nextPoll = maxBackoff
+				}
+			}
+			timer.Reset(nextPoll)
 		}
 	}
 }
 
-func (r *Runner) processBatch(ctx context.Context) {
+func (r *Runner) cleanup(ctx context.Context) {
+	retention := r.jobRetention
+	if retention <= 0 {
+		retention = 24 * time.Hour
+	}
+	deleted, err := queue.DeleteOldCompleted(ctx, r.db, retention)
+	if err != nil {
+		log.Printf("worker cleanup error: %v", err)
+		return
+	}
+	if deleted > 0 {
+		log.Printf("worker cleanup: removed %d terminal jobs", deleted)
+	}
+}
+
+func (r *Runner) processBatch(ctx context.Context) bool {
+	worked := false
 	for {
 		done, err := r.processOne(ctx)
 		if err != nil {
 			log.Printf("worker error: %v", err)
+			// Stop the batch and let Run apply exponential backoff. The
+			// failed job is already rescheduled or dead-lettered inside
+			// processOne; repeated DB errors should not spin CPU.
+			return worked
 		}
 		if done {
-			return
+			break
 		}
+		worked = true
 	}
+	return worked
 }
 
 func (r *Runner) processOne(ctx context.Context) (bool, error) {
@@ -266,6 +370,20 @@ func (r *Runner) processJob(ctx context.Context, job *queue.Job) error {
 			EventType:     payload.EventType,
 			Payload:       payload.Payload,
 		}, uuid.Nil)
+		return err
+
+	case "integration:retry":
+		var payload struct {
+			EventID string `json:"event_id"`
+		}
+		if err := job.ParsePayload(&payload); err != nil {
+			return err
+		}
+		eventID, err := uuid.Parse(payload.EventID)
+		if err != nil {
+			return err
+		}
+		_, err = r.integrationhub.Service.RetryEvent(ctx, eventID, uuid.Nil)
 		return err
 
 	case "billing:sync":

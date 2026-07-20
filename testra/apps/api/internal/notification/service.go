@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"net/smtp"
 	"strings"
@@ -12,27 +14,36 @@ import (
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/secrets"
+	"github.com/testra/testra/apps/api/internal/shared/security"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
 type SMTPConfig struct {
-	Host     string
-	Port     string
-	From     string
-	Password string
+	Host           string
+	Port           string
+	From           string
+	Username       string
+	Password       string // Deprecated: use SecretProvider + PasswordSecret
+	SecretProvider secrets.Provider
+	PasswordSecret string // Key passed to SecretProvider to retrieve the SMTP password
 }
 
 type Service struct {
-	repo      Repository
-	smtp      SMTPConfig
-	httpClient *http.Client
+	repo         Repository
+	smtp         SMTPConfig
+	httpClient   *http.Client
+	smtpSender   func(string, smtp.Auth, string, []string, []byte) error
+	urlValidator func(context.Context, string) error
 }
 
 func NewService(repo Repository, smtpCfg SMTPConfig) *Service {
 	return &Service{
-		repo:       repo,
-		smtp:       smtpCfg,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		repo:         repo,
+		smtp:         smtpCfg,
+		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		smtpSender:   smtp.SendMail,
+		urlValidator: security.ValidateURL,
 	}
 }
 
@@ -161,11 +172,11 @@ func (s *Service) GetChannel(ctx context.Context, id uuid.UUID) (*NotificationCh
 	return s.repo.GetChannel(ctx, id)
 }
 
-func (s *Service) ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]NotificationChannel, error) {
+func (s *Service) ListChannels(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]NotificationChannel, error) {
 	if workspaceID == uuid.Nil {
 		return nil, sharederrors.ErrInvalidInput
 	}
-	return s.repo.ListChannels(ctx, workspaceID)
+	return s.repo.ListChannels(ctx, workspaceID, cursor, limit)
 }
 
 func (s *Service) UpdateChannel(ctx context.Context, id uuid.UUID, input UpdateChannelInput) (*NotificationChannel, error) {
@@ -244,49 +255,119 @@ func (s *Service) Send(ctx context.Context, input SendInput) (*Notification, err
 		return notification, nil
 	}
 
-	channels, err := s.repo.ListChannels(ctx, input.WorkspaceID)
+	channels, err := s.repo.ListChannels(ctx, input.WorkspaceID, "", 1000)
 	if err != nil {
 		return notification, err
 	}
 
 	for _, ch := range channels {
-		switch ch.Type {
-		case ChannelTypeEmail:
-			if prefs.EmailEnabled {
-				s.dispatchEmail(ctx, ch, input)
-			}
-		case ChannelTypeSlack, ChannelTypeTeams, ChannelTypeWebhook:
-			if (ch.Type == ChannelTypeSlack && prefs.SlackEnabled) ||
-				(ch.Type == ChannelTypeTeams && prefs.TeamsEnabled) ||
-				(ch.Type == ChannelTypeWebhook && prefs.WebhookEnabled) {
-				s.dispatchHTTP(ctx, ch, input)
-			}
+		if !s.isChannelEnabled(ch.Type, prefs) {
+			continue
+		}
+
+		history := &NotificationHistory{
+			ID:             uuid.New(),
+			OrganizationID: input.OrganizationID,
+			ChannelID:      &ch.ID,
+			ChannelType:    string(ch.Type),
+			Status:         "pending",
+			RetryCount:     0,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		}
+		if notification != nil {
+			history.NotificationID = notification.ID
+		}
+		if err := s.repo.CreateHistory(ctx, history); err != nil {
+			log.Printf("notification: failed to create history: %v", err)
+			continue
+		}
+
+		attempts, err := s.deliver(ctx, ch, input)
+		history.UpdatedAt = time.Now().UTC()
+		history.RetryCount = attempts
+		if err != nil {
+			history.Status = "failed"
+			history.ErrorMessage = err.Error()
+			log.Printf("notification: failed to dispatch %s for channel %s: %v", ch.Type, ch.ID, err)
+		} else {
+			history.Status = "sent"
+		}
+		if updateErr := s.repo.UpdateHistory(ctx, history); updateErr != nil {
+			log.Printf("notification: failed to update history: %v", updateErr)
 		}
 	}
 
 	return notification, nil
 }
 
-func (s *Service) dispatchEmail(ctx context.Context, ch NotificationChannel, input SendInput) {
+func (s *Service) isChannelEnabled(t NotificationChannelType, prefs *NotificationPreferences) bool {
+	switch t {
+	case ChannelTypeEmail:
+		return prefs.EmailEnabled
+	case ChannelTypeSlack:
+		return prefs.SlackEnabled
+	case ChannelTypeTeams:
+		return prefs.TeamsEnabled
+	case ChannelTypeWebhook:
+		return prefs.WebhookEnabled
+	}
+	return false
+}
+
+func (s *Service) deliver(ctx context.Context, ch NotificationChannel, input SendInput) (int, error) {
+	switch ch.Type {
+	case ChannelTypeEmail:
+		return s.dispatchEmail(ctx, ch, input)
+	case ChannelTypeSlack, ChannelTypeTeams, ChannelTypeWebhook:
+		return s.dispatchHTTP(ctx, ch, input)
+	}
+	return 0, fmt.Errorf("unknown channel type %s", ch.Type)
+}
+
+func (s *Service) dispatchEmail(ctx context.Context, ch NotificationChannel, input SendInput) (int, error) {
 	if s.smtp.Host == "" || s.smtp.From == "" {
-		return
+		return 0, nil
 	}
 	to, ok := ch.Config["to"]
 	if !ok || to == "" {
-		return
+		return 0, nil
 	}
+
+	password := s.smtp.Password
+	if s.smtp.SecretProvider != nil && s.smtp.PasswordSecret != "" {
+		v, err := s.smtp.SecretProvider.Get(s.smtp.PasswordSecret)
+		if err != nil {
+			return 0, fmt.Errorf("resolve smtp password: %w", err)
+		}
+		password = v
+	}
+
+	var auth smtp.Auth
+	if s.smtp.Username != "" && password != "" {
+		auth = smtp.PlainAuth("", s.smtp.Username, password, s.smtp.Host)
+	}
+
 	subject := fmt.Sprintf("Subject: %s\r\n", input.Title)
 	from := fmt.Sprintf("From: %s\r\n", s.smtp.From)
 	recipients := strings.Split(to, ",")
 	msg := []byte(from + "To: " + to + "\r\n" + subject + "\r\n" + input.Body + "\r\n")
 	addr := s.smtp.Host + ":" + s.smtp.Port
-	_ = smtp.SendMail(addr, nil, s.smtp.From, recipients, msg)
+
+	return s.retry(ctx, func() error {
+		return s.smtpSender(addr, auth, s.smtp.From, recipients, msg)
+	})
 }
 
-func (s *Service) dispatchHTTP(ctx context.Context, ch NotificationChannel, input SendInput) {
+func (s *Service) dispatchHTTP(ctx context.Context, ch NotificationChannel, input SendInput) (int, error) {
 	url := ch.Config["url"]
 	if url == "" {
-		return
+		return 0, nil
+	}
+	if s.urlValidator != nil {
+		if err := s.urlValidator(ctx, url); err != nil {
+			return 0, fmt.Errorf("blocked by SSRF guard: %w", err)
+		}
 	}
 	payload := map[string]string{
 		"title": input.Title,
@@ -294,16 +375,142 @@ func (s *Service) dispatchHTTP(ctx context.Context, ch NotificationChannel, inpu
 		"link":  input.Link,
 		"type":  input.Type,
 	}
-	body, _ := json.Marshal(payload)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	body, err := json.Marshal(payload)
 	if err != nil {
-		return
+		return 0, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.httpClient.Do(req)
-	if err == nil {
-		_ = resp.Body.Close()
+
+	return s.retry(ctx, func() error {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := s.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		_, _ = io.Copy(io.Discard, resp.Body)
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected status %d", resp.StatusCode)
+		}
+		return nil
+	})
+}
+
+// retry attempts f up to maxAttempts times with exponential backoff. The first
+// attempt is immediate, subsequent attempts wait 500ms, 1s, 2s, ... up to a
+// 5 second cap. The context is checked before every attempt.
+// It returns the number of attempts made and the final error, if any.
+func (s *Service) retry(ctx context.Context, f func() error) (int, error) {
+	const maxAttempts = 3
+	delay := 500 * time.Millisecond
+	var lastErr error
+	for i := 0; i < maxAttempts; i++ {
+		if err := ctx.Err(); err != nil {
+			return i + 1, err
+		}
+		if err := f(); err == nil {
+			return i + 1, nil
+		} else {
+			lastErr = err
+		}
+		if i < maxAttempts-1 {
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return i + 1, ctx.Err()
+			case <-timer.C:
+			}
+			if delay < 5*time.Second {
+				delay *= 2
+			}
+		}
 	}
+	return maxAttempts, lastErr
+}
+
+func (s *Service) CreateTemplate(ctx context.Context, input CreateTemplateInput, createdBy uuid.UUID) (*NotificationTemplate, error) {
+	if input.OrganizationID == uuid.Nil || !validation.IsValidName(input.Name) || input.EventType == "" || input.ChannelType == "" {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	now := time.Now().UTC()
+	t := &NotificationTemplate{
+		ID:             uuid.New(),
+		OrganizationID: input.OrganizationID,
+		Name:           strings.TrimSpace(input.Name),
+		EventType:      input.EventType,
+		ChannelType:    input.ChannelType,
+		Subject:        strings.TrimSpace(input.Subject),
+		Body:           strings.TrimSpace(input.Body),
+		CreatedBy:      createdBy,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	if err := s.repo.CreateTemplate(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (s *Service) GetTemplate(ctx context.Context, id uuid.UUID) (*NotificationTemplate, error) {
+	if id == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	return s.repo.GetTemplate(ctx, id)
+}
+
+func (s *Service) ListTemplates(ctx context.Context, orgID uuid.UUID, eventType, channelType string, limit int) ([]NotificationTemplate, error) {
+	if orgID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	return s.repo.ListTemplates(ctx, orgID, eventType, channelType, limit)
+}
+
+func (s *Service) UpdateTemplate(ctx context.Context, id uuid.UUID, input UpdateTemplateInput) (*NotificationTemplate, error) {
+	if id == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	t, err := s.repo.GetTemplate(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if input.Name != "" {
+		t.Name = input.Name
+	}
+	if input.EventType != "" {
+		t.EventType = input.EventType
+	}
+	if input.ChannelType != "" {
+		t.ChannelType = input.ChannelType
+	}
+	if input.Subject != "" {
+		t.Subject = input.Subject
+	}
+	if input.Body != "" {
+		t.Body = input.Body
+	}
+	t.UpdatedAt = time.Now().UTC()
+	if err := s.repo.UpdateTemplate(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (s *Service) DeleteTemplate(ctx context.Context, id uuid.UUID) error {
+	if id == uuid.Nil {
+		return sharederrors.ErrInvalidInput
+	}
+	return s.repo.DeleteTemplate(ctx, id)
+}
+
+func (s *Service) ListHistory(ctx context.Context, notificationID uuid.UUID, limit int) ([]NotificationHistory, error) {
+	if notificationID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	return s.repo.ListHistory(ctx, notificationID, limit)
 }
 
 func validateChannelConfig(t NotificationChannelType, config map[string]string) error {
@@ -355,6 +562,23 @@ type UpdateChannelInput struct {
 	Type   string
 	Name   string
 	Config map[string]string
+}
+
+type CreateTemplateInput struct {
+	OrganizationID uuid.UUID
+	Name           string
+	EventType      string
+	ChannelType    string
+	Subject        string
+	Body           string
+}
+
+type UpdateTemplateInput struct {
+	Name        string
+	EventType   string
+	ChannelType string
+	Subject     string
+	Body        string
 }
 
 type SendInput struct {

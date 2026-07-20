@@ -23,7 +23,7 @@
 - [ ] Authentication, MFA, password reset, RBAC, and API-key controls are implemented and reviewed as applicable.
 - [ ] Tenant isolation is tested at HTTP, use-case, repository, queue, cache, and export boundaries.
 - [ ] Security checklist is complete.
-- [ ] AWS Secrets Manager/KMS, 90-day secret rotation, Cloudflare/ACM TLS, CORS, ADR-007 rate limits, and dependency scanning are operational.
+- [ ] environment files or a local secrets store/KMS, 90-day secret rotation, Let's Encrypt TLS, CORS, ADR-007 rate limits, and dependency scanning are operational.
 - [ ] Data retention, deletion, and incident response are approved.
 
 ## Reliability and Operations

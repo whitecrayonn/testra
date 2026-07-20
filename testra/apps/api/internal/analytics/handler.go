@@ -3,11 +3,12 @@ package analytics
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/pagination"
@@ -40,7 +41,7 @@ func (h *Handler) CreateDashboard(w http.ResponseWriter, r *http.Request) {
 	userID, _ := middleware.UserIDFromContext(r.Context())
 	dashboard, err := h.service.CreateDashboard(r.Context(), CreateDashboardInput{WorkspaceID: wsID, Name: req.Name, Type: req.Type, Config: req.Config}, userID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusCreated, toDashboardResponse(dashboard))
@@ -54,7 +55,7 @@ func (h *Handler) ListDashboards(w http.ResponseWriter, r *http.Request) {
 	}
 	dashboards, err := h.service.ListDashboards(r.Context(), wsID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	resp := make([]dashboardResponse, len(dashboards))
@@ -72,7 +73,7 @@ func (h *Handler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	d, err := h.service.GetDashboard(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toDashboardResponse(d))
@@ -95,7 +96,7 @@ func (h *Handler) UpdateDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	d, err := h.service.UpdateDashboard(r.Context(), id, UpdateDashboardInput{Name: req.Name, Type: req.Type, Config: req.Config})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toDashboardResponse(d))
@@ -108,7 +109,7 @@ func (h *Handler) DeleteDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.service.DeleteDashboard(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusNoContent, nil)
@@ -131,24 +132,81 @@ func (h *Handler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	summary, err := h.service.GetSummary(r.Context(), wsID, projectID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, summary)
 }
 
 func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
+	wsID, projectID, start, end := parseTrendParams(w, r)
+	if wsID == uuid.Nil {
+		return
+	}
+	trends, err := h.service.GetTrends(r.Context(), wsID, projectID, start, end)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	meta := pagination.Meta{HasMore: false}
+	apihttp.JSON(w, http.StatusOK, map[string]interface{}{"trends": trends, "meta": meta})
+}
+
+func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
+	filter, ok := parseMetricsFilter(w, r)
+	if !ok {
+		return
+	}
+	metrics, err := h.service.GetMetrics(r.Context(), filter)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	apihttp.JSON(w, http.StatusOK, metrics)
+}
+
+func (h *Handler) GetRecentActivity(w http.ResponseWriter, r *http.Request) {
+	filter, ok := parseMetricsFilter(w, r)
+	if !ok {
+		return
+	}
+	activity, err := h.service.GetRecentActivity(r.Context(), filter)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	apihttp.JSON(w, http.StatusOK, activity)
+}
+
+func (h *Handler) ExportMetricsCSV(w http.ResponseWriter, r *http.Request) {
+	filter, ok := parseMetricsFilter(w, r)
+	if !ok {
+		return
+	}
+	rows, err := h.service.GetMetricsCSV(r.Context(), filter)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", "attachment; filename=metrics.csv")
+	for _, row := range rows {
+		_, _ = w.Write([]byte(strings.Join(row, ",") + "\n"))
+	}
+}
+
+func parseTrendParams(w http.ResponseWriter, r *http.Request) (uuid.UUID, *uuid.UUID, *time.Time, *time.Time) {
 	wsID, err := uuid.Parse(r.URL.Query().Get("workspace_id"))
 	if err != nil {
 		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "workspace_id required")
-		return
+		return uuid.Nil, nil, nil, nil
 	}
 	var projectID *uuid.UUID
 	if pid := r.URL.Query().Get("project_id"); pid != "" {
 		p, err := uuid.Parse(pid)
 		if err != nil {
 			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project_id")
-			return
+			return uuid.Nil, nil, nil, nil
 		}
 		projectID = &p
 	}
@@ -157,7 +215,7 @@ func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 		t, err := time.Parse("2006-01-02", s)
 		if err != nil {
 			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "start must be YYYY-MM-DD")
-			return
+			return uuid.Nil, nil, nil, nil
 		}
 		start = &t
 	}
@@ -165,17 +223,63 @@ func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 		t, err := time.Parse("2006-01-02", e)
 		if err != nil {
 			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "end must be YYYY-MM-DD")
-			return
+			return uuid.Nil, nil, nil, nil
 		}
 		end = &t
 	}
-	trends, err := h.service.GetTrends(r.Context(), wsID, projectID, start, end)
+	return wsID, projectID, start, end
+}
+
+func parseMetricsFilter(w http.ResponseWriter, r *http.Request) (MetricsFilter, bool) {
+	filter := MetricsFilter{}
+	wsID, err := uuid.Parse(r.URL.Query().Get("workspace_id"))
 	if err != nil {
-		mapError(w, err)
-		return
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "workspace_id required")
+		return filter, false
 	}
-	meta := pagination.Meta{HasMore: false}
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{"trends": trends, "meta": meta})
+	filter.WorkspaceID = wsID
+	if pid := r.URL.Query().Get("project_id"); pid != "" {
+		p, err := uuid.Parse(pid)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project_id")
+			return filter, false
+		}
+		filter.ProjectID = &p
+	}
+	filter.Release = r.URL.Query().Get("release")
+	filter.Sprint = r.URL.Query().Get("sprint")
+	filter.Environment = r.URL.Query().Get("environment")
+	filter.Source = r.URL.Query().Get("source")
+	if tester := r.URL.Query().Get("tester"); tester != "" {
+		t, err := uuid.Parse(tester)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid tester")
+			return filter, false
+		}
+		filter.TesterID = &t
+	}
+	if s := r.URL.Query().Get("start"); s != "" {
+		t, err := time.Parse("2006-01-02", s)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "start must be YYYY-MM-DD")
+			return filter, false
+		}
+		filter.Start = &t
+	}
+	if e := r.URL.Query().Get("end"); e != "" {
+		t, err := time.Parse("2006-01-02", e)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "end must be YYYY-MM-DD")
+			return filter, false
+		}
+		filter.End = &t
+	}
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		if l, err := strconv.Atoi(limit); err == nil && l > 0 {
+			filter.Limit = l
+		}
+	}
+	return filter, true
 }
 
 // Helpers
@@ -199,19 +303,6 @@ func toDashboardResponse(d *Dashboard) dashboardResponse {
 		Config:      d.Config,
 		CreatedAt:   d.CreatedAt,
 		UpdatedAt:   d.UpdatedAt,
-	}
-}
-
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}
 }
 

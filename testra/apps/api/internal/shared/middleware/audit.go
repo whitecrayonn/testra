@@ -12,6 +12,7 @@ type AuditLogInput struct {
 	Resource   string
 	ResourceID string
 	IPAddress  string
+	StatusCode int
 }
 
 type statusCaptureWriter struct {
@@ -35,17 +36,16 @@ func AuditLog(
 			ww := &statusCaptureWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(ww, r)
 
-			if ww.status < 400 {
-				uid := extractUserID(r)
-				if uid != uuid.Nil {
-					logger(AuditLogInput{
-						UserID:     uid,
-						Action:     action,
-						Resource:   resource,
-						ResourceID: extractResourceID(r),
-						IPAddress:  r.RemoteAddr,
-					})
-				}
+			uid := extractUserID(r)
+			if uid != uuid.Nil {
+				logger(AuditLogInput{
+					UserID:     uid,
+					Action:     action,
+					Resource:   resource,
+					ResourceID: extractResourceID(r),
+					IPAddress:  MaskIP(r.RemoteAddr),
+					StatusCode: ww.status,
+				})
 			}
 		})
 	}

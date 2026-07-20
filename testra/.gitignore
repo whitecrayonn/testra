@@ -13,8 +13,11 @@ bin/
 
 # Go
 apps/api/bin/
+apps/api/*.exe
 apps/api/tmp/
 apps/worker/bin/
+apps/worker/*.exe
+*.exe
 go.work.sum
 
 # Python

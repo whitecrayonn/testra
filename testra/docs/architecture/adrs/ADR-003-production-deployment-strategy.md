@@ -5,23 +5,23 @@
 
 ## Context
 
-Testra needs low operational cost for a solo developer while preserving privacy, managed reliability, enterprise networking, and a migration path for scale. Operating Kubernetes at MVP would add cost and operational burden without product value. ADR-009 replaces the local Docker Compose stage with a native development environment and updates the MVP deployment target from AWS ECS Fargate to a simpler Ubuntu VM with systemd.
+Testra is built by a solo developer with zero infrastructure budget. The deployment strategy must minimize operational cost and complexity while preserving a migration path for future scale. Container orchestration and cloud-managed services (Docker, Kubernetes, Terraform, AWS/GCP/Azure) are explicitly out of scope for MVP and local development because they add cost and operational burden without product value. ADR-009 establishes a native development environment; this ADR establishes the production deployment target.
 
 ## Decision
 
 The deployment roadmap is:
 
-| Stage | Compute | PostgreSQL | Redis | Object storage | ClickHouse | CDN/SSL | Secrets |
+| Stage | Compute | PostgreSQL | Redis | Object storage | ClickHouse | TLS/SSL | Secrets |
 |---|---|---|---|---|---|---|---|
-| Local | Native (Go, Node.js, Python binaries) — see ADR-009 | Local PostgreSQL service | Local Redis service | MinIO binary | Optional (not needed until Phase 3) | local HTTP; HTTPS optional | ignored local env file |
-| MVP | Ubuntu VM with systemd + Nginx reverse proxy | PostgreSQL (local or managed) | Redis (local or managed) | MinIO (optional) or S3 | ClickHouse (optional until Phase 3) | Nginx TLS or Cloudflare | environment files or secrets manager |
-| Beta | Ubuntu VMs across multiple AZs or AWS ECS Fargate behind ALB | RDS Multi-AZ | ElastiCache replication/failover | S3 versioning and lifecycle policies | ClickHouse Cloud production service | Cloudflare CDN/WAF plus ACM-managed TLS | AWS Secrets Manager with rotation |
-| Enterprise | Private networking and dedicated capacity; EKS only if an explicit scale/team requirement justifies it | RDS Multi-AZ/read replicas or Aurora PostgreSQL after measured need | ElastiCache replication/failover or dedicated cluster | S3 replication, Object Lock where contracted | ClickHouse Cloud with private connectivity/dedicated resources | Cloudflare Enterprise controls plus ACM | AWS Secrets Manager and KMS, customer-specific secrets where required |
+| Local | Native binaries (Go, Node.js, Python) — see ADR-009 | Local PostgreSQL service | Local Redis service | Local MinIO binary | Optional (not needed until Phase 3) | HTTP only; HTTPS optional | local `.env` file |
+| MVP | Single Ubuntu VPS with systemd + Nginx reverse proxy | PostgreSQL on the same VPS | Redis on the same VPS | Local MinIO or filesystem-backed S3-compatible store | Optional (not needed until Phase 3) | Let's Encrypt via certbot on Nginx | environment file or a local secrets store |
+| Beta | Single Ubuntu VPS or a small fleet of VPS instances | PostgreSQL on the VPS with streaming backups | Redis on the VPS with persistence | Filesystem/MinIO backups | ClickHouse Cloud only if analytics volume justifies it | Let's Encrypt with optional CDN/WAF | environment file or a local secrets store |
+| Enterprise | Single Ubuntu VPS fleet or a managed platform only if an explicit scale/team requirement justifies it | PostgreSQL read replicas or managed PostgreSQL only after measured need | Redis replication or managed Redis only after measured need | Object-store backups with immutability where required | ClickHouse Cloud only if analytics volume justifies it | Let's Encrypt with optional CDN/WAF | environment file or a secrets store; customer-specific secrets where required |
 
-MVP runs Go API, Go worker, Next.js, and Python ML as systemd services on a single Ubuntu VM with Nginx as reverse proxy. This minimizes operational cost and complexity for a solo developer while preserving a migration path to AWS managed services.
+MVP runs the Go API, Go worker, Next.js web app, and Python ML service as systemd services on a single Ubuntu VPS. Nginx terminates TLS (Let's Encrypt) and reverse-proxies to the application services. Migrations run from CI via `apps/api/cmd/migrator` and are never applied manually in production.
 
-Use S3-compatible interfaces in application ports so local MinIO and production S3 remain interchangeable. Keep ClickHouse behind a repository/port boundary to preserve future migration options. Docker files remain in the repository as optional deployment assets.
+Use S3-compatible interfaces in application ports so local MinIO and a future object store remain interchangeable. Keep ClickHouse behind a repository/port boundary so analytics can be deferred until result volume justifies it. Docker, Kubernetes, and Terraform are not used.
 
 ## Consequences
 
-Ubuntu VM + systemd reduces MVP operational cost and eliminates container orchestration complexity. The native development environment (ADR-009) removes Docker Desktop as a development dependency. AWS managed services remain available as a future evolution path when scale justifies the investment. Kubernetes is deferred rather than required for enterprise readiness. Cloudflare provides edge protection without coupling application code to a CDN.
+A single Ubuntu VPS with systemd minimizes MVP operational cost and eliminates container orchestration and cloud-IaC complexity. The native development environment (ADR-009) removes Docker as a development dependency. Cloud-managed services may be reconsidered only after product-market fit and measured scale justify the budget. Let's Encrypt on Nginx provides free TLS without coupling the application to a CDN or certificate authority.

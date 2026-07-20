@@ -49,8 +49,8 @@
 | Test runs / results | ✅ | ✅ | ✅ | 🔄 | ❌ | Manual runs work; SSE uses query-token auth in browsers |
 | Test run progress (SSE) | ✅ | ✅ | ✅ | 🔄 | ❌ | `Auth` middleware accepts `Authorization` header or `access_token` query param |
 | Automation result ingestion (JUnit/Playwright/Cypress) | ✅ | ❌ | ✅ | 🔄 | ❌ | No UI; protected by API-key auth with scope and rate limiting |
-| API testing engine | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
-| Defects | ✅ | ✅ | 🔄 | ✅ | ❌ | Backend CRUD, pagination, and list/create UI implemented; OpenAPI pending update |
+| API testing engine | ✅ | ✅ | ✅ | 🔄 | ❌ | Backend migrations, domain, repository, service, handler, tests; frontend Studio page with collections, folders, requests, environments, execution, and history; OpenAPI updated |
+| Defects | ✅ | ✅ | ✅ | ✅ | ❌ | Backend CRUD, pagination, and list/create/detail/edit/delete UI implemented; OpenAPI updated |
 | Manual test execution tracker | 🔄 | 🔄 | 🔄 | 🔄 | ❌ | Runs can be created and started; no step-level UI |
 
 ## Core layer
@@ -97,11 +97,10 @@
 
 | Feature | Backend | Frontend | OpenAPI | Tests | Production Ready | Status |
 |---------|---------|----------|---------|-------|------------------|--------|
-| Local development (pnpm dev native, Docker Compose for deps) | N/A | N/A | N/A | N/A | ✅ | Functional; native dev is default, Docker optional per ADR-009 |
-| Dockerfiles | N/A | N/A | N/A | N/A | 🔄 | Multi-stage builds; `.dockerignore` not verified |
-| Kubernetes manifests | N/A | N/A | N/A | N/A | ❌ | Base deployment + service only |
-| Terraform modules | N/A | N/A | N/A | N/A | ❌ | Scaffold only; modules empty |
-| CI pipeline (lint/build/test) | N/A | N/A | N/A | N/A | 🔄 | GitHub Actions builds Go/web/ML; no integration tests |
+| Local development (pnpm dev native, local services for deps) | N/A | N/A | N/A | N/A | ✅ | Functional; native dev is default, no Docker per ADR-009 |
+| Build binaries / web standalone | N/A | N/A | N/A | N/A | ✅ | `go build` and `next build` work; Docker is not used |
+| systemd service unit files and nginx site configurations | N/A | N/A | N/A | N/A | ❌ | Not written; no production deployment runbooks yet |
+| CI pipeline (lint/build/test) | N/A | N/A | N/A | N/A | ✅ | GitHub Actions builds Go/web/ML; no integration tests |
 | CD pipeline (deploy) | N/A | N/A | N/A | N/A | ❌ | Not implemented |
 | Observability (logs/metrics/traces) | N/A | N/A | N/A | N/A | ❌ | Not implemented |
 | Secrets management | N/A | N/A | N/A | N/A | ❌ | Not implemented |
@@ -113,8 +112,8 @@
 - **Fully implemented end-to-end:** None. Even the most complete flows (Identity, Test Case Management) lack production hardening.
 - **Backend functional, frontend missing:** API Keys, Test Folders, Test Suites, Automation Ingestion, Audit.
 - **Frontend functional, backend partial:** Dashboard, Settings shell.
-- **Not started:** Defects, API Testing, Billing, Analytics, Intelligence, Integration Hub, SSO, Marketplace, Public SDK. **Notifications are implemented.**
-- **Blockers for production:** rate limiting, API-key auth, SSE auth, route guards, secrets management, K8s/Terraform completion, and deployment pipeline.
+- **Not started:** API Testing, Billing, Analytics, Intelligence, Integration Hub, SSO, Marketplace, Public SDK. **Defects and notifications are implemented.**
+- **Blockers for production:** rate limiting, API-key auth, SSE auth, route guards, secrets management, single-Ubuntu-VPS systemd/single-Ubuntu-VPS systemd services completion, and deployment pipeline.
 
 
 ## See Also

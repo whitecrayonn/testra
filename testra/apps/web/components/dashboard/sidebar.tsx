@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getUnreadCount } from "@/features/notifications/api";
-import { clearAuth } from "@/lib/api";
+import { logout } from "@/lib/api";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -18,6 +18,8 @@ import {
   Brain,
   Settings,
   LogOut,
+  Globe,
+  Bot,
 } from "lucide-react";
 
 const navItems = [
@@ -26,6 +28,8 @@ const navItems = [
   { href: "/dashboard/test-cases", label: "Test Cases", icon: TestTube },
   { href: "/dashboard/test-runs", label: "Runs", icon: PlayCircle },
   { href: "/dashboard/defects", label: "Defects", icon: Bug },
+  { href: "/dashboard/api-tests", label: "API Tests", icon: Globe },
+  { href: "/dashboard/automation", label: "Automation", icon: Bot },
   { href: "/dashboard/flaky-tests", label: "Flaky tests", icon: Brain },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -36,8 +40,12 @@ export function Sidebar() {
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  function signOut() {
-    clearAuth();
+  async function signOut() {
+    try {
+      await logout();
+    } catch {
+      // Ignore logout failures; redirect to login regardless.
+    }
     router.replace("/login");
   }
 

@@ -3,18 +3,24 @@ package identity
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 )
 
 type Handler struct {
-	service *Service
+	service       *Service
+	jwtExpiry     time.Duration
+	refreshExpiry time.Duration
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, jwtExpiry time.Duration, refreshExpiry time.Duration) *Handler {
+	return &Handler{
+		service:       service,
+		jwtExpiry:     jwtExpiry,
+		refreshExpiry: refreshExpiry,
+	}
 }
 
 type registerRequest struct {
@@ -64,10 +70,11 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Name:     req.Name,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
+	h.setAuthCookies(w, r, result.Token, result.RefreshToken)
 	apihttp.JSON(w, http.StatusCreated, authResponse{
 		Token:        result.Token,
 		RefreshToken: result.RefreshToken,
@@ -88,10 +95,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		MFACode:  req.MFACode,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
+	h.setAuthCookies(w, r, result.Token, result.RefreshToken)
 	apihttp.JSON(w, http.StatusOK, authResponse{
 		Token:        result.Token,
 		RefreshToken: result.RefreshToken,
@@ -108,7 +116,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.GetUser(r.Context(), userID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -129,7 +137,7 @@ func (h *Handler) SetupMFA(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.SetupMFA(r.Context(), userID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -157,7 +165,7 @@ func (h *Handler) VerifyMFA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.VerifyMFA(r.Context(), userID, req.Code); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -182,7 +190,7 @@ func (h *Handler) DisableMFA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DisableMFA(r.Context(), userID, req.Code); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -204,7 +212,7 @@ func (h *Handler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		Email: req.Email,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -227,7 +235,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		Token:       req.Token,
 		NewPassword: req.NewPassword,
 	}); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -239,20 +247,28 @@ type refreshRequest struct {
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	var req refreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-		return
+	refreshToken := ""
+	if cookieToken, ok := middleware.RefreshTokenFromCookie(r); ok {
+		refreshToken = cookieToken
+	} else {
+		var req refreshRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+			return
+		}
+		refreshToken = req.RefreshToken
 	}
 
 	result, err := h.service.RefreshToken(r.Context(), RefreshTokenInput{
-		RefreshToken: req.RefreshToken,
+		RefreshToken: refreshToken,
 	})
 	if err != nil {
-		mapError(w, err)
+		middleware.ClearAuthCookies(w, r)
+		apihttp.MapError(w, err)
 		return
 	}
 
+	h.setAuthCookies(w, r, result.Token, result.RefreshToken)
 	apihttp.JSON(w, http.StatusOK, authResponse{
 		Token:        result.Token,
 		RefreshToken: result.RefreshToken,
@@ -260,25 +276,61 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrConflict:
-		apihttp.ErrorJSON(w, http.StatusConflict, "CONFLICT", err.Error())
-	case sharederrors.ErrInvalidCredential:
-		apihttp.ErrorJSON(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", err.Error())
-	case sharederrors.ErrMFARequired:
-		apihttp.ErrorJSON(w, http.StatusUnauthorized, "MFA_REQUIRED", err.Error())
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrTokenExpired:
-		apihttp.ErrorJSON(w, http.StatusUnauthorized, "TOKEN_EXPIRED", err.Error())
-	case sharederrors.ErrTokenRevoked:
-		apihttp.ErrorJSON(w, http.StatusUnauthorized, "TOKEN_REVOKED", err.Error())
-	case sharederrors.ErrTooManyRequests:
-		apihttp.ErrorJSON(w, http.StatusTooManyRequests, "TOO_MANY_REQUESTS", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+type logoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	refreshToken := ""
+	if cookieToken, ok := middleware.RefreshTokenFromCookie(r); ok {
+		refreshToken = cookieToken
+	} else {
+		var req logoutRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			middleware.ClearAuthCookies(w, r)
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+			return
+		}
+		refreshToken = req.RefreshToken
 	}
+
+	if err := h.service.Logout(r.Context(), refreshToken); err != nil {
+		middleware.ClearAuthCookies(w, r)
+		apihttp.MapError(w, err)
+		return
+	}
+
+	middleware.ClearAuthCookies(w, r)
+	apihttp.JSON(w, http.StatusOK, map[string]any{"status": "logged_out"})
+}
+
+func (h *Handler) LogoutAllDevices(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	if err := h.service.LogoutAllDevices(r.Context(), userID); err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	middleware.ClearAuthCookies(w, r)
+	apihttp.JSON(w, http.StatusOK, map[string]any{"status": "logged_out_all"})
+}
+
+func (h *Handler) CSRF(w http.ResponseWriter, r *http.Request) {
+	token, err := middleware.GenerateCSRFToken()
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL", "failed to generate csrf token")
+		return
+	}
+	middleware.SetCSRFCookie(w, r, token, middleware.DefaultCSRFCookieMaxAge())
+	apihttp.JSON(w, http.StatusOK, map[string]any{"csrf_token": token})
+}
+
+func (h *Handler) setAuthCookies(w http.ResponseWriter, r *http.Request, accessToken, refreshToken string) {
+	middleware.SetAccessTokenCookie(w, r, accessToken, int(h.jwtExpiry.Seconds()))
+	middleware.SetRefreshTokenCookie(w, r, refreshToken, int(h.refreshExpiry.Seconds()))
 }

@@ -59,7 +59,7 @@ Every protected path must preserve this order conceptually. Middleware and modul
 - ML failure: degrade optional intelligence features without blocking core test management unless the use case explicitly requires prediction.
 - External SMTP/integration failure: retry boundedly and expose operational state without leaking credentials.
 
-Production ingress is Nginx on an Ubuntu VM (MVP) terminating TLS and reverse-proxying to systemd-managed application services. Future AWS deployment uses Cloudflare CDN/WAF to AWS load balancing/CloudFront and ECS Fargate. TLS uses Cloudflare/ACM in the AWS path. The logical flow remains valid for local native development and the deployment roadmap in ADR-003 (amended by ADR-009).
+Production ingress is Nginx on an Ubuntu VM (MVP) terminating TLS and reverse-proxying to systemd-managed application services. A future managed platform may add a CDN/WAF and load balancing if scale justifies it, but the logical flow remains valid for local native development and the single-Ubuntu-VPS roadmap in ADR-003 (amended by ADR-009).
 
 
 ## Sequence Diagrams

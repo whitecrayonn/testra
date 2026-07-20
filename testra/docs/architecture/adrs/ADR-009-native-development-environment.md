@@ -5,7 +5,7 @@
 
 ## Context
 
-The primary development machine is Windows without virtualization support. Docker Desktop cannot be used reliably and should never become a blocker for development. ADR-003 previously specified Docker Compose as the local development environment. This created a hard dependency on Docker Desktop for every developer on the team.
+The primary development machine is Windows without virtualization support. Docker cannot be used reliably and should never become a blocker for development. ADR-003 previously specified Docker Compose as the local development environment. This created a hard dependency on Docker for every developer on the team and did not match the zero-budget, single-Ubuntu-VPS production target.
 
 ## Decision
 
@@ -17,7 +17,7 @@ Developers install and run the following services natively:
 
 | Service | Requirement Level | Notes |
 |---|---|---|
-| Go 1.23+ | Required | API, worker, migrator |
+| Go 1.24+ | Required | API, worker, migrator |
 | Node.js 20+ | Required | Web app, dev scripts |
 | pnpm 9.5+ | Required | Monorepo package manager |
 | Python 3.12+ | Required for ML | Optional if ML service is not needed |
@@ -40,36 +40,35 @@ This starts API, worker, Next.js web, and ML service using locally installed dep
 
 ### Docker Status
 
-- Docker and Docker Compose are **optional** deployment and development assets.
-- Docker files remain in the repository under `infra/docker/` for optional use.
-- Docker Desktop is **not required** for any development workflow.
-- Docker may be used by developers who prefer it, but it is not the official path.
+- Docker and Docker Compose are **not used** for local development or production.
+- No Docker files or images remain in the repository.
+- Native binaries and locally installed services are the only supported local workflow.
 
 ### Production Strategy Update
 
-The MVP deployment target is updated from AWS ECS Fargate to:
+The MVP deployment target is a single Ubuntu VPS managed with systemd and Nginx:
 
 | Component | Technology |
 |---|---|
-| Compute | Ubuntu VM |
+| Compute | Single Ubuntu VPS |
 | Process manager | systemd |
 | Reverse proxy | Nginx |
 | API | Go binary (systemd service) |
 | Worker | Go binary (systemd service) |
-| Web | Next.js standalone (systemd service or PM2) |
+| Web | Next.js standalone (systemd service) |
 | ML | Python FastAPI (systemd service) |
-| Database | PostgreSQL (local or managed) |
-| Cache | Redis (local or managed) |
-| Object storage | MinIO (optional) or S3 |
+| Database | PostgreSQL on the same VPS |
+| Cache | Redis on the same VPS |
+| Object storage | Local MinIO or filesystem-backed S3-compatible store |
 
-Kubernetes remains a future enterprise deployment target after product-market fit. AWS managed services remain a future evolution path when scale justifies the operational investment.
+Cloud-managed services and container orchestration (Kubernetes, Terraform, AWS/GCP/Azure) are out of scope for MVP. They may be reconsidered only after product-market fit and measured scale justify the budget.
 
 ## Consequences
 
-- **Positive:** Development is unblocked on machines without virtualization support. No Docker Desktop dependency. Simpler onboarding for new developers.
-- **Positive:** Production MVP deployment is simpler and lower-cost on a single Ubuntu VM with systemd.
+- **Positive:** Development is unblocked on machines without virtualization support. No Docker dependency. Simpler onboarding for new developers.
+- **Positive:** Production MVP deployment is simpler and lower-cost on a single Ubuntu VPS with systemd.
 - **Negative:** Developers must install and manage local PostgreSQL, Redis, Mailpit, and MinIO instances.
 - **Mitigation:** Document clear installation steps for each platform. Provide helper scripts for starting/stopping local services.
 - **Negative:** Environment consistency across developers is less guaranteed than with Docker Compose.
 - **Mitigation:** Document required versions and provide configuration validation in dev scripts.
-- **Supersedes:** ADR-003's local development stage (Docker Compose) is replaced by native development. ADR-003's MVP/Beta/Enterprise AWS stages remain as future evolution paths.
+- **Supersedes:** ADR-003's local development stage (Docker Compose) is replaced by native development. ADR-003's cloud-managed stages are replaced by the single-Ubuntu-VPS target with an optional future managed-platform migration.

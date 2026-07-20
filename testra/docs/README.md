@@ -31,6 +31,7 @@
 | [`ENGINEERING_STANDARDS.md`](engineering/ENGINEERING_STANDARDS.md) | Coding standards for Go, TypeScript, API, DB, security |
 | [`API_DESIGN_GUIDELINES.md`](api/API_DESIGN_GUIDELINES.md) | REST conventions, versioning, OpenAPI maintenance, response envelopes |
 | [`DATABASE_GUIDE.md`](architecture/DATABASE_GUIDE.md) | Migration catalog, schema, RLS, ERD, and storage responsibilities |
+| [`DATABASE_REVIEW.md`](engineering/DATABASE_REVIEW.md) | Database schema, RLS, indexing, and security findings |
 | [`SYSTEM_FLOWS.md`](architecture/SYSTEM_FLOWS.md) | Platform, request, trust-boundary, and sequence diagrams |
 | [`MODULE_DEPENDENCIES.md`](architecture/MODULE_DEPENDENCIES.md) | Module ownership and dependency matrix |
 | [`ROUTES.md`](ROUTES.md) | Frontend and backend route inventory |
@@ -56,6 +57,19 @@
 | `../testra-product-discovery.md` | Problem statement, market opportunity, USP | Root-level discovery |
 | `../testra-brd.md` | Business Requirements Document | Root-level business case |
 | `../04_Architecture/testra-software-architecture-decisions.md` | Pre-implementation draft | Conflicts with accepted ADRs; archive candidate |
+
+## Engineering review reports
+
+| Document | Purpose |
+|----------|---------|
+| [`engineering/DATABASE_REVIEW.md`](engineering/DATABASE_REVIEW.md) | Database schema, RLS, indexing, and security findings |
+| [`engineering/API_REVIEW.md`](engineering/API_REVIEW.md) | Endpoint inventory, status codes, pagination, idempotency, OpenAPI drift |
+| [`engineering/FRONTEND_REVIEW.md`](engineering/FRONTEND_REVIEW.md) | Frontend architecture, auth storage, rendering, and security posture |
+| [`engineering/DEVOPS_REVIEW.md`](engineering/DEVOPS_REVIEW.md) | Single-Ubuntu-VPS systemd deployment, CI/CD readiness, and local development workflow |
+| [`engineering/PERFORMANCE_REVIEW.md`](engineering/PERFORMANCE_REVIEW.md) | Performance hotspots, scalability boundaries, and optimization plan |
+| [`engineering/CLEANUP_REPORT.md`](engineering/CLEANUP_REPORT.md) | Backend quality cleanup findings and panics/TODOs/dead code |
+| [`security/SECURITY_REVIEW_v2.md`](security/SECURITY_REVIEW_v2.md) | Security audit of authentication, authorization, secrets, and posture |
+| [`architecture/ARCHITECTURE_REVIEW_v2.md`](architecture/ARCHITECTURE_REVIEW_v2.md) | Architecture review of monolith, dependencies, and runtime |
 
 ## Archive
 

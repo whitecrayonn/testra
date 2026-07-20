@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { apiFetch, setAuth, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -35,14 +35,13 @@ export default function RegisterPage() {
   const onSubmit = async (values: RegisterValues) => {
     setServerError("");
     try {
-      const data = await apiFetch<{ token: string; refresh_token: string; user: { id: string; email: string; name: string } }>(
+      await apiFetch<{ token: string; refresh_token: string; user: { id: string; email: string; name: string } }>(
         "/api/v1/auth/register",
         {
           method: "POST",
           body: JSON.stringify(values),
         },
       );
-      setAuth(data.token, data.refresh_token);
       router.push("/onboarding");
     } catch (err) {
       if (err instanceof ApiError) {

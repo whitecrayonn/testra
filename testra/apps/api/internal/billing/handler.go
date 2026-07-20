@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 )
 
@@ -26,7 +25,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 	sub, err := h.service.GetSubscription(r.Context(), orgID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toSubscriptionResponse(sub))
@@ -55,7 +54,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 		CancelAtPeriodEnd: req.CancelAtPeriodEnd,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toSubscriptionResponse(sub))
@@ -70,7 +69,7 @@ func (h *Handler) ListInvoices(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	invoices, err := h.service.ListInvoices(r.Context(), orgID, limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toInvoiceResponses(invoices))
@@ -154,17 +153,4 @@ func toInvoiceResponses(invoices []Invoice) []invoiceResponse {
 		resp[i] = toInvoiceResponse(&invoices[i])
 	}
 	return resp
-}
-
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
-	}
 }

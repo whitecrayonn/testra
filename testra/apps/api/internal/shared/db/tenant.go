@@ -13,6 +13,7 @@ const (
 	txKey contextKey = iota
 	connKey
 	tenantKey
+	lookupUserKey
 )
 
 func WithTenantID(ctx context.Context, tenantID uuid.UUID) context.Context {
@@ -40,4 +41,13 @@ func WithConn(ctx context.Context, conn *sql.Conn) context.Context {
 func ConnFromContext(ctx context.Context) *sql.Conn {
 	conn, _ := ctx.Value(connKey).(*sql.Conn)
 	return conn
+}
+
+func WithLookupUserID(ctx context.Context, userID uuid.UUID) context.Context {
+	return context.WithValue(ctx, lookupUserKey, userID)
+}
+
+func LookupUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	v, ok := ctx.Value(lookupUserKey).(uuid.UUID)
+	return v, ok
 }

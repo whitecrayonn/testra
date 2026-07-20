@@ -14,7 +14,7 @@ The repository is a functional Phase 1–3 modular monolith (Go API, Next.js web
 2. **Missing background worker** — `apps/worker` contains only a `fmt.Println` stub.
 3. **Missing ML inference** — `apps/ml/api/main.py` only exposes `/health`.
 4. **Placeholder frontend pages** — settings members, roles, billing, audit-logs, organization/workspace/profile/security are `PlaceholderPage` components.
-5. **Infrastructure is scaffold-only** — K8s base has only API deployment+service; Terraform modules directory is empty; Docker Compose has no application services.
+5. **Infrastructure is scaffold-only** — single-Ubuntu-VPS systemd base has only API deployment+service; systemd service unit files and nginx site configurations directory is empty; native services has no application services.
 6. **OpenAPI / ROUTES / canonical docs** lag behind code; defects is implemented in backend but not fully reflected in ROUTES.md / OpenAPI.
 7. **Several P0 production blockers remain open** from `TECHNICAL_DEBT.md`: rate-limiting not wired, API-key auth for `/ingest` incomplete, SSE auth uses query token, default secrets in `.env.example`, no client route guards, audit durability issues.
 
@@ -102,21 +102,21 @@ All pages below use `PlaceholderPage`:
 
 ## Infrastructure gaps
 
-### Docker Compose
+### native services
 - No `api`, `web`, `worker`, or `ml` services.
 - `mailpit` has no `healthcheck`.
 - `.dockerignore` not verified.
 
-### Kubernetes
+### single-Ubuntu-VPS systemd services
 - Base only has API deployment and service.
 - Missing ConfigMap, Secret, probes, Ingress, HPA, PodDisruptionBudget, ServiceAccount.
 - Overlays only change namespace and image tag.
 - No web/worker/migrator/ML manifests.
 
-### Terraform
-- `infra/terraform/main.tf` only configures AWS provider.
-- `infra/terraform/modules/` is empty.
-- No VPC, EKS, RDS, ElastiCache, S3, Route53, WAF modules.
+### single-Ubuntu-VPS systemd services
+- `single VPS deployment runbooks/main.tf` only configures AWS provider.
+- `single VPS deployment runbooks/modules/` is empty.
+- No VPC, EKS, RDS, Redis, S3, Route53, WAF modules.
 
 ---
 
@@ -140,7 +140,7 @@ All pages below use `PlaceholderPage`:
 6. Implement `apps/worker` with Asynq/Redis processors for notifications and aggregations.
 7. Wire new modules into `server.go` and add required permissions/seeds.
 8. Add frontend settings pages and API wrappers for members, roles, billing, audit-logs, organization/workspace, profile/security.
-9. Complete Docker Compose app services, K8s manifests, and Terraform modules.
+9. Complete native services app services, single-Ubuntu-VPS systemd manifests, and systemd service unit files and nginx site configurations.
 10. Run `go test ./...`, `pnpm turbo run typecheck build`, and integration tests.
 
 ---

@@ -2,7 +2,7 @@
 
 **Purpose:** Catalog schema evolution, entity relationships, RLS policies, permission model, and storage responsibilities.
 **Owner:** Data Architect / Engineering Lead
-**Scope:** `testra/apps/api/migrations/000001_*.sql` through `000018_*.sql` (up migrations), plus related down files. Migration `000018` adds notifications, notification preferences, and notification channels.
+**Scope:** `testra/apps/api/migrations/000001_*.sql` through `000027_*.sql` (up migrations), plus related down files. Migration `000018` adds notifications, notification preferences, and notification channels; migrations `000019` through `000027` add API-key tenant lookup, defects, analytics, intelligence, integration hub, billing, additional permissions, the worker queue, and user-lookup RLS policies; migrations `000028` through `000032` add role-assignment and queue dead-letter fixes, idempotency org scope, performance indexes, and the API Testing Engine schema.
 **Status:** Review complete. This document catalogs the schema evolution, entity relationships, security policies, and permission model as expressed in the migration files.
 **Source of Truth:** `apps/api/migrations/*.sql` for authoritative schema; DATABASE_GUIDE.md for interpretation.
 **Last Updated:** July 2026
@@ -36,6 +36,11 @@
 | `000016_add_execution_permissions.up.sql` | Adds `runs:update`, `runs:delete`, `runs:ingest` permissions. |
 | `000017_add_idempotency_records.up.sql` | Creates `idempotency_records` with workspace/operation/key uniqueness and RLS. |
 | `000018_add_notifications.up.sql` | Creates `notifications`, `notification_preferences`, and `notification_channels` with RLS. |
+| `000028_fix_role_assignments_rls_policy.up.sql` | Adjusts RLS policy on `role_assignments` to allow self-assignment flows. |
+| `000029_queue_dead_letter_status.up.sql` | Adds dead-letter status to the worker queue. |
+| `000030_idempotency_org_scope.up.sql` | Moves idempotency records to organization scope. |
+| `000031_add_performance_indexes.up.sql` | Adds secondary indexes for hot query paths. |
+| `000032_add_api_testing.up.sql` | Creates `api_collections`, `api_folders`, `api_environments`, `api_requests`, and `api_request_history` tables with RLS and `api_testing:*` permissions. |
 
 Each migration has a corresponding `.down.sql` file for rollback.
 
@@ -58,6 +63,11 @@ users
             └─ api_keys (workspace_id)
             └─ test_runs (workspace_id, project_id, suite_id)
             └─ idempotency_records (workspace_id)
+            └─ api_collections (workspace_id)
+                 └─ api_folders (collection_id, parent_id)
+                 └─ api_requests (collection_id, folder_id, environment_id)
+            └─ api_environments (workspace_id)
+            └─ api_request_history (workspace_id, request_id, environment_id)
 ```
 
 ### 2.2 RBAC
@@ -93,6 +103,16 @@ users
   └─ refresh_tokens (user_id, family_id)
   └─ password_reset_tokens (user_id)
   └─ audit_events (user_id, nullable)
+```
+
+### 2.6 API Testing
+
+```
+api_collections (workspace_id)
+  └─ api_folders (collection_id, parent_id self-reference)
+       └─ api_requests (collection_id, folder_id, environment_id?)
+api_environments (workspace_id) -- variables as JSONB key/value pairs
+api_request_history (workspace_id, request_id?, environment_id?)
 ```
 
 ---
@@ -235,6 +255,43 @@ users
 - Unique `(workspace_id, operation, key)`
 - Indexes on `(workspace_id, operation, key)` and `expires_at`
 
+### `api_collections`
+- `id` UUID PK
+- `workspace_id` -> `workspaces(id)` ON DELETE CASCADE
+- `name`, `description`
+- `created_by` -> `users(id)`, `created_at`, `updated_at`
+
+### `api_folders`
+- `id` UUID PK
+- `workspace_id`, `collection_id` -> `api_collections(id)` ON DELETE CASCADE
+- `parent_id` -> `api_folders(id)` ON DELETE CASCADE, `name`
+- `created_at`, `updated_at`
+
+### `api_environments`
+- `id` UUID PK
+- `workspace_id` -> `workspaces(id)` ON DELETE CASCADE
+- `name`, `variables` JSONB array of `{key, value, enabled}`
+- `created_at`, `updated_at`
+
+### `api_requests`
+- `id` UUID PK
+- `workspace_id`, `collection_id` -> `api_collections(id)` ON DELETE CASCADE
+- `folder_id` -> `api_folders(id)` ON DELETE SET NULL
+- `environment_id` -> `api_environments(id)` ON DELETE SET NULL
+- `name`, `method`, `url`
+- `headers`, `query_params`, `variables` JSONB arrays of `{key, value, enabled}`
+- `auth_type`, `auth_config` JSONB, `body_type`, `body_content`
+- `created_by` -> `users(id)`, `created_at`, `updated_at`
+
+### `api_request_history`
+- `id` UUID PK
+- `workspace_id`, `request_id` -> `api_requests(id)` ON DELETE SET NULL
+- `environment_id` -> `api_environments(id)` ON DELETE SET NULL
+- `name`, `method`, `url`
+- `request_headers` JSONB, `request_body`
+- `response_status`, `response_status_text`, `response_headers` JSONB, `response_body`
+- `response_time_ms`, `error`, `created_by`, `created_at`
+
 ---
 
 ## 4. Row Level Security Policy Matrix
@@ -255,6 +312,11 @@ users
 | `test_runs` | `test_runs_tenant` | `workspace_id IN (workspaces of tenant)` |
 | `test_run_items` | `test_run_items_tenant` | `run_id IN (test_runs of tenant)` |
 | `idempotency_records` | `idempotency_records_tenant` | `workspace_id IN (workspaces of tenant)` |
+| `api_collections` | `api_collections_tenant` | `workspace_id IN (workspaces of tenant)` |
+| `api_folders` | `api_folders_tenant` | `workspace_id IN (workspaces of tenant)` |
+| `api_environments` | `api_environments_tenant` | `workspace_id IN (workspaces of tenant)` |
+| `api_requests` | `api_requests_tenant` | `workspace_id IN (workspaces of tenant)` |
+| `api_request_history` | `api_request_history_tenant` | `workspace_id IN (workspaces of tenant)` |
 
 "workspaces of tenant" means:
 
@@ -317,7 +379,23 @@ Mapped to:
 - `qa_engineer`: `create/read/update`
 - `viewer`: `read`
 
-### 5.4 Added in `000016_add_execution_permissions`
+### 5.4 Added in `000032_add_api_testing`
+
+| Permission ID | Name | Description |
+|---------------|------|-------------|
+| `...1401` | `api_testing:create` | Create API collections, folders, environments, and requests |
+| `...1402` | `api_testing:read` | View API collections, folders, environments, requests, and execution history |
+| `...1403` | `api_testing:update` | Update API collections, folders, environments, and requests |
+| `...1404` | `api_testing:delete` | Delete API collections, folders, environments, and requests |
+| `...1405` | `api_testing:execute` | Execute API requests |
+
+Mapped to:
+
+- `owner` and `admin`: all five
+- `qa_engineer`: `create/read/update/execute`
+- `viewer`: `read`
+
+### 5.5 Added in `000016_add_execution_permissions`
 
 | Permission ID | Name | Description |
 |---------------|------|-------------|

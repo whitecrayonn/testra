@@ -22,7 +22,19 @@ type Repository interface {
 	// Channels
 	CreateChannel(ctx context.Context, ch *NotificationChannel) error
 	GetChannel(ctx context.Context, id uuid.UUID) (*NotificationChannel, error)
-	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]NotificationChannel, error)
+	ListChannels(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]NotificationChannel, error)
 	UpdateChannel(ctx context.Context, ch *NotificationChannel) error
 	DeleteChannel(ctx context.Context, id uuid.UUID) error
+
+	// Templates
+	CreateTemplate(ctx context.Context, t *NotificationTemplate) error
+	GetTemplate(ctx context.Context, id uuid.UUID) (*NotificationTemplate, error)
+	ListTemplates(ctx context.Context, orgID uuid.UUID, eventType, channelType string, limit int) ([]NotificationTemplate, error)
+	UpdateTemplate(ctx context.Context, t *NotificationTemplate) error
+	DeleteTemplate(ctx context.Context, id uuid.UUID) error
+
+	// History
+	CreateHistory(ctx context.Context, h *NotificationHistory) error
+	UpdateHistory(ctx context.Context, h *NotificationHistory) error
+	ListHistory(ctx context.Context, notificationID uuid.UUID, limit int) ([]NotificationHistory, error)
 }

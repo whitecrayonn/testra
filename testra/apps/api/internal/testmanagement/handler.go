@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/pagination"
@@ -113,8 +112,9 @@ func mapCaseResponse(tc *TestCase) caseResponse {
 			TestData: st.TestData,
 		}
 	}
-	if tc.Tags == nil {
-		tc.Tags = []string{}
+	tags := tc.Tags
+	if tags == nil {
+		tags = []string{}
 	}
 	return caseResponse{
 		ID:            tc.ID.String(),
@@ -205,7 +205,7 @@ func (h *Handler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		Name:        req.Name,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -221,7 +221,7 @@ func (h *Handler) GetFolder(w http.ResponseWriter, r *http.Request) {
 
 	folder, err := h.service.GetFolder(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -251,9 +251,20 @@ func (h *Handler) ListFolders(w http.ResponseWriter, r *http.Request) {
 		parentID = &pid
 	}
 
-	folders, err := h.service.ListFolders(r.Context(), wsID, parentID)
+	params := pagination.ParseParams(r)
+	cursor := params.Cursor
+	if cursor != "" {
+		decoded, err := pagination.DecodeCursor(cursor)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+		cursor = decoded
+	}
+
+	folders, err := h.service.ListFolders(r.Context(), wsID, parentID, cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -261,7 +272,19 @@ func (h *Handler) ListFolders(w http.ResponseWriter, r *http.Request) {
 	for i, f := range folders {
 		resp[i] = mapFolderResponse(&f)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
+
+	meta := pagination.Meta{HasMore: len(folders) == params.Limit}
+	if meta.HasMore && len(folders) > 0 {
+		nextCursor, err := pagination.EncodeCursor(folders[len(folders)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
+	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }
 
 type updateFolderRequest struct {
@@ -283,7 +306,7 @@ func (h *Handler) UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	folder, err := h.service.UpdateFolder(r.Context(), id, UpdateFolderInput{Name: req.Name})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -298,7 +321,7 @@ func (h *Handler) DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteFolder(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -342,7 +365,7 @@ func (h *Handler) CreateSuite(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -358,7 +381,7 @@ func (h *Handler) GetSuite(w http.ResponseWriter, r *http.Request) {
 
 	suite, err := h.service.GetSuite(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -388,9 +411,20 @@ func (h *Handler) ListSuites(w http.ResponseWriter, r *http.Request) {
 		folderID = &fid
 	}
 
-	suites, err := h.service.ListSuites(r.Context(), wsID, folderID)
+	params := pagination.ParseParams(r)
+	cursor := params.Cursor
+	if cursor != "" {
+		decoded, err := pagination.DecodeCursor(cursor)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+		cursor = decoded
+	}
+
+	suites, err := h.service.ListSuites(r.Context(), wsID, folderID, cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -398,7 +432,19 @@ func (h *Handler) ListSuites(w http.ResponseWriter, r *http.Request) {
 	for i, s := range suites {
 		resp[i] = mapSuiteResponse(&s)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
+
+	meta := pagination.Meta{HasMore: len(suites) == params.Limit}
+	if meta.HasMore && len(suites) > 0 {
+		nextCursor, err := pagination.EncodeCursor(suites[len(suites)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
+	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }
 
 type updateSuiteRequest struct {
@@ -424,7 +470,7 @@ func (h *Handler) UpdateSuite(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -439,7 +485,7 @@ func (h *Handler) DeleteSuite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteSuite(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -524,7 +570,7 @@ func (h *Handler) CreateCase(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:     userID,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -540,7 +586,7 @@ func (h *Handler) GetCase(w http.ResponseWriter, r *http.Request) {
 
 	tc, err := h.service.GetCase(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -573,7 +619,7 @@ func (h *Handler) ListCases(w http.ResponseWriter, r *http.Request) {
 	params := pagination.ParseParams(r)
 	cases, err := h.service.ListCases(r.Context(), projectID, suiteID, params.Cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -618,7 +664,7 @@ func (h *Handler) SearchCases(w http.ResponseWriter, r *http.Request) {
 	params := pagination.ParseParams(r)
 	cases, nextCursor, err := h.service.SearchCases(r.Context(), wsID, query, params.Cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -700,7 +746,7 @@ func (h *Handler) UpdateCase(w http.ResponseWriter, r *http.Request) {
 		ChangedBy:     userID,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -715,7 +761,7 @@ func (h *Handler) DeleteCase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteCase(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -729,9 +775,20 @@ func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	versions, err := h.service.ListVersions(r.Context(), id)
+	params := pagination.ParseParams(r)
+	cursor := params.Cursor
+	if cursor != "" {
+		decoded, err := pagination.DecodeCursor(cursor)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+		cursor = decoded
+	}
+
+	versions, err := h.service.ListVersions(r.Context(), id, cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -739,20 +796,17 @@ func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 	for i, v := range versions {
 		resp[i] = mapVersionResponse(&v)
 	}
-	apihttp.JSON(w, http.StatusOK, resp)
-}
 
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrConflict:
-		apihttp.ErrorJSON(w, http.StatusConflict, "CONFLICT", err.Error())
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+	meta := pagination.Meta{HasMore: len(versions) == params.Limit}
+	if meta.HasMore && len(versions) > 0 {
+		nextCursor, err := pagination.EncodeCursor(versions[len(versions)-1].ID.String())
+		if err == nil {
+			meta.NextCursor = nextCursor
+		}
 	}
+
+	apihttp.JSON(w, http.StatusOK, map[string]any{
+		"data": resp,
+		"meta": meta,
+	})
 }

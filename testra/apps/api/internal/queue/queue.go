@@ -96,11 +96,12 @@ func MarkDone(ctx context.Context, tx *sql.Tx, id uuid.UUID) error {
 	return err
 }
 
-// MarkFailed marks a job as failed or re-queues it for retry.
+// MarkFailed re-queues a job for retry or moves it to dead_letter once max
+// attempts are exhausted. The retry delay acts as a visibility timeout.
 func MarkFailed(ctx context.Context, tx *sql.Tx, id uuid.UUID, attempts, maxAttempts int, errMsg string) error {
 	status := "pending"
 	if attempts >= maxAttempts {
-		status = "failed"
+		status = "dead_letter"
 	}
 	_, err := tx.ExecContext(ctx,
 		`UPDATE queue_jobs SET status = $2, error_message = $3, scheduled_at = NOW() + (attempts * INTERVAL '5 minutes'), updated_at = NOW() WHERE id = $1`,
@@ -108,10 +109,12 @@ func MarkFailed(ctx context.Context, tx *sql.Tx, id uuid.UUID, attempts, maxAtte
 	return err
 }
 
-// DeleteOldCompleted removes completed/failed jobs older than the retention window.
+// DeleteOldCompleted removes completed and dead_letter jobs older than the
+// retention window. 'failed' is retained for backwards compatibility with any
+// pre-migration rows.
 func DeleteOldCompleted(ctx context.Context, db *sql.DB, retention time.Duration) (int64, error) {
 	result, err := db.ExecContext(ctx,
-		`DELETE FROM queue_jobs WHERE status IN ('completed','failed') AND updated_at < NOW() - $1`,
+		`DELETE FROM queue_jobs WHERE status IN ('completed','dead_letter','failed') AND updated_at < NOW() - $1`,
 		retention)
 	if err != nil {
 		return 0, err

@@ -165,7 +165,7 @@ Each domain module in `internal/<domain>/` contains:
 - **SQL injection prevention** — parameterized queries only, no string concat
 - **Rate limiting:** Redis token buckets; login 10/IP/15 minutes and 5/account/15 minutes, registration 5/IP/hour, password reset 5/account/hour, API keys 120 requests/minute by default.
 - **CORS** — restrict origins per environment
-- **TLS:** Cloudflare/CloudFront edge and ACM-managed certificates; service traffic remains private within AWS networking.
+- **TLS:** Let's Encrypt (certbot) on Nginx for the single Ubuntu VPS; a CDN/WAF may be added later if justified.
 
 ---
 
@@ -173,31 +173,30 @@ Each domain module in `internal/<domain>/` contains:
 
 ### 6.1 Deployment Roadmap
 
-- **Local:** Native development with locally installed PostgreSQL, Redis, Mailpit, and MinIO. Docker Compose is optional (see ADR-009).
-- **MVP:** Ubuntu VM with systemd + Nginx, running Go API, Go worker, Next.js, and Python ML as systemd services. PostgreSQL and Redis local or managed. MinIO optional. AWS managed services available as a future evolution path (see ADR-003, ADR-009).
-- **Beta:** ECS Fargate and managed data services across multiple AZs with replication.
-- **Enterprise:** private AWS networking and dedicated capacity; EKS only after measured need.
+- **Local:** Native development with locally installed PostgreSQL, Redis, Mailpit, and MinIO (no Docker, see ADR-009).
+- **MVP:** Single Ubuntu VPS with systemd + Nginx, running Go API, Go worker, Next.js, and Python ML as systemd services. PostgreSQL and Redis on the same VPS; MinIO optional. Cloud-managed services are a future evolution path only after measured scale (see ADR-003, ADR-009).
+- **Beta:** Single VPS or small VPS fleet, with backups, replication, and monitoring.
+- **Enterprise:** Managed platform or dedicated capacity only after measured need.
 
-### 6.2 Docker
+### 6.2 Build & Packaging
 
-- **Dockerfiles** in `infra/docker/` per service (`api.Dockerfile`, `web.Dockerfile`, etc.)
-- **Multi-stage builds** for Go (build → scratch/distroless) and Next.js (build → standalone)
-- **Docker Compose** is optional for local dev — `infra/docker/docker-compose.yml` (not required, see ADR-009)
-- **Images tagged by commit SHA** in CI
+- **No Docker.** Builds produce native binaries and a Next.js standalone output.
+- **Go:** `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build` for the API, worker, migrator, and OpenAPI commands.
+- **Web:** `next build` producing `.next/standalone` for serving behind Nginx or as a systemd service.
+- **ML:** Python FastAPI served via `uvicorn` as a systemd service.
+- **Artifacts tagged by commit SHA** in CI.
 
-### 6.3 Kubernetes (Optional Enterprise Evolution)
+### 6.3 Deployment (MVP)
 
-- Helm charts or Kustomize in `infra/k8s/`
-- Separate deployments: web, api, worker, ml
-- HPA for api and worker
-- Ingress with TLS
+- systemd unit files for API, worker, web, ML, Nginx, PostgreSQL, Redis, and optional MinIO.
+- Environment files per stage; secrets never committed.
+- Nginx reverse proxy and TLS termination via Let's Encrypt.
+- Backup/restore and log rotation runbooks.
 
-### 6.4 Terraform
+### 6.4 Cloud/IaC (Future Evolution Only)
 
-- `infra/terraform/` — cloud provisioning
-- Modules for reusable components
-- Environments: `environments/staging/`, `environments/production/`
-- State stored remotely (S3 + DynamoDB lock or equivalent)
+- Container orchestration, Terraform, and managed cloud services are **not part of MVP**.
+- If scale justifies it, evaluate managed platforms or dedicated capacity after product-market fit.
 
 ### 6.5 Observability
 

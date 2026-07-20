@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 )
@@ -73,27 +74,46 @@ func (r *SQLRepository) GetFolderByID(ctx context.Context, id uuid.UUID) (*TestF
 		return nil, err
 	}
 	if parentID.Valid {
-		pid, _ := uuid.Parse(parentID.String)
+		pid, err := uuid.Parse(parentID.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored parent_id: %w", err)
+		}
 		f.ParentID = &pid
 	}
 	return &f, nil
 }
 
-func (r *SQLRepository) ListFolders(ctx context.Context, workspaceID uuid.UUID, parentID *uuid.UUID) ([]TestFolder, error) {
+func (r *SQLRepository) ListFolders(ctx context.Context, workspaceID uuid.UUID, parentID *uuid.UUID, cursor string, limit int) ([]TestFolder, error) {
 	var rows *sql.Rows
 	var err error
 
-	if parentID != nil {
+	if parentID != nil && cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
 			`SELECT id, workspace_id, parent_id, name, created_at, updated_at FROM test_folders
-			 WHERE workspace_id = $1 AND parent_id = $2 ORDER BY name ASC`,
-			workspaceID, *parentID,
+			 WHERE workspace_id = $1 AND parent_id = $2 AND id < $3
+			 ORDER BY id DESC LIMIT $4`,
+			workspaceID, *parentID, cursor, limit,
+		)
+	} else if parentID != nil {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, parent_id, name, created_at, updated_at FROM test_folders
+			 WHERE workspace_id = $1 AND parent_id = $2
+			 ORDER BY id DESC LIMIT $3`,
+			workspaceID, *parentID, limit,
+		)
+	} else if cursor != "" {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, parent_id, name, created_at, updated_at FROM test_folders
+			 WHERE workspace_id = $1 AND parent_id IS NULL AND id < $2
+			 ORDER BY id DESC LIMIT $3`,
+			workspaceID, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
 			`SELECT id, workspace_id, parent_id, name, created_at, updated_at FROM test_folders
-			 WHERE workspace_id = $1 AND parent_id IS NULL ORDER BY name ASC`,
-			workspaceID,
+			 WHERE workspace_id = $1 AND parent_id IS NULL
+			 ORDER BY id DESC LIMIT $2`,
+			workspaceID, limit,
 		)
 	}
 	if err != nil {
@@ -109,7 +129,10 @@ func (r *SQLRepository) ListFolders(ctx context.Context, workspaceID uuid.UUID, 
 			return nil, err
 		}
 		if pid.Valid {
-			parsed, _ := uuid.Parse(pid.String)
+			parsed, err := uuid.Parse(pid.String)
+			if err != nil {
+				return nil, fmt.Errorf("invalid stored parent_id: %w", err)
+			}
 			f.ParentID = &parsed
 		}
 		folders = append(folders, f)
@@ -125,7 +148,10 @@ func (r *SQLRepository) UpdateFolder(ctx context.Context, folder *TestFolder) er
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -137,7 +163,10 @@ func (r *SQLRepository) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -167,27 +196,46 @@ func (r *SQLRepository) GetSuiteByID(ctx context.Context, id uuid.UUID) (*TestSu
 		return nil, err
 	}
 	if folderID.Valid {
-		fid, _ := uuid.Parse(folderID.String)
+		fid, err := uuid.Parse(folderID.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored folder_id: %w", err)
+		}
 		s.FolderID = &fid
 	}
 	return &s, nil
 }
 
-func (r *SQLRepository) ListSuites(ctx context.Context, workspaceID uuid.UUID, folderID *uuid.UUID) ([]TestSuite, error) {
+func (r *SQLRepository) ListSuites(ctx context.Context, workspaceID uuid.UUID, folderID *uuid.UUID, cursor string, limit int) ([]TestSuite, error) {
 	var rows *sql.Rows
 	var err error
 
-	if folderID != nil {
+	if folderID != nil && cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
 			`SELECT id, workspace_id, folder_id, name, description, created_at, updated_at FROM test_suites
-			 WHERE workspace_id = $1 AND folder_id = $2 ORDER BY name ASC`,
-			workspaceID, *folderID,
+			 WHERE workspace_id = $1 AND folder_id = $2 AND id < $3
+			 ORDER BY id DESC LIMIT $4`,
+			workspaceID, *folderID, cursor, limit,
+		)
+	} else if folderID != nil {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, folder_id, name, description, created_at, updated_at FROM test_suites
+			 WHERE workspace_id = $1 AND folder_id = $2
+			 ORDER BY id DESC LIMIT $3`,
+			workspaceID, *folderID, limit,
+		)
+	} else if cursor != "" {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, workspace_id, folder_id, name, description, created_at, updated_at FROM test_suites
+			 WHERE workspace_id = $1 AND id < $2
+			 ORDER BY id DESC LIMIT $3`,
+			workspaceID, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
 			`SELECT id, workspace_id, folder_id, name, description, created_at, updated_at FROM test_suites
-			 WHERE workspace_id = $1 ORDER BY name ASC`,
-			workspaceID,
+			 WHERE workspace_id = $1
+			 ORDER BY id DESC LIMIT $2`,
+			workspaceID, limit,
 		)
 	}
 	if err != nil {
@@ -203,7 +251,10 @@ func (r *SQLRepository) ListSuites(ctx context.Context, workspaceID uuid.UUID, f
 			return nil, err
 		}
 		if fid.Valid {
-			parsed, _ := uuid.Parse(fid.String)
+			parsed, err := uuid.Parse(fid.String)
+			if err != nil {
+				return nil, fmt.Errorf("invalid stored folder_id: %w", err)
+			}
 			s.FolderID = &parsed
 		}
 		suites = append(suites, s)
@@ -219,7 +270,10 @@ func (r *SQLRepository) UpdateSuite(ctx context.Context, suite *TestSuite) error
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -231,7 +285,10 @@ func (r *SQLRepository) DeleteSuite(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -239,12 +296,15 @@ func (r *SQLRepository) DeleteSuite(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *SQLRepository) CreateCase(ctx context.Context, tc *TestCase) error {
-	stepsJSON, _ := json.Marshal(tc.Steps)
-	_, err := r.db.ExecContext(ctx,
+	stepsJSON, err := json.Marshal(tc.Steps)
+	if err != nil {
+		return fmt.Errorf("marshal steps: %w", err)
+	}
+	_, err = r.db.ExecContext(ctx,
 		`INSERT INTO test_cases (id, workspace_id, project_id, suite_id, title, description, preconditions, steps, status, priority, tags, version, created_by, created_at, updated_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
 		tc.ID, tc.WorkspaceID, tc.ProjectID, tc.SuiteID, tc.Title, tc.Description, tc.Preconditions,
-		stepsJSON, string(tc.Status), string(tc.Priority), pqArray(tc.Tags), tc.Version,
+		stepsJSON, string(tc.Status), string(tc.Priority), pq.Array(tc.Tags), tc.Version,
 		tc.CreatedBy, tc.CreatedAt, tc.UpdatedAt,
 	)
 	return err
@@ -254,14 +314,14 @@ func (r *SQLRepository) GetCaseByID(ctx context.Context, id uuid.UUID) (*TestCas
 	var tc TestCase
 	var suiteID sql.NullString
 	var stepsJSON string
-	var tagsStr string
+	var tags []string
 	var status, priority string
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at
+		`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 		 FROM test_cases WHERE id = $1`,
 		id,
 	).Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-		&stepsJSON, &status, &priority, &tagsStr, &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt)
+		&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sharederrors.ErrNotFound
 	}
@@ -270,13 +330,16 @@ func (r *SQLRepository) GetCaseByID(ctx context.Context, id uuid.UUID) (*TestCas
 	}
 	tc.Status = TestCaseStatus(status)
 	tc.Priority = TestCasePriority(priority)
-	tc.Tags = parseTags(tagsStr)
+	tc.Tags = tags
 	if suiteID.Valid {
-		sid, _ := uuid.Parse(suiteID.String)
+		sid, err := uuid.Parse(suiteID.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored suite_id: %w", err)
+		}
 		tc.SuiteID = &sid
 	}
 	if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
-		tc.Steps = nil
+		return nil, fmt.Errorf("unmarshal steps: %w", err)
 	}
 	return &tc, nil
 }
@@ -287,28 +350,28 @@ func (r *SQLRepository) ListCases(ctx context.Context, projectID uuid.UUID, suit
 
 	if suiteID != nil && cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases WHERE project_id = $1 AND suite_id = $2 AND id < $3
 			 ORDER BY id DESC LIMIT $4`,
 			projectID, *suiteID, cursor, limit,
 		)
 	} else if suiteID != nil {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases WHERE project_id = $1 AND suite_id = $2
 			 ORDER BY id DESC LIMIT $3`,
 			projectID, *suiteID, limit,
 		)
 	} else if cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases WHERE project_id = $1 AND id < $2
 			 ORDER BY id DESC LIMIT $3`,
 			projectID, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases WHERE project_id = $1
 			 ORDER BY id DESC LIMIT $2`,
 			projectID, limit,
@@ -346,7 +409,7 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 
 	if hasCursor {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at,
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at,
 			        ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) AS rank
 			 FROM test_cases
 			 WHERE workspace_id = $1 AND search_tsv @@ to_tsquery('pg_catalog.english', $2)
@@ -357,7 +420,7 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags::text, version, created_by, created_at, updated_at,
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at,
 			        ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) AS rank
 			 FROM test_cases
 			 WHERE workspace_id = $1 AND search_tsv @@ to_tsquery('pg_catalog.english', $2)
@@ -388,17 +451,23 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 }
 
 func (r *SQLRepository) UpdateCase(ctx context.Context, tc *TestCase) error {
-	stepsJSON, _ := json.Marshal(tc.Steps)
+	stepsJSON, err := json.Marshal(tc.Steps)
+	if err != nil {
+		return fmt.Errorf("marshal steps: %w", err)
+	}
 	result, err := r.db.ExecContext(ctx,
 		`UPDATE test_cases SET title = $2, description = $3, preconditions = $4, steps = $5, status = $6, priority = $7, tags = $8, suite_id = $9, version = $10, updated_at = $11
 		 WHERE id = $1`,
 		tc.ID, tc.Title, tc.Description, tc.Preconditions, stepsJSON,
-		string(tc.Status), string(tc.Priority), pqArray(tc.Tags), tc.SuiteID, tc.Version, tc.UpdatedAt,
+		string(tc.Status), string(tc.Priority), pq.Array(tc.Tags), tc.SuiteID, tc.Version, tc.UpdatedAt,
 	)
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -410,7 +479,10 @@ func (r *SQLRepository) DeleteCase(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sharederrors.ErrNotFound
 	}
@@ -418,8 +490,11 @@ func (r *SQLRepository) DeleteCase(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *SQLRepository) CreateVersion(ctx context.Context, version *TestCaseVersion) error {
-	stepsJSON, _ := json.Marshal(version.Steps)
-	_, err := r.db.ExecContext(ctx,
+	stepsJSON, err := json.Marshal(version.Steps)
+	if err != nil {
+		return fmt.Errorf("marshal steps: %w", err)
+	}
+	_, err = r.db.ExecContext(ctx,
 		`INSERT INTO test_case_versions (id, test_case_id, version, title, description, preconditions, steps, changed_by, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		version.ID, version.TestCaseID, version.Version, version.Title, version.Description,
@@ -428,12 +503,25 @@ func (r *SQLRepository) CreateVersion(ctx context.Context, version *TestCaseVers
 	return err
 }
 
-func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID) ([]TestCaseVersion, error) {
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, test_case_id, version, title, description, preconditions, steps::text, changed_by, created_at
-		 FROM test_case_versions WHERE test_case_id = $1 ORDER BY version DESC`,
-		caseID,
-	)
+func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID, cursor string, limit int) ([]TestCaseVersion, error) {
+	var rows *sql.Rows
+	var err error
+
+	if cursor != "" {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, test_case_id, version, title, description, preconditions, steps::text, changed_by, created_at
+			 FROM test_case_versions WHERE test_case_id = $1 AND id < $2
+			 ORDER BY id DESC LIMIT $3`,
+			caseID, cursor, limit,
+		)
+	} else {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, test_case_id, version, title, description, preconditions, steps::text, changed_by, created_at
+			 FROM test_case_versions WHERE test_case_id = $1
+			 ORDER BY id DESC LIMIT $2`,
+			caseID, limit,
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +535,7 @@ func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID) ([]T
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(stepsJSON), &v.Steps); err != nil {
-			v.Steps = nil
+			return nil, fmt.Errorf("unmarshal steps: %w", err)
 		}
 		versions = append(versions, v)
 	}
@@ -460,21 +548,24 @@ func scanCases(rows *sql.Rows) ([]TestCase, error) {
 		var tc TestCase
 		var suiteID sql.NullString
 		var stepsJSON string
-		var tagsStr string
+		var tags []string
 		var status, priority string
 		if err := rows.Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-			&stepsJSON, &status, &priority, &tagsStr, &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt); err != nil {
+			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt); err != nil {
 			return nil, err
 		}
 		tc.Status = TestCaseStatus(status)
 		tc.Priority = TestCasePriority(priority)
-		tc.Tags = parseTags(tagsStr)
+		tc.Tags = tags
 		if suiteID.Valid {
-			sid, _ := uuid.Parse(suiteID.String)
+			sid, err := uuid.Parse(suiteID.String)
+			if err != nil {
+				return nil, fmt.Errorf("invalid stored suite_id: %w", err)
+			}
 			tc.SuiteID = &sid
 		}
 		if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
-			tc.Steps = nil
+			return nil, fmt.Errorf("unmarshal steps: %w", err)
 		}
 		cases = append(cases, tc)
 	}
@@ -488,22 +579,25 @@ func scanCasesWithRank(rows *sql.Rows) ([]TestCase, float64, error) {
 		var tc TestCase
 		var suiteID sql.NullString
 		var stepsJSON string
-		var tagsStr string
+		var tags []string
 		var status, priority string
 		var rank float64
 		if err := rows.Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-			&stepsJSON, &status, &priority, &tagsStr, &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt, &rank); err != nil {
+			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt, &rank); err != nil {
 			return nil, 0, err
 		}
 		tc.Status = TestCaseStatus(status)
 		tc.Priority = TestCasePriority(priority)
-		tc.Tags = parseTags(tagsStr)
+		tc.Tags = tags
 		if suiteID.Valid {
-			sid, _ := uuid.Parse(suiteID.String)
+			sid, err := uuid.Parse(suiteID.String)
+			if err != nil {
+				return nil, 0, fmt.Errorf("invalid stored suite_id: %w", err)
+			}
 			tc.SuiteID = &sid
 		}
 		if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
-			tc.Steps = nil
+			return nil, 0, fmt.Errorf("unmarshal steps: %w", err)
 		}
 		cases = append(cases, tc)
 		lastRank = rank
@@ -533,40 +627,6 @@ func decodeSearchCursor(cursor string) (float64, string, error) {
 		return 0, "", fmt.Errorf("invalid search cursor rank: %w", err)
 	}
 	return rank, m["id"], nil
-}
-
-func pqArray(items []string) string {
-	if len(items) == 0 {
-		return "{}"
-	}
-	result := "{"
-	for i, s := range items {
-		if i > 0 {
-			result += ","
-		}
-		result += s
-	}
-	result += "}"
-	return result
-}
-
-func parseTags(s string) []string {
-	if len(s) < 2 {
-		return nil
-	}
-	inner := s[1 : len(s)-1]
-	if inner == "" {
-		return nil
-	}
-	var result []string
-	start := 0
-	for i := 0; i <= len(inner); i++ {
-		if i == len(inner) || inner[i] == ',' {
-			result = append(result, inner[start:i])
-			start = i + 1
-		}
-	}
-	return result
 }
 
 func toTSQuery(query string) string {

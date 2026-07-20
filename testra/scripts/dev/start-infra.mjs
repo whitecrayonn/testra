@@ -71,8 +71,6 @@ if (!allOk) {
   console.error("\nSome local services are not reachable.");
   console.error("Install and start: PostgreSQL 16+, Redis 7+, Mailpit, MinIO");
   console.error("See README.md for platform-specific installation instructions.");
-  console.error("\nDocker Compose is available as an optional alternative:");
-  console.error("  docker compose -f infra/docker/docker-compose.yml up -d");
   process.exit(1);
 }
 

@@ -13,10 +13,10 @@ import (
 )
 
 // TestIngestionQueueFlow simulates the full runtime path:
-//   1. Ingest a test result (with an idempotency key).
-//   2. Queue an asynchronous analytics job bound to the tenant.
-//   3. Dequeue, prepare an execution payload, and complete the job.
-//   4. Replay the ingest with the same idempotency key to confirm idempotency.
+//  1. Ingest a test result (with an idempotency key).
+//  2. Queue an asynchronous analytics job bound to the tenant.
+//  3. Dequeue, prepare an execution payload, and complete the job.
+//  4. Replay the ingest with the same idempotency key to confirm idempotency.
 //
 // The goal is to confirm the ingestion → queue → execution sequence does not
 // deadlock and respects tenant context.
@@ -47,7 +47,7 @@ func TestIngestionQueueFlow(t *testing.T) {
 	}
 
 	jobPayload := map[string]any{
-		"run_id":      res.RunID,
+		"run_id":       res.RunID,
 		"workspace_id": ten.WorkspaceID.String(),
 		"project_id":   ten.ProjectID.String(),
 	}

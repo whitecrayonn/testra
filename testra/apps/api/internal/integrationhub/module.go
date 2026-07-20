@@ -1,6 +1,11 @@
 package integrationhub
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/testra/testra/apps/api/internal/audit"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
+)
 
 type Module struct {
 	Repository Repository
@@ -8,9 +13,9 @@ type Module struct {
 	Handler    *Handler
 }
 
-func New(sqlDB *sql.DB) *Module {
+func New(sqlDB *sql.DB, auditSvc *audit.Service, bus *eventbus.Bus) *Module {
 	repo := NewSQLRepository(sqlDB)
-	service := NewService(repo)
+	service := NewService(repo, auditSvc, bus, sqlDB)
 	handler := NewHandler(service)
 
 	return &Module{

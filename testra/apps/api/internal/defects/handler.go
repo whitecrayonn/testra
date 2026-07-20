@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/pagination"
@@ -116,7 +115,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:     userID,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -132,7 +131,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	d, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -159,7 +158,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	defects, err := h.service.List(r.Context(), projectID, cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -242,7 +241,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	d, err := h.service.Update(r.Context(), id, input)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -257,7 +256,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -278,26 +277,13 @@ func toDefectResponse(d *Defect) defectResponse {
 		CreatedAt:   d.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   d.UpdatedAt.Format(time.RFC3339),
 	}
-	if d.TestRunItemID != nil {
+	if d.TestRunItemID != nil && *d.TestRunItemID != uuid.Nil {
 		s := d.TestRunItemID.String()
 		resp.TestRunItemID = &s
 	}
-	if d.AssignedTo != nil {
+	if d.AssignedTo != nil && *d.AssignedTo != uuid.Nil {
 		s := d.AssignedTo.String()
 		resp.AssignedTo = &s
 	}
 	return resp
-}
-
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrUnauthorized:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "internal server error")
-	}
 }

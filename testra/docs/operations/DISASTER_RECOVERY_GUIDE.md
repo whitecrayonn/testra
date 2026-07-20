@@ -22,7 +22,7 @@ The following are the mandatory baseline objectives. Enterprise contracts may ti
 | Service/data | Backup/recovery policy | RPO | RTO |
 |---|---|---:|---:|
 | PostgreSQL | Daily snapshots 35 days, continuous WAL/PITR 35 days, weekly snapshots 12 weeks | ≤ 5 minutes MVP; ≤ 1 minute Beta | ≤ 4 hours MVP; ≤ 2 hours Beta |
-| Object storage | S3 versioning, lifecycle policies, same-region redundancy MVP/Beta, cross-region replication Enterprise | ≤ 24 hours MVP; replication target Beta/Enterprise | ≤ 8 hours MVP; ≤ 4 hours Beta/Enterprise |
+| Object storage | Versioned object-store backups (MinIO/filesystem MVP, replicated object store Beta/Enterprise), lifecycle policies, off-site copies | ≤ 24 hours MVP; replication target Beta/Enterprise | ≤ 8 hours MVP; ≤ 4 hours Beta/Enterprise |
 | ClickHouse | Daily backups 14 days, weekly backups 8 weeks, re-ingestion from durable source | ≤ 24 hours | ≤ 12 hours |
 | Redis queues | No business-data backup; replay durable idempotent jobs | ≤ 1 hour for recoverable queued work | ≤ 4 hours |
 

@@ -46,7 +46,7 @@
 
 ## Data & schema
 
-- The authoritative database schema is `apps/api/migrations/*.sql` (currently `000001` through `000018`) (BIBLICAL, DATABASE_GUIDE).
+- The authoritative database schema is `apps/api/migrations/*.sql` (currently `000001` through `000028`) (BIBLICAL, DATABASE_GUIDE).
 - Merged migrations are immutable. Never edit them; create a new `up`/`down` pair (BIBLICAL, ENGINEERING_STANDARDS, ONBOARDING).
 - Every migration must have both `up` and `down` files (BIBLICAL, ENGINEERING_STANDARDS).
 - UUID primary keys are used for all entities (BIBLICAL, DATABASE_GUIDE).
@@ -75,11 +75,11 @@
 
 ## Deployment & infrastructure
 
-- Local development uses native services, not Docker by default (ADR-009).
+- Local development uses native services; no Docker is used (ADR-009).
 - MVP production is an Ubuntu VM with systemd and Nginx reverse proxy (ADR-003, DEPLOYMENT_GUIDE).
-- TLS is terminated at Nginx (MVP) or Cloudflare/ACM (future).
+- TLS is terminated at Nginx with Let's Encrypt on the single Ubuntu VPS (MVP).
 - Migrations are applied through CI/CD via `apps/api/cmd/migrator`; never manually in production (BIBLICAL, DEPLOYMENT_GUIDE).
-- Kubernetes and Terraform are planned for future scale, not required for MVP (ADR-003, DEPLOYMENT_GUIDE).
+- Cloud-managed services and container orchestration may be considered for future scale, but they are not planned for MVP (ADR-003, DEPLOYMENT_GUIDE).
 
 ## Observability & operations
 

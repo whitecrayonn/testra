@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/pagination"
@@ -60,7 +59,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Owner: userID,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -76,7 +75,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	org, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -93,7 +92,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	params := pagination.ParseParams(r)
 	orgs, err := h.service.ListForUserPaginated(r.Context(), userID, params.Cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -114,19 +113,4 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		"data": resp,
 		"meta": meta,
 	})
-}
-
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrConflict:
-		apihttp.ErrorJSON(w, http.StatusConflict, "CONFLICT", err.Error())
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
-	}
 }

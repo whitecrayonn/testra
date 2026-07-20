@@ -106,11 +106,11 @@ The MVP is defined as the set of capabilities needed for the first commercial la
 | Platform backend | ✅ Functional | Identity, organization, workspace, project, RBAC, audit |
 | Testing backend | ✅ Functional | Test management, results, automation ingestion |
 | Web frontend | 🔄 Partial | Auth, onboarding, dashboard skeleton, test cases, test runs |
-| Infrastructure | 📝 Scaffolding | Docker, Kubernetes, Terraform scaffold; not production-ready |
+| Infrastructure | 📝 Scaffolding | Native local services; single-Ubuntu-VPS systemd + nginx deployment runbooks are scaffolded; not production-ready |
 
 ## Repository status
 
-- **Monorepo:** `apps/api`, `apps/web`, `apps/worker`, `apps/ml`, `packages/*`, `infra/*`.
+- **Monorepo:** `apps/api`, `apps/web`, `apps/worker`, `apps/ml`, `packages/*`, `docs/`, `scripts/`.
 - **Backend:** Go 1.23 modular monolith with Clean Architecture boundaries.
 - **Frontend:** Next.js 15 App Router, TypeScript 5, TailwindCSS, react-hook-form + Zod.
 - **Database:** PostgreSQL 16 with Row-Level Security; ClickHouse and Redis present but not yet used by application code.
@@ -139,7 +139,7 @@ These estimates are directional and based on functional coverage and production 
 |------|----------|--------|
 | Backend MVP features | ~70% | Core flows work; missing defects, billing, CI/CD integrations (notifications now implemented) |
 | Frontend MVP features | ~50% | Auth, onboarding, test cases, test runs are partial; settings/dashboard placeholders reduced with notifications UI |
-| Infrastructure / DevOps | ~25% | Local dev works; K8s/Terraform/CD are scaffolded but incomplete |
+| Infrastructure / DevOps | ~25% | Local dev works; systemd service files, nginx config, and CD are not yet written |
 | OpenAPI / SDK | ~55% | Spec covers auth, orgs, workspaces, projects, test management, test runs, ingestion, notifications; missing defects, analytics, billing, integrations |
 | Test coverage | ~20% | Unit tests only; no integration or E2E test suite |
 | Production readiness | ~15% | No rate limiting on auth, no API-key auth, no secrets management, no monitoring, no CD |
@@ -150,7 +150,7 @@ These estimates are directional and based on functional coverage and production 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | **Architecture pattern** | Modular monolith with Clean Architecture | Solo-developer velocity, enterprise-ready from MVP, clear extraction boundaries |
-| **Backend language** | Go 1.23 | Compiled, memory-efficient, concurrency-native, simple deployment |
+| **Backend language** | Go 1.24 | Compiled, memory-efficient, concurrency-native, simple deployment |
 | **Frontend framework** | Next.js 15 App Router + TypeScript | Modern React, SSR for dashboards, large hiring market |
 | **Primary database** | PostgreSQL 16 | ACID, RLS, JSONB, proven multi-tenant SaaS choice |
 | **Analytics store** | ClickHouse 24 | High-ingest time-series result data (not yet wired) |
@@ -160,16 +160,16 @@ These estimates are directional and based on functional coverage and production 
 | **Authentication** | JWT access tokens + opaque refresh-token families + TOTP MFA | Supports session security and enterprise MFA requirements |
 | **API style** | RESTful JSON, URL versioning `/api/v1`, OpenAPI 3.1 spec | Familiar to QA engineers and enterprise integrators |
 | **Real-time** | Server-Sent Events (SSE) for test-run progress | Simpler horizontal scaling than WebSockets for one-way progress streams |
-| **Deployment target** | Kubernetes on AWS (EKS) for production; native/local dev first | Enterprise-ready path; local dev skips Docker for speed |
+| **Deployment target** | Single Ubuntu VPS with systemd + nginx for production; native local dev first | Low operational cost; no container/cloud infrastructure for MVP |
 
 ## Major ADR / architecture summary
 
 Key decisions recorded in `04_Architecture/testra-software-architecture-decisions.md`:
 
 1. **Modular monolith over microservices** — avoid distributed-system overhead while keeping module boundaries clean for future extraction.
-2. **Monorepo** — atomic changes across API, web, SDK, and infrastructure; one CI pipeline.
+2. **Monorepo** — atomic changes across API, web, SDK, and deployment runbooks; one CI pipeline.
 3. **Clean / Hexagonal backend** — every module has `domain → ports → repository/service → handler` layers.
-4. **Native development environment** — `pnpm dev` starts local services directly; Docker optional for local development.
+4. **Native development environment** — `pnpm dev` starts local services directly; no Docker is used.
 5. **API-first** — the web UI is one client; CI/CD ingestion and future public API use the same endpoints.
 6. **Zero customer code retention** — Testra ingests test results and metadata, never customer source code or API collections.
 7. **No external LLM dependency** — intelligence uses classical ML/statistical models trained per tenant on tenant-owned data.
@@ -223,9 +223,9 @@ These have scaffolding or partial implementation but are not shippable.
 | **Settings** | Settings shell and navigation | Most sub-pages are still placeholders; **notifications** and **API keys** settings pages are implemented |
 | **OpenAPI** | Core routes documented | Defects, analytics, billing, integrations, webhooks still missing; notifications documented |
 | **Test Suites / Folders UI** | Backend list endpoints and API wrappers | No user interface to create/manage suites or folders |
-| **CI/CD** | GitHub Actions lint/build | No image push, no deployment, no integration tests |
-| **Kubernetes** | Base deployment + service manifests | No ConfigMap/Secret, probes, resources, ingress, web/worker/migrator |
-| **Terraform** | Provider/backend scaffold | No modules or resources defined |
+| **CI/CD** | GitHub Actions lint/build | No binary artifact upload, no deployment, no integration tests |
+| **Systemd / nginx deployment** | Not started | No service units, nginx site config, or deployment runbooks yet |
+| **Cloud-managed services** | Not applicable | Not used; MVP runs on a single Ubuntu VPS |
 
 ---
 
@@ -235,7 +235,7 @@ The frontend contains pages or directories that render empty cards or placeholde
 
 | Route / Directory | File | Note |
 |-------------------|------|------|
-| `/dashboard/defects` | `app/(dashboard)/[workspace]/defects/page.tsx` | `PlaceholderPage` with "Planned for Phase 4" |
+| `/dashboard/defects` | `app/(dashboard)/[workspace]/defects/page.tsx` | List, create, and paginate defects; detail/edit/delete at `/[workspace]/defects/[id]` |
 | `/dashboard/settings/*` | `app/(dashboard)/dashboard/settings/*/page.tsx` | API keys and notifications pages implemented; most other tabs are placeholders |
 | `/dashboard/api-tests` | `app/(dashboard)/[workspace]/api-tests/page.tsx` | Not implemented; may be empty |
 | `apps/web/features/api-testing/` | `.gitkeep` or empty | No API testing frontend |
@@ -250,7 +250,6 @@ These modules exist as directories with only a `.gitkeep` or no code at all.
 
 | Module | Backend directory | Frontend directory | Why it matters |
 |--------|-------------------|--------------------|----------------|
-| **Defects** | `apps/api/internal/defects/` | `apps/web/features/defects/` | Core MVP feature; required for issue tracking |
 | **API Testing** | `apps/api/internal/apitesting/` | `apps/web/features/api-testing/` | Displaces Postman; key differentiator |
 | **Billing / Subscriptions** | `apps/api/internal/billing/` | `apps/web/features/settings/` | Required for commercial launch |
 | **Integration Hub** | `apps/api/internal/integrationhub/` | N/A | Jira, GitHub, GitLab, CI/CD webhooks |
@@ -287,9 +286,9 @@ These features compile and run but have known runtime defects that block product
 | **No global state management** | `localStorage` is the only state layer; causes hydration mismatches and repetitive `typeof window` guards. | `frontend-audit.md` §5, §10.6 |
 | **Duplicate dashboard route trees** | `/dashboard/*` and `/:workspace/*` both exist; same components served from different URLs with different context logic. | `frontend-audit.md` §3.2, §10.8 |
 | **No error boundary / global loading** | Each page handles loading/error independently. | `frontend-audit.md` §10.10 |
-| **No production-ready infrastructure** | Kubernetes/Terraform are scaffolds; no secrets, probes, ingress, or CD. | `infra-audit.md` |
+| **No production-ready infrastructure** | No systemd service units or nginx config; no secrets, health checks, or CD pipeline. | `docs/deployment/DEPLOYMENT_GUIDE.md` |
 | **Worker is a stub** | `apps/worker` and `apps/api/cmd/worker` are empty. No background processing exists. | `infra-audit.md` finding #12 |
-| **ClickHouse / Redis / MinIO not used by app** | Provisioned in Docker Compose but no application code connects to them. | `infra-audit.md` |
+| **ClickHouse / Redis / MinIO not used by app** | Provisioned in native services but no application code connects to them. | `infra-audit.md` |
 | **Environment variable drift** | `apps/api/.env.example` has `JWT_EXPIRY_HOURS=168` while code reads `JWT_EXPIRY_MINUTES`. | `infra-audit.md` §6.3 |
 
 ---
@@ -314,13 +313,13 @@ These features compile and run but have known runtime defects that block product
 
 | Capability | Maturity | Evidence |
 |------------|----------|----------|
-| **Local development** | ✅ Functional | `pnpm dev`, `make migrate`, Docker Compose for deps |
+| **Local development** | ✅ Functional | `pnpm dev`, `make migrate`, native services for deps |
 | **Core backend flows** | ✅ Functional | Unit tests build; manual API calls work |
 | **Frontend happy path** | 🔄 Partial | Login → onboarding → create project → test cases works with caveats |
 | **Test automation** | ❌ Minimal | Go unit tests only; no integration/E2E suite |
 | **Security posture** | ❌ Not production | No rate limiting, no API-key auth, weak `.env.example` |
 | **Observability** | ❌ Not present | No OpenTelemetry, Prometheus, Grafana, or centralized logs |
-| **Deployment pipeline** | ❌ Not present | CI builds only; no image push or deploy |
+| **Deployment pipeline** | ❌ Not present | CI builds only; no binary artifact upload or deploy |
 | **Documentation** | 🔄 Partial | Product docs complete; engineering wiki being finalized |
 
 #### One-sentence verdict

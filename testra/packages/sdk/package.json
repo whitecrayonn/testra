@@ -5,13 +5,19 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "generate": "openapi-typescript ../../docs/api/openapi/openapi.yaml --output src/openapi.ts",
     "build": "tsc",
     "dev": "tsc -w",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "openapi-fetch": "^0.12.0"
+  },
   "devDependencies": {
     "@testra/config": "workspace:*",
+    "eslint": "^9.9.0",
+    "openapi-typescript": "^7.4.0",
     "typescript": "^5.5.3"
   }
 }

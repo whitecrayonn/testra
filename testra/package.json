@@ -15,6 +15,7 @@
     "postinstall": "node scripts/dev/setup-python.mjs"
   },
   "devDependencies": {
+    "js-yaml": "^5.2.1",
     "prettier": "^3.3.3",
     "turbo": "^2.0.9"
   },

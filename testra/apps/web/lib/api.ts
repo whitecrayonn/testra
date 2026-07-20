@@ -1,9 +1,18 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-const TOKEN_KEY = "testra_token";
-const REFRESH_TOKEN_KEY = "testra_refresh_token";
+let refreshing: Promise<void> | null = null;
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string | null> | null = null;
 
-let refreshing: Promise<{ token: string; refresh_token: string }> | null = null;
+function isBrowser(): boolean {
+  return typeof window !== "undefined";
+}
+
+function redirectToLogin() {
+  if (isBrowser()) {
+    window.location.href = "/login";
+  }
+}
 
 export class ApiError extends Error {
   constructor(
@@ -21,16 +30,85 @@ interface ApiEnvelope<T> {
   meta?: Record<string, unknown>;
 }
 
+function isMutatingRequest(method: string | undefined): boolean {
+  switch ((method || "GET").toUpperCase()) {
+    case "GET":
+    case "HEAD":
+    case "OPTIONS":
+    case "TRACE":
+      return false;
+    default:
+      return true;
+  }
+}
+
+function shouldSendJsonBody(options: RequestInit): boolean {
+  if (options.body) {
+    return typeof options.body === "string";
+  }
+  const method = (options.method || "GET").toUpperCase();
+  return method === "POST" || method === "PUT" || method === "PATCH";
+}
+
+async function ensureCsrfToken(): Promise<string | null> {
+  if (csrfToken) return csrfToken;
+  if (csrfPromise) return csrfPromise;
+
+  csrfPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/auth/csrf`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const body: ApiEnvelope<{ csrf_token: string }> = await res.json().catch(() => ({}));
+      const token = body.data?.csrf_token;
+      if (!token) return null;
+      csrfToken = token;
+      return token;
+    } catch {
+      return null;
+    } finally {
+      csrfPromise = null;
+    }
+  })();
+
+  return csrfPromise;
+}
+
+const FETCH_TIMEOUT_MS = 30_000;
+
+function fetchWithTimeout(
+  input: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timeout),
+  );
+}
+
 async function rawApiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ res: Response; body: ApiEnvelope<T> }> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const headers = new Headers(options.headers);
+  headers.set("Accept", "application/json");
+  if (shouldSendJsonBody(options)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (isMutatingRequest(options.method) && path !== "/api/v1/auth/refresh") {
+    const token = await ensureCsrfToken();
+    if (token) {
+      headers.set("X-CSRF-Token", token);
+    }
+  }
+
+  const res = await fetchWithTimeout(`${API_URL}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    credentials: "include",
+    headers,
   });
 
   let body: ApiEnvelope<T> = {};
@@ -47,66 +125,54 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = getToken();
-
-  const attempt = async (): Promise<T> => {
-    const { res, body } = await rawApiFetch<T>(path, {
-      ...options,
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    });
-
-    if (res.status === 401 && path !== "/api/v1/auth/refresh") {
-      const newToken = await refreshAccessToken();
-      return apiFetch(path, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${newToken.token}`,
-        },
-      });
-    }
-
-    if (!res.ok) {
-      const err = body.error ?? { code: "UNKNOWN", message: "Request failed" };
-      throw new ApiError(res.status, err.code, err.message);
-    }
-
-    return body.data as T;
-  };
-
-  return attempt();
+  return request<T>(path, options, false);
 }
 
-async function refreshAccessToken(): Promise<{ token: string; refresh_token: string }> {
-  if (refreshing) return refreshing;
+async function request<T>(
+  path: string,
+  options: RequestInit,
+  isRetry: boolean,
+): Promise<T> {
+  const { res, body } = await rawApiFetch<T>(path, options);
 
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
+  if (res.status === 401 && path !== "/api/v1/auth/refresh" && !isRetry) {
+    try {
+      await refreshAccessToken();
+      return request<T>(path, options, true);
+    } catch {
+      // AuthExpiredError or refresh failure; redirect happens in refreshAccessToken.
+      throw new AuthExpiredError();
+    }
+  }
+
+  if (res.status === 401) {
+    redirectToLogin();
     throw new AuthExpiredError();
   }
 
+  if (!res.ok) {
+    const err = body.error ?? { code: "UNKNOWN", message: "Request failed" };
+    throw new ApiError(res.status, err.code, err.message);
+  }
+
+  return body.data as T;
+}
+
+async function refreshAccessToken(): Promise<void> {
+  if (refreshing) return refreshing;
+
   refreshing = (async () => {
-    const { res, body } = await rawApiFetch<{ token: string; refresh_token: string }>(
+    const { res } = await rawApiFetch<{ token: string; refresh_token: string }>(
       "/api/v1/auth/refresh",
       {
         method: "POST",
-        body: JSON.stringify({ refresh_token: refreshToken }),
       },
     );
 
-    if (!res.ok || !body.data) {
-      clearAuth();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+    if (!res.ok) {
+      redirectToLogin();
       throw new AuthExpiredError();
     }
-
-    setAuth(body.data.token, body.data.refresh_token);
-    return body.data;
   })();
 
   try {
@@ -122,47 +188,34 @@ export class AuthExpiredError extends ApiError {
   }
 }
 
-export function setAuth(token: string, refreshToken: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  }
+async function rawFetch(
+  path: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  return fetchWithTimeout(`${API_URL}${path}`, {
+    ...options,
+    credentials: "include",
+  });
 }
 
-export function clearAuth() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+export async function isAuthenticated(): Promise<boolean> {
+  let res = await rawFetch("/api/v1/auth/me", { method: "GET" });
+
+  if (res.status === 401) {
+    const refreshRes = await rawFetch("/api/v1/auth/refresh", {
+      method: "POST",
+    });
+
+    if (refreshRes.ok) {
+      res = await rawFetch("/api/v1/auth/me", { method: "GET" });
+    } else {
+      return false;
+    }
   }
+
+  return res.ok;
 }
 
-export function setToken(token: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-}
-
-export function clearToken() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
-}
-
-export function getToken(): string | null {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(TOKEN_KEY);
-  }
-  return null;
-}
-
-export function getRefreshToken(): string | null {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
-  }
-  return null;
-}
-
-export function isAuthenticated(): boolean {
-  return getToken() !== null;
+export async function logout(): Promise<void> {
+  await apiFetch("/api/v1/auth/logout", { method: "POST" });
 }

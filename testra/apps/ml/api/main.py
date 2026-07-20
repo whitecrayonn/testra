@@ -1,7 +1,23 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Testra ML Service", version="0.0.0")
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def verify_api_key(api_key: str | None = Security(api_key_header)) -> None:
+    """Enforce ML_SERVICE_API_KEY when the variable is configured."""
+    expected = os.environ.get("ML_API_KEY")
+    if expected:
+        if api_key is None or api_key != expected:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing X-API-Key header",
+            )
 
 
 class RunHistoryPoint(BaseModel):
@@ -11,9 +27,9 @@ class RunHistoryPoint(BaseModel):
 
 
 class PredictFlakyRequest(BaseModel):
-    test_case_id: str | None = None
-    test_case_title: str = ""
-    history: list[RunHistoryPoint] = []
+    test_case_id: str | None = Field(default=None, max_length=64)
+    test_case_title: str = Field(default="", max_length=512)
+    history: list[RunHistoryPoint] = Field(default=[], max_length=1000)
 
 
 class PredictFlakyResponse(BaseModel):
@@ -23,8 +39,8 @@ class PredictFlakyResponse(BaseModel):
 
 
 class ClassifyFailureRequest(BaseModel):
-    error_message: str
-    stack_trace: str = ""
+    error_message: str = Field(..., max_length=4000)
+    stack_trace: str = Field(default="", max_length=8000)
 
 
 class ClassifyFailureResponse(BaseModel):
@@ -39,7 +55,10 @@ def health() -> dict[str, str]:
 
 
 @app.post("/predict-flaky", response_model=PredictFlakyResponse)
-def predict_flaky(req: PredictFlakyRequest) -> PredictFlakyResponse:
+def predict_flaky(
+    req: PredictFlakyRequest,
+    _=Depends(verify_api_key),
+) -> PredictFlakyResponse:
     """Predict flakiness from recent run history without external LLMs."""
     history = req.history
     n = len(history)
@@ -76,7 +95,10 @@ def predict_flaky(req: PredictFlakyRequest) -> PredictFlakyResponse:
 
 
 @app.post("/classify-failure", response_model=ClassifyFailureResponse)
-def classify_failure(req: ClassifyFailureRequest) -> ClassifyFailureResponse:
+def classify_failure(
+    req: ClassifyFailureRequest,
+    _=Depends(verify_api_key),
+) -> ClassifyFailureResponse:
     """Classify a failure message using rule-based keyword matching."""
     text = f"{req.error_message} {req.stack_trace}".lower()
     label, explanation = _keyword_classify(text)

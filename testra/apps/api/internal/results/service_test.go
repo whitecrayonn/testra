@@ -2,6 +2,7 @@ package results
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,6 +105,67 @@ func (f *fakeRepository) DeleteItemsByRunID(_ context.Context, runID uuid.UUID) 
 func (f *fakeRepository) RunInTx(_ context.Context, fn func(Repository) error) error {
 	return fn(f)
 }
+
+func (f *fakeRepository) CreateItemExecution(_ context.Context, item *TestRunItem) error {
+	if _, ok := f.items[item.ID]; !ok {
+		return sharederrors.ErrNotFound
+	}
+	f.items[item.ID] = item
+	return nil
+}
+
+func (f *fakeRepository) ListItemsByRunPaged(_ context.Context, runID uuid.UUID, status, search, cursor string, limit int) ([]TestRunItem, error) {
+	var out []TestRunItem
+	for _, i := range f.items {
+		if i.RunID == runID {
+			if status != "" && string(i.Status) != status {
+				continue
+			}
+			if search != "" && !strings.Contains(strings.ToLower(i.Title), strings.ToLower(search)) {
+				continue
+			}
+			out = append(out, *i)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (f *fakeRepository) CreateItemHistory(_ context.Context, history *RunItemHistory) error {
+	return nil
+}
+func (f *fakeRepository) ListItemHistory(_ context.Context, _ uuid.UUID) ([]RunItemHistory, error) {
+	return nil, nil
+}
+
+func (f *fakeRepository) CreateEvidence(_ context.Context, _ *EvidenceRef) error { return nil }
+func (f *fakeRepository) ListEvidenceByItem(_ context.Context, _ uuid.UUID) ([]EvidenceRef, error) {
+	return nil, nil
+}
+func (f *fakeRepository) DeleteEvidence(_ context.Context, _ uuid.UUID) error { return nil }
+
+func (f *fakeRepository) CreateRunItemDefect(_ context.Context, _, _ uuid.UUID) error { return nil }
+func (f *fakeRepository) ListRunItemDefects(_ context.Context, _ uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+func (f *fakeRepository) DeleteRunItemDefect(_ context.Context, _, _ uuid.UUID) error { return nil }
+
+func (f *fakeRepository) CreatePlan(_ context.Context, _ *TestPlan) error { return nil }
+func (f *fakeRepository) GetPlanByID(_ context.Context, _ uuid.UUID) (*TestPlan, error) {
+	return nil, sharederrors.ErrNotFound
+}
+func (f *fakeRepository) ListPlans(_ context.Context, _ uuid.UUID, _ string, _ int) ([]TestPlan, error) {
+	return nil, nil
+}
+func (f *fakeRepository) UpdatePlan(_ context.Context, _ *TestPlan) error         { return nil }
+func (f *fakeRepository) DeletePlan(_ context.Context, _ uuid.UUID) error         { return nil }
+func (f *fakeRepository) CreatePlanItem(_ context.Context, _ *TestPlanItem) error { return nil }
+func (f *fakeRepository) ListPlanItems(_ context.Context, _ uuid.UUID) ([]TestPlanItem, error) {
+	return nil, nil
+}
+func (f *fakeRepository) DeletePlanItemsByPlanID(_ context.Context, _ uuid.UUID) error { return nil }
 
 func TestServiceCreateRun(t *testing.T) {
 	svc := NewService(newFakeRepository())

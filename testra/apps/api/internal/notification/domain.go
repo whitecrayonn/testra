@@ -37,16 +37,16 @@ type Notification struct {
 }
 
 type NotificationPreferences struct {
-	ID              uuid.UUID
-	OrganizationID  uuid.UUID
-	UserID          uuid.UUID
-	InAppEnabled    bool
-	EmailEnabled    bool
-	SlackEnabled    bool
-	TeamsEnabled    bool
-	WebhookEnabled  bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	UserID         uuid.UUID
+	InAppEnabled   bool
+	EmailEnabled   bool
+	SlackEnabled   bool
+	TeamsEnabled   bool
+	WebhookEnabled bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type NotificationChannelType string
@@ -74,6 +74,32 @@ type NotificationChannel struct {
 	Name           string
 	Config         map[string]string
 	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type NotificationTemplate struct {
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	Name           string
+	EventType      string
+	ChannelType    string
+	Subject        string
+	Body           string
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type NotificationHistory struct {
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	NotificationID uuid.UUID
+	ChannelID      *uuid.UUID
+	ChannelType    string
+	Status         string
+	ErrorMessage   string
+	RetryCount     int
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

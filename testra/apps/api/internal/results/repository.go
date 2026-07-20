@@ -129,26 +129,27 @@ func (r *SQLRepository) DeleteRun(ctx context.Context, id uuid.UUID) error {
 
 func (r *SQLRepository) CreateItem(ctx context.Context, item *TestRunItem) error {
 	artifactsJSON, _ := json.Marshal(item.Artifacts)
+	stepResultsJSON, _ := json.Marshal(item.StepResults)
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO test_run_items (id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts, sort_order, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		`INSERT INTO test_run_items (id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts, step_results, comment, executed_by, executed_at, sort_order, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 		item.ID, item.RunID, item.TestCaseID, item.Title, string(item.Status),
-		item.DurationMs, item.ErrorMessage, item.StackTrace, artifactsJSON,
-		item.SortOrder, item.CreatedAt, item.UpdatedAt,
+		item.DurationMs, item.ErrorMessage, item.StackTrace, artifactsJSON, stepResultsJSON,
+		item.Comment, item.ExecutedBy, item.ExecutedAt, item.SortOrder, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
 }
 
 func (r *SQLRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*TestRunItem, error) {
 	row := r.db.QueryRowContext(ctx,
-		`SELECT id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts::text, sort_order, created_at, updated_at
+		`SELECT id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts::text, step_results::text, comment, executed_by, executed_at, sort_order, created_at, updated_at
 		 FROM test_run_items WHERE id = $1`, id)
 	return scanItem(row)
 }
 
 func (r *SQLRepository) ListItems(ctx context.Context, runID uuid.UUID) ([]TestRunItem, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts::text, sort_order, created_at, updated_at
+		`SELECT id, run_id, test_case_id, title, status, duration_ms, error_message, stack_trace, artifacts::text, step_results::text, comment, executed_by, executed_at, sort_order, created_at, updated_at
 		 FROM test_run_items WHERE run_id = $1 ORDER BY sort_order ASC`, runID)
 	if err != nil {
 		return nil, err
@@ -159,11 +160,13 @@ func (r *SQLRepository) ListItems(ctx context.Context, runID uuid.UUID) ([]TestR
 
 func (r *SQLRepository) UpdateItem(ctx context.Context, item *TestRunItem) error {
 	artifactsJSON, _ := json.Marshal(item.Artifacts)
+	stepResultsJSON, _ := json.Marshal(item.StepResults)
 	result, err := r.db.ExecContext(ctx,
-		`UPDATE test_run_items SET title = $2, status = $3, duration_ms = $4, error_message = $5, stack_trace = $6, artifacts = $7, updated_at = $8
+		`UPDATE test_run_items SET title = $2, status = $3, duration_ms = $4, error_message = $5, stack_trace = $6, artifacts = $7, step_results = $8, comment = $9, executed_by = $10, executed_at = $11, updated_at = $12
 		 WHERE id = $1`,
 		item.ID, item.Title, string(item.Status), item.DurationMs,
-		item.ErrorMessage, item.StackTrace, artifactsJSON, item.UpdatedAt,
+		item.ErrorMessage, item.StackTrace, artifactsJSON, stepResultsJSON,
+		item.Comment, item.ExecutedBy, item.ExecutedAt, item.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -234,12 +237,13 @@ func scanRuns(rows *sql.Rows) ([]TestRun, error) {
 
 func scanItem(row rowScanner) (*TestRunItem, error) {
 	var item TestRunItem
-	var testCaseID sql.NullString
-	var artifactsStr string
+	var testCaseID, executedBy sql.NullString
+	var artifactsStr, stepResultsStr string
 	var status string
+	var executedAt sql.NullTime
 	if err := row.Scan(&item.ID, &item.RunID, &testCaseID, &item.Title, &status,
-		&item.DurationMs, &item.ErrorMessage, &item.StackTrace, &artifactsStr,
-		&item.SortOrder, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		&item.DurationMs, &item.ErrorMessage, &item.StackTrace, &artifactsStr, &stepResultsStr,
+		&item.Comment, &executedBy, &executedAt, &item.SortOrder, &item.CreatedAt, &item.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, sharederrors.ErrNotFound
 		}
@@ -252,6 +256,16 @@ func scanItem(row rowScanner) (*TestRunItem, error) {
 	}
 	if artifactsStr != "" && artifactsStr != "[]" {
 		_ = json.Unmarshal([]byte(artifactsStr), &item.Artifacts)
+	}
+	if stepResultsStr != "" && stepResultsStr != "[]" {
+		_ = json.Unmarshal([]byte(stepResultsStr), &item.StepResults)
+	}
+	if executedBy.Valid {
+		ebid, _ := uuid.Parse(executedBy.String)
+		item.ExecutedBy = &ebid
+	}
+	if executedAt.Valid {
+		item.ExecutedAt = &executedAt.Time
 	}
 	return &item, nil
 }

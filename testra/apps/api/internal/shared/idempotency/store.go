@@ -19,22 +19,23 @@ const DefaultTTL = 24 * time.Hour
 
 // Store persists idempotency records for replayable side-effecting operations.
 type Store interface {
-	Get(ctx context.Context, workspaceID uuid.UUID, operation, key string) (*Record, error)
+	Get(ctx context.Context, orgID, workspaceID uuid.UUID, operation, key string) (*Record, error)
 	Save(ctx context.Context, record *Record) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 }
 
 // Record captures a processed request so that identical retries return the same response.
 type Record struct {
-	ID           uuid.UUID
-	WorkspaceID  uuid.UUID
-	Operation    string
-	Key          string
-	Fingerprint  string
-	ResponseBody json.RawMessage
-	StatusCode   int
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	WorkspaceID    uuid.UUID
+	Operation      string
+	Key            string
+	Fingerprint    string
+	ResponseBody   json.RawMessage
+	StatusCode     int
+	CreatedAt      time.Time
+	ExpiresAt      time.Time
 }
 
 // PostgresStore is a PostgreSQL implementation of Store.
@@ -46,14 +47,25 @@ func NewPostgresStore(db db.DBTX) *PostgresStore {
 	return &PostgresStore{db: db}
 }
 
-func (s *PostgresStore) Get(ctx context.Context, workspaceID uuid.UUID, operation, key string) (*Record, error) {
+// nullUUID returns a UUID value that can be passed to the database driver.
+// uuid.Nil is passed as nil so Postgres stores NULL rather than the nil UUID.
+func nullUUID(id uuid.UUID) interface{} {
+	if id == uuid.Nil {
+		return nil
+	}
+	return id.String()
+}
+
+func (s *PostgresStore) Get(ctx context.Context, orgID, workspaceID uuid.UUID, operation, key string) (*Record, error) {
 	var record Record
 	var expiresAt time.Time
+
+	workspaceArg := nullUUID(workspaceID)
 	err := s.db.QueryRowContext(ctx,
 		`SELECT request_fingerprint, response_body, status_code, expires_at
 		 FROM idempotency_records
-		 WHERE workspace_id = $1 AND operation = $2 AND key = $3 AND expires_at > NOW()`,
-		workspaceID, operation, key,
+		 WHERE organization_id = $1 AND workspace_id IS NOT DISTINCT FROM $2 AND operation = $3 AND key = $4 AND expires_at > NOW()`,
+		orgID, workspaceArg, operation, key,
 	).Scan(&record.Fingerprint, &record.ResponseBody, &record.StatusCode, &expiresAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -61,6 +73,7 @@ func (s *PostgresStore) Get(ctx context.Context, workspaceID uuid.UUID, operatio
 		}
 		return nil, err
 	}
+	record.OrganizationID = orgID
 	record.WorkspaceID = workspaceID
 	record.Operation = operation
 	record.Key = key
@@ -69,11 +82,12 @@ func (s *PostgresStore) Get(ctx context.Context, workspaceID uuid.UUID, operatio
 }
 
 func (s *PostgresStore) Save(ctx context.Context, record *Record) error {
+	workspaceArg := nullUUID(record.WorkspaceID)
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO idempotency_records (id, workspace_id, operation, key, request_fingerprint, response_body, status_code, created_at, expires_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		 ON CONFLICT (workspace_id, operation, key) DO NOTHING`,
-		record.ID, record.WorkspaceID, record.Operation, record.Key,
+		`INSERT INTO idempotency_records (id, organization_id, workspace_id, operation, key, request_fingerprint, response_body, status_code, created_at, expires_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		 ON CONFLICT (organization_id, workspace_id, operation, key) DO NOTHING`,
+		record.ID, record.OrganizationID, workspaceArg, record.Operation, record.Key,
 		record.Fingerprint, record.ResponseBody, record.StatusCode,
 		record.CreatedAt, record.ExpiresAt,
 	)

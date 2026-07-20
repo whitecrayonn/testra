@@ -43,6 +43,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (CreateResult, 
 		return CreateResult{}, sharederrors.ErrInvalidInput
 	}
 
+	if err := ValidateScopes(input.Scopes); err != nil {
+		return CreateResult{}, err
+	}
+
 	organizationID, err := s.repo.GetWorkspaceOrganization(ctx, input.WorkspaceID)
 	if err != nil {
 		return CreateResult{}, err

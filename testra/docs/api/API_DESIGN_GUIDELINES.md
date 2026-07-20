@@ -14,9 +14,9 @@
 
 ## 1. Contract Authority
 
-`docs/api/openapi/openapi.yaml` is the contract for implemented/documented endpoints. New endpoints must be documented before implementation and reviewed with the owning module.
+`docs/api/openapi/openapi.yaml` is the contract for implemented/documented endpoints. New endpoints must be implemented in `apps/api/internal/shared/server/server.go` and then synchronized back into the OpenAPI spec with `node scripts/sync-openapi.mjs`. `node scripts/check-openapi-drift.mjs` is run in CI to prevent undocumented endpoints.
 
-As of Phase 3, the contract includes authentication (register, login, MFA, password reset, refresh), organizations, workspaces, projects, API keys, RBAC-authorized resources, test management (folders, suites, cases, versions), test runs, CI ingestion, and notifications. Defects, analytics, integrations, and future modules remain roadmap areas until added to OpenAPI.
+As of Phase 3, the contract includes authentication (register, login, MFA, password reset, refresh, logout, CSRF), organizations, workspaces, projects, API keys, RBAC-authorized resources, test management (folders, suites, cases, versions), test runs, CI ingestion, notifications, defects, analytics, integrations, billing, and intelligence.
 
 ## 2. Resource Design
 
@@ -67,8 +67,9 @@ All new list endpoints use cursor pagination with `cursor` and `page_size`. The 
 
 ## 7. Authentication and Authorization
 
-- Browser/user sessions use bearer JWT as recorded in ADR-001.
-- Scoped, hashed API keys are implemented for workspace management; the ingestion endpoint is still authenticated by JWT and API-key authentication is the next integration step.
+- Browser/user sessions use httpOnly, Secure, SameSite=Lax cookies (`testra_access_token` and `testra_refresh_token`) for JWT access and refresh tokens. The access cookie can also be sent in the `Authorization: Bearer <token>` header for non-browser/API clients.
+- All cookie-authenticated mutating requests must include a double-submit CSRF token in the `X-CSRF-Token` header matching the `testra_csrf_token` cookie. `GET /auth/csrf` issues the CSRF cookie.
+- Scoped, hashed API keys are implemented for workspace management; the ingestion endpoint authenticates with `X-API-Key` or `Authorization: ApiKey <key>`.
 - Authentication is not authorization. Every tenant-scoped operation must resolve organization/workspace/project scope and check permissions.
 - Do not infer tenant scope solely from client-provided IDs; verify membership and relationship server-side.
 

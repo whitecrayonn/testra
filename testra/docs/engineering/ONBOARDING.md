@@ -56,7 +56,7 @@ Testra uses a **Native Development Environment** (ADR-009). Docker is not requir
 3. `pnpm dev` — checks local services, runs migrations, and starts API, web, worker, and ML simultaneously via Turborepo
 4. `make test`, `make lint` before push
 
-Docker Compose remains available as an optional alternative in `infra/docker/`.
+Docker and Docker Compose are not used. All services run natively on the local machine.
 
 ### 3.3 CI/CD
 
@@ -72,7 +72,7 @@ Docker Compose remains available as an optional alternative in `infra/docker/`.
 | `staging` | Auto-deploy from `main` | Sanitized/synthetic |
 | `production` | Manual promotion | Real, backed up, monitored |
 
-Config via env vars (12-factor). `.env.example` is committed; local values use ignored files; MVP production values use environment files or a secrets manager on the Ubuntu VM; future AWS production uses AWS Secrets Manager encrypted by KMS and task roles.
+Config via env vars (12-factor). `.env.example` is committed; local values use ignored files; MVP production values use environment files or a local secrets store on the Ubuntu VPS. Cloud-managed secrets managers may be adopted later if scale justifies it.
 
 ---
 
@@ -234,21 +234,22 @@ testra/
 │   ├── ui/           # Shared React components (shadcn/ui primitives)
 │   ├── config/       # Shared tooling configs
 │   └── sdk/           # Official SDK (not built yet)
-├── infra/
-│   ├── docker/       # Docker Compose and images
-│   ├── k8s/          # Kubernetes base manifests
-│   └── terraform/    # Terraform scaffold
-├── docs/
+├── docs/             # OpenAPI specs, ADRs, runbooks, deployment guides
 │   ├── BIBLICAL_TESTRA.md     # Engineering handbook
 │   ├── engineering/           # Roadmap, onboarding, standards
 │   ├── architecture/          # ADRs and system design
 │   ├── api/                   # OpenAPI spec and API guidelines
 │   ├── operations/            # Runbooks and checklists
-│   └── ...
-├── scripts/          # Dev scripts (pnpm, Go, Python)
-├── Makefile
+│   └── reports/               # Generated reports and reviews
+├── scripts/          # Development and automation scripts
+├── .github/          # CI/CD workflows
+├── Makefile          # Common dev tasks
+├── go.work           # Go workspace
 ├── pnpm-workspace.yaml
-└── go.work
+├── turbo.json
+├── package.json
+├── .env.example
+└── README.md
 ```
 
 #### How to read code

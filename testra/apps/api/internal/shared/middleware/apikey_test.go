@@ -62,10 +62,12 @@ func TestExtractAPIKey(t *testing.T) {
 }
 
 func TestHashAPIKey(t *testing.T) {
-	if hashAPIKey("testra_abc") != hashAPIKey("testra_abc") {
+	h1 := hashAPIKey("testra_abc")
+	h2 := hashAPIKey("testra_abc")
+	if h1 != h2 {
 		t.Fatal("hash not deterministic")
 	}
-	if hashAPIKey("testra_abc") == hashAPIKey("testra_xyz") {
+	if h1 == hashAPIKey("testra_xyz") {
 		t.Fatal("hash collision")
 	}
 }

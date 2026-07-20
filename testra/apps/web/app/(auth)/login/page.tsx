@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { apiFetch, setAuth, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginValues) => {
     setServerError("");
     try {
-      const data = await apiFetch<{ token: string; refresh_token: string; user: { id: string; email: string; name: string } }>(
+      await apiFetch<{ token: string; refresh_token: string; user: { id: string; email: string; name: string } }>(
         "/api/v1/auth/login",
         {
           method: "POST",
@@ -47,7 +47,6 @@ export default function LoginPage() {
           }),
         },
       );
-      setAuth(data.token, data.refresh_token);
       router.push("/dashboard");
     } catch (err) {
       if (err instanceof ApiError && err.code === "MFA_REQUIRED") {

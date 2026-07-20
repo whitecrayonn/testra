@@ -227,14 +227,27 @@ func (r *SQLRepository) GetChannel(ctx context.Context, id uuid.UUID) (*Notifica
 	return &ch, nil
 }
 
-func (r *SQLRepository) ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]NotificationChannel, error) {
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, organization_id, workspace_id, type, name, config, created_by, created_at, updated_at
-		 FROM notification_channels
-		 WHERE workspace_id = $1
-		 ORDER BY name ASC`,
-		workspaceID,
-	)
+func (r *SQLRepository) ListChannels(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]NotificationChannel, error) {
+	var rows *sql.Rows
+	var err error
+
+	if cursor != "" {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, organization_id, workspace_id, type, name, config, created_by, created_at, updated_at
+			 FROM notification_channels
+			 WHERE workspace_id = $1 AND id < $2
+			 ORDER BY id DESC LIMIT $3`,
+			workspaceID, cursor, limit,
+		)
+	} else {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT id, organization_id, workspace_id, type, name, config, created_by, created_at, updated_at
+			 FROM notification_channels
+			 WHERE workspace_id = $1
+			 ORDER BY id DESC LIMIT $2`,
+			workspaceID, limit,
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -309,4 +322,148 @@ func decodeTimeCursor(cursor string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return time.Parse(cursorTimeFormat, string(b))
+}
+
+func (r *SQLRepository) CreateTemplate(ctx context.Context, t *NotificationTemplate) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO notification_templates (id, organization_id, name, event_type, channel_type, subject, body, created_by, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		t.ID, t.OrganizationID, t.Name, t.EventType, t.ChannelType, t.Subject, t.Body, t.CreatedBy, t.CreatedAt, t.UpdatedAt)
+	return err
+}
+
+func (r *SQLRepository) GetTemplate(ctx context.Context, id uuid.UUID) (*NotificationTemplate, error) {
+	var t NotificationTemplate
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, organization_id, name, event_type, channel_type, subject, body, created_by, created_at, updated_at
+		 FROM notification_templates WHERE id = $1`, id,
+	).Scan(&t.ID, &t.OrganizationID, &t.Name, &t.EventType, &t.ChannelType, &t.Subject, &t.Body, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, sharederrors.ErrNotFound
+	}
+	return &t, err
+}
+
+func (r *SQLRepository) ListTemplates(ctx context.Context, orgID uuid.UUID, eventType, channelType string, limit int) ([]NotificationTemplate, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+	query := `SELECT id, organization_id, name, event_type, channel_type, subject, body, created_by, created_at, updated_at
+		 FROM notification_templates WHERE organization_id = $1 `
+	args := []interface{}{orgID}
+	if eventType != "" {
+		query += ` AND event_type = $` + fmt.Sprintf("%d ", len(args)+1)
+		args = append(args, eventType)
+	}
+	if channelType != "" {
+		query += ` AND channel_type = $` + fmt.Sprintf("%d ", len(args)+1)
+		args = append(args, channelType)
+	}
+	query += ` ORDER BY updated_at DESC LIMIT $` + fmt.Sprintf("%d", len(args)+1)
+	args = append(args, limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []NotificationTemplate
+	for rows.Next() {
+		var t NotificationTemplate
+		if err := rows.Scan(&t.ID, &t.OrganizationID, &t.Name, &t.EventType, &t.ChannelType, &t.Subject, &t.Body, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, err
+		}
+		list = append(list, t)
+	}
+	return list, rows.Err()
+}
+
+func (r *SQLRepository) UpdateTemplate(ctx context.Context, t *NotificationTemplate) error {
+	res, err := r.db.ExecContext(ctx,
+		`UPDATE notification_templates SET name = $2, event_type = $3, channel_type = $4, subject = $5, body = $6, updated_at = $7 WHERE id = $1`,
+		t.ID, t.Name, t.EventType, t.ChannelType, t.Subject, t.Body, t.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sharederrors.ErrNotFound
+	}
+	return nil
+}
+
+func (r *SQLRepository) DeleteTemplate(ctx context.Context, id uuid.UUID) error {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM notification_templates WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sharederrors.ErrNotFound
+	}
+	return nil
+}
+
+func (r *SQLRepository) CreateHistory(ctx context.Context, h *NotificationHistory) error {
+	chID := uuid.NullUUID{}
+	if h.ChannelID != nil {
+		chID = uuid.NullUUID{UUID: *h.ChannelID, Valid: true}
+	}
+	notifID := uuid.NullUUID{UUID: h.NotificationID, Valid: h.NotificationID != uuid.Nil}
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO notification_history (id, organization_id, notification_id, channel_id, channel_type, status, error_message, retry_count, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		h.ID, h.OrganizationID, notifID, chID, h.ChannelType, h.Status, h.ErrorMessage, h.RetryCount, h.CreatedAt, h.UpdatedAt)
+	return err
+}
+
+func (r *SQLRepository) UpdateHistory(ctx context.Context, h *NotificationHistory) error {
+	res, err := r.db.ExecContext(ctx,
+		`UPDATE notification_history SET status = $2, error_message = $3, retry_count = $4, updated_at = $5 WHERE id = $1`,
+		h.ID, h.Status, h.ErrorMessage, h.RetryCount, h.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sharederrors.ErrNotFound
+	}
+	return nil
+}
+
+func (r *SQLRepository) ListHistory(ctx context.Context, notificationID uuid.UUID, limit int) ([]NotificationHistory, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, organization_id, notification_id, channel_id, channel_type, status, error_message, retry_count, created_at, updated_at
+		 FROM notification_history WHERE notification_id = $1 ORDER BY created_at DESC LIMIT $2`,
+		notificationID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []NotificationHistory
+	for rows.Next() {
+		var h NotificationHistory
+		var chID sql.NullString
+		if err := rows.Scan(&h.ID, &h.OrganizationID, &h.NotificationID, &chID, &h.ChannelType, &h.Status, &h.ErrorMessage, &h.RetryCount, &h.CreatedAt, &h.UpdatedAt); err != nil {
+			return nil, err
+		}
+		if chID.Valid {
+			id, _ := uuid.Parse(chID.String)
+			h.ChannelID = &id
+		}
+		list = append(list, h)
+	}
+	return list, rows.Err()
 }

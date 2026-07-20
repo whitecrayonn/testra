@@ -10,7 +10,7 @@ import (
 )
 
 type AuthConfig struct {
-	JWTSecret string
+	TokenManager *jwt.Manager
 }
 
 func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
@@ -22,7 +22,12 @@ func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwt.Parse(token, cfg.JWTSecret)
+			if cfg.TokenManager == nil {
+				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL", errors.ErrInternal.Error())
+				return
+			}
+
+			claims, err := cfg.TokenManager.Parse(token)
 			if err != nil {
 				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
 				return
@@ -43,10 +48,9 @@ func extractBearerToken(r *http.Request) string {
 		}
 	}
 
-	// EventSource cannot send custom headers, so clients may pass a short-lived
-	// JWT via the access_token query parameter for SSE endpoints.
-	if token := r.URL.Query().Get("access_token"); token != "" {
+	if token, ok := AccessTokenFromCookie(r); ok {
 		return token
 	}
-	return r.URL.Query().Get("token")
+
+	return ""
 }

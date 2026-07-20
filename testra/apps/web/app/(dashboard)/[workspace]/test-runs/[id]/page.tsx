@@ -2,14 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Play, CheckCircle, XCircle, Clock, SkipForward } from "lucide-react";
+import { ArrowLeft, Play, CheckCircle, XCircle, Clock, SkipForward, RotateCcw, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { getToken } from "@/lib/api";
-import { getTestRun, listTestRunItems, updateTestRunStatus } from "@/features/results/api";
+import {
+  getTestRun,
+  listTestRunItems,
+  updateTestRunStatus,
+  cloneTestRun,
+  rerunTestRun,
+} from "@/features/results/api";
+import { StepRunner } from "@/features/results/components/StepRunner";
 import type { TestRun, TestRunItem, RunProgressEvent } from "@/types/results";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -29,6 +35,8 @@ const statusVariants: Record<string, "neutral" | "info" | "success" | "danger" |
   failed: "danger",
   skipped: "warning",
   blocked: "warning",
+  retest: "info",
+  not_executed: "neutral",
   cancelled: "neutral",
 };
 
@@ -39,6 +47,8 @@ const itemStatusIcons: Record<string, React.ReactNode> = {
   failed: <XCircle className="h-4 w-4 text-red-600" aria-hidden="true" />,
   skipped: <SkipForward className="h-4 w-4 text-yellow-600" aria-hidden="true" />,
   blocked: <Clock className="h-4 w-4 text-orange-600" aria-hidden="true" />,
+  retest: <RotateCcw className="h-4 w-4 text-brand-600" aria-hidden="true" />,
+  not_executed: <Clock className="h-4 w-4 text-slate-400" aria-hidden="true" />,
 };
 
 export default function TestRunDetailPage() {
@@ -49,6 +59,7 @@ export default function TestRunDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<RunProgressEvent | null>(null);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
   const isActive = useMemo(
     () => run?.status === "pending" || run?.status === "running",
@@ -59,8 +70,8 @@ export default function TestRunDetailPage() {
     try {
       const r = await getTestRun(runId);
       setRun(r);
-      const itemResults = await listTestRunItems(runId);
-      setItems(itemResults);
+      const itemResults = await listTestRunItems(runId, { limit: 200 });
+      setItems(itemResults.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load run");
     } finally {
@@ -75,12 +86,9 @@ export default function TestRunDetailPage() {
   useEffect(() => {
     if (!isActive) return;
 
-    const token = getToken();
-    if (!token) return;
-
-    const eventSource = new EventSource(
-      `${API_URL}/api/v1/test-runs/${runId}/stream?access_token=${encodeURIComponent(token)}`,
-    );
+    const eventSource = new EventSource(`${API_URL}/api/v1/test-runs/${runId}/stream`, {
+      withCredentials: true,
+    });
 
     eventSource.onmessage = (e) => {
       const event: RunProgressEvent = JSON.parse(e.data);
@@ -137,6 +145,29 @@ export default function TestRunDetailPage() {
     }
   };
 
+  const handleClone = async () => {
+    try {
+      await cloneTestRun(runId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clone run");
+    }
+  };
+
+  const handleRerun = async () => {
+    try {
+      const updated = await rerunTestRun(runId);
+      setRun(updated);
+      await fetchRun();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rerun run");
+    }
+  };
+
+  const handleItemUpdated = (updated: TestRunItem) => {
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    setActiveItemId(null);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -175,12 +206,22 @@ export default function TestRunDetailPage() {
           { label: run.name },
         ]}
         actions={
-          run.status === "pending" && (
-            <Button onClick={handleStartRun}>
-              <Play className="mr-2 h-4 w-4" aria-hidden="true" />
-              Start Run
+          <div className="flex gap-2">
+            {run.status === "pending" && (
+              <Button onClick={handleStartRun}>
+                <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+                Start Run
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleClone}>
+              <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
+              Clone
             </Button>
-          )
+            <Button variant="secondary" onClick={handleRerun}>
+              <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+              Rerun
+            </Button>
+          </div>
         }
       />
 
@@ -246,12 +287,31 @@ export default function TestRunDetailPage() {
                     {item.error_message && (
                       <div className="mt-1 font-mono text-xs text-red-600">{item.error_message}</div>
                     )}
+                    {item.step_results && item.step_results.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {item.step_results.map((step, i) => (
+                          <Badge key={i} variant={statusVariants[step.status] || "neutral"}>
+                            S{step.order + 1}: {step.status}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={statusVariants[item.status] || "neutral"}>{item.status}</Badge>
                   {item.duration_ms > 0 && (
                     <span className="text-xs text-slate-500">{(item.duration_ms / 1000).toFixed(2)}s</span>
                   )}
+                  {run.status === "running" && (
+                    <Button variant="secondary" size="sm" onClick={() => setActiveItemId(activeItemId === item.id ? null : item.id)}>
+                      {activeItemId === item.id ? "Close" : "Execute"}
+                    </Button>
+                  )}
                 </div>
+                {activeItemId === item.id && (
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <StepRunner item={item} onUpdated={handleItemUpdated} />
+                  </div>
+                )}
               </Card>
             ))}
           </div>

@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlayCircle, TestTube, FolderKanban, Settings, Zap, ChevronRight, Activity } from "lucide-react";
+import { PlayCircle, TestTube, FolderKanban, Settings, Zap, ChevronRight, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getSummary, getTrends } from "@/features/analytics/api";
-import type { Summary, TrendPoint } from "@/types/analytics";
+import { DashboardAnalytics } from "@/features/analytics/components/DashboardAnalytics";
 
 interface DashboardState {
   workspaceId: string | null;
@@ -21,10 +20,6 @@ interface DashboardState {
 export default function DashboardPage() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [trends, setTrends] = useState<TrendPoint[]>([]);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
-  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -37,18 +32,6 @@ export default function DashboardPage() {
         projectId,
         projectName: localStorage.getItem("testra_project_name"),
       });
-
-      if (workspaceId) {
-        Promise.all([getSummary(workspaceId, projectId || undefined), getTrends(workspaceId, projectId || undefined)])
-          .then(([s, t]) => {
-            setSummary(s);
-            setTrends(t.slice(-7));
-          })
-          .catch((err) => setAnalyticsError(err instanceof Error ? err.message : "Failed to load analytics"))
-          .finally(() => setLoadingAnalytics(false));
-      } else {
-        setLoadingAnalytics(false);
-      }
     }
   }, []);
 
@@ -136,51 +119,9 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-brand-600" />
-            Analytics summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {analyticsError ? (
-            <p className="text-sm text-red-600">{analyticsError}</p>
-          ) : loadingAnalytics ? (
-            <div className="grid gap-4 sm:grid-cols-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
-              ))}
-            </div>
-          ) : summary ? (
-            <div className="grid gap-4 sm:grid-cols-5">
-              <Metric label="Total runs" value={summary.total_runs} />
-              <Metric label="Passed" value={summary.passed} variant="success" />
-              <Metric label="Failed" value={summary.failed} variant="danger" />
-              <Metric label="Skipped" value={summary.skipped} />
-              <Metric label="Blocked" value={summary.blocked} />
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">Select a workspace to see analytics.</p>
-          )}
-
-          {trends.length > 0 && (
-            <div className="mt-6">
-              <h3 className="mb-3 text-sm font-medium text-slate-900">Recent trends</h3>
-              <div className="space-y-2">
-                {trends.map((point) => (
-                  <div key={point.date} className="flex items-center justify-between rounded-lg border border-slate-100 p-3 text-sm">
-                    <span className="text-slate-500">{point.date}</span>
-                    <span className="font-medium">{point.total_runs} runs</span>
-                    <span className="text-green-600">{point.passed} passed</span>
-                    <span className="text-red-600">{point.failed} failed</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {state?.workspaceId && (
+        <DashboardAnalytics workspaceId={state.workspaceId} projectId={state.projectId || undefined} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -196,6 +137,10 @@ export default function DashboardPage() {
               <LinkButton href="/dashboard/test-runs/new" variant="secondary">
                 <PlayCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                 New test run
+              </LinkButton>
+              <LinkButton href="/dashboard/test-plans/new" variant="secondary">
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                New test plan
               </LinkButton>
               <LinkButton href="/dashboard/projects" variant="secondary">
                 Manage projects
@@ -245,21 +190,3 @@ export default function DashboardPage() {
   );
 }
 
-function Metric({
-  label,
-  value,
-  variant,
-}: {
-  label: string;
-  value: number;
-  variant?: "success" | "danger";
-}) {
-  const color =
-    variant === "success" ? "text-green-600" : variant === "danger" ? "text-red-600" : "text-slate-900";
-  return (
-    <div className="rounded-lg border border-slate-200 p-4">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
-    </div>
-  );
-}

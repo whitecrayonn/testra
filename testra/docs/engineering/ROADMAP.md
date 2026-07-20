@@ -35,7 +35,7 @@
 - Establish OpenAPI contract skeleton and ADR-001 (hybrid auth).
 
 ### Definition of Done
-- [x] Native development environment with local PostgreSQL, Redis, Mailpit, MinIO (Docker optional per ADR-009)
+- [x] Native development environment with local PostgreSQL, Redis, Mailpit, MinIO (no Docker per ADR-009)
 - [x] `.gitignore` and `.env.example` present
 - [x] ADR-001 (hybrid auth) recorded
 - [x] OpenAPI 3.1 skeleton covering existing endpoints
@@ -245,7 +245,7 @@
 ### Objectives
 - ML-powered flaky detection, failure classification, risk/health scores.
 - Meilisearch, Stripe billing, WorkOS SSO (when enterprise deal requires).
-- Kubernetes migration.
+- single-VPS scaling or a future managed platform (not planned for MVP).
 
 ### Definition of Done
 - [ ] `intelligence` module + `apps/ml`: flaky detection
@@ -254,7 +254,7 @@
 - [ ] Meilisearch integration
 - [ ] Stripe billing
 - [ ] WorkOS SSO (conditional)
-- [ ] K8s migration (EKS/GKE)
+- [ ] Document migration path to a managed platform (not MVP)
 
 ### Dependencies
 - Phase 5 (MVP launched, production data available)
@@ -477,7 +477,7 @@
 | # | Deliverable | Why | Success criteria | Owner |
 |---|-------------|-----|------------------|-------|
 | 24 | ClickHouse schema and analytics runbook | Analytics and dashboards require ClickHouse. | Schema, ingestion pipeline, query patterns, and operational guide documented before launch. | Data / Analytics |
-| 25 | Terraform / Kubernetes deployment runbooks | Production deployment needs concrete manifests. | Step-by-step runbooks for EKS/RDS/S3/Redis provisioning and deployment. | Infra / SRE |
+| 25 | Single-Ubuntu-VPS systemd + nginx deployment runbooks | Production deployment needs concrete service units and nginx configs. | Step-by-step runbooks for systemd services, Nginx, PostgreSQL, Redis, MinIO on Ubuntu. | Infra / SRE |
 | 26 | Generated TypeScript SDK + README | Public API and partner integrations depend on SDK. | `packages/sdk/` is generated from OpenAPI and has usage examples. | API / Platform |
 | 27 | Security and compliance runbooks | SOC 2 readiness requires documented evidence. | Penetration test, vulnerability management, access review, and audit export runbooks. | Security |
 | 28 | Enterprise features docs | SSO/SAML, SCIM, data residency require dedicated guides. | Create an `enterprise/` documentation directory with setup and configuration guides. | Enterprise |
@@ -534,9 +534,9 @@ Documentation is "done" for a feature when:
 | C1 | **Rate limiting is now wired** on `/auth/*` and `/ingest`. Redis-backed `LocalRateLimiter` supports per-IP, per-email, and per-API-key hash keys. | Brute force / DoS risk reduced | `identity`, `shared/middleware` | Scale to a distributed Redis rate limiter and add more granular public endpoint rules | P0 | Closed |
 | C2 | **API-key authentication middleware is implemented and wired to `/ingest`.** Scoped keys validate hash, expiry, scopes, and set tenant context. | CI/CD can use revocable keys instead of user JWTs | `apikeys`, `automationhub`, `shared/middleware` | Document `X-API-Key` / `Authorization: ApiKey` usage in CI guide and OpenAPI | P0 | Closed |
 | C3 | **~~SSE progress stream inaccessible from browsers.~~** Query-token auth is implemented: `GET /test-runs/{id}/stream?access_token=${token}` works in browsers. Harden before public networks. | Manual test execution live progress works locally/MVP | `results`, `frontend` | Replace query-token with session cookie or short-lived signed SSE token before public networks | P0 | Closed |
-| C4 | **Default/weak secrets in `.env.example` and no secret management.** Example contains `JWT_SECRET=testratestra` and `DATABASE_URL` with hard-coded password. | Production deployments will use known credentials | `infra`, `config` | Generate secrets in CI/CD or secrets manager; remove defaults; fail fast if secrets are unchanged | P0 | Open |
+| C4 | **Startup secret validation added.** `config.Validate()` fails fast in production when `JWT_SECRET` is weak/default/short or `DATABASE_URL` uses example credentials or disables TLS; `.env.example` values remain for local dev only. | Production deployments can no longer boot with known credentials | `infra`, `config` | Integrate with a secrets manager (Vault/environment files or a local secrets store) for rotation; still remove any real defaults from CI | P0 | Mitigated |
 | C5 | **Client-side route guards added.** `DashboardLayout` and `AuthLayout` redirect unauthenticated users. Token refresh on 401 is implemented. | `localStorage` still exposes tokens to XSS; risk partially mitigated | `frontend` | Move access token to `httpOnly` cookie or secure wrapper before production launch | P0 | Mitigated |
-| C6 | **Audit logging uses `context.Background()` and no retry/queue.** Events are fired asynchronously with no guarantee of persistence. | Compliance evidence can be silently lost | `audit`, `shared/middleware` | Write audit events synchronously inside the request transaction or enqueue to a durable queue (Redis/Asynq) | P0 | Open |
+| C6 | **Audit persistence failures are now logged, not silently dropped**, and run under a bounded 5s detached context. Still best-effort (no transactional write or durable queue). | Lost compliance events are observable in logs | `audit`, `shared/middleware` | Write audit events synchronously inside the request transaction or enqueue to a durable queue (Redis/Asynq) | P0 | Mitigated |
 
 ---
 
@@ -550,10 +550,10 @@ Documentation is "done" for a feature when:
 | H4 | **~~Project key generation mismatch.~~** Frontend now generates uppercase alphanumeric keys matching the backend regex. | Users can create projects with auto-generated keys | `project`, `frontend` | Add unique constraint/index on `(organization_id, key)` | P1 | Closed |
 | H5 | **Token refresh on 401 is implemented in `lib/api.ts`.** The client stores refresh tokens and retries once after a 401. | Users are no longer logged out every 15 minutes | `frontend`, `identity` | Move token storage to `httpOnly` cookie and add proactive refresh before expiry | P1 | Closed |
 | H6 | **~~MFA QR code rendered as text.~~** Frontend now renders `qr_code` as an `<img src={qr_code} />` data URL. | Users can scan QR code with authenticator apps | `frontend`, `identity` | Add copy-to-clipboard fallback | P1 | Closed |
-| H7 | **No Kubernetes ConfigMap, Secret, probes, or ingress definitions.** | Cannot deploy to production safely; no health checks or secret management | `infra/k8s`, `infra/terraform` | Add Kustomize/Helm charts, `ConfigMap`, `Secret`, liveness/readiness probes, `Ingress`, and resource limits | P1 | Open |
-| H8 | **Terraform scaffold has no resources or modules.** | Infrastructure cannot be provisioned | `infra/terraform` | Implement VPC, EKS, RDS, S3, Redis, Route53, WAF modules | P1 | Open |
+| H7 | **No production systemd service units, nginx config, or deployment runbooks.** | Cannot deploy to production safely; no health checks or secret management | `docs/deployment/` | Create systemd unit files, nginx site config, health checks, and environment file guidance | P1 | Open |
+| H8 | **No VPS provisioning or repeatable deployment scripts.** | Infrastructure cannot be provisioned consistently | `docs/deployment/`, `scripts/` | Document server setup, firewall, PostgreSQL/Redis/MinIO install, and CI/CD artifact delivery | P1 | Open |
 | H9 | **No integration or end-to-end test suite.** | Regression risk, low confidence in refactors | `all` | Add Go integration tests against test DB, Playwright E2E for critical flows | P1 | Open |
-| H10 | **No observability stack.** No OpenTelemetry, Prometheus, Grafana, Loki, or structured request logging. | Cannot debug production incidents | `shared`, `infra` | Add OpenTelemetry traces, structured logs, and metrics endpoints | P1 | Open |
+| H10 | **No observability stack.** No OpenTelemetry, Prometheus, Grafana, Loki, or structured request logging. | Cannot debug production incidents | `shared`, `docs/operations/` | Add OpenTelemetry traces, structured logs, and metrics endpoints | P1 | Open |
 
 ---
 
@@ -567,10 +567,10 @@ Documentation is "done" for a feature when:
 | M4 | **`apps/worker` is a stub and `cmd/worker` does nothing.** | No background processing for email, reports, or ML jobs | `worker`, `apps/api/cmd/worker` | Implement Asynq worker or promote `cmd/worker` to real background service | P2 | Open |
 | M5 | **Settings sub-pages are mostly placeholders.** | Cannot manage members, roles, API keys, audit logs, billing; notifications page implemented | `frontend` | Build settings pages using existing `platform/api.ts` and backend endpoints | P2 | Open |
 | M6 | **Audit middleware does not capture request result/status before response.** | Audit metadata may be incomplete if handler errors | `audit`, `shared/middleware` | Use `responseWriter` wrapper to capture status code in middleware | P2 | Open |
-| M7 | **`mailpit` has no Docker Compose healthcheck.** | `depends_on` ordering is weaker without health status | `infra/docker` | Add `healthcheck` block to `mailpit` service | P2 | Open |
-| M8 | **Docker Compose does not define application services.** | Developers must run `api`, `web`, `worker`, `ml` manually | `infra/docker` | Add optional `api`, `web`, `worker`, `ml` services for container-first workflows | P2 | Open |
+| M7 | **`mailpit` health check is not wired into `pnpm dev`.** | Service startup order is not verified | `scripts/dev/` | Add a local health check for Mailpit in `start-infra.mjs` | P2 | Open |
+| M8 | **No single `start` script for all backing services.** | Developers must start PostgreSQL, Redis, Mailpit, MinIO separately | `scripts/dev/` | Provide optional native start/stop helper scripts | P2 | Open |
 | M9 | **No bulk import / migration tools from TestRail/Excel/CSV.** | High friction for customer onboarding | `testmanagement`, `frontend` | Build import endpoints and UI wizards | P3 | Open |
-| M10 | **Environment variable name mismatch.** `apps/api/.env.example` has `JWT_EXPIRY_HOURS=168` while code reads `JWT_EXPIRY_MINUTES`. | Config silently falls to default 15 minutes or fails to parse | `config`, `infra` | Fix `.env.example` and add startup validation for required vars | P2 | Open |
+| M10 | **Environment variable name mismatch.** `apps/api/.env.example` has `JWT_EXPIRY_HOURS=168` while code reads `JWT_EXPIRY_MINUTES`. | Config silently falls to default 15 minutes or fails to parse | `config`, `scripts/` | Fix `.env.example` and add startup validation for required vars | P2 | Open |
 
 ---
 
@@ -580,10 +580,10 @@ Documentation is "done" for a feature when:
 |---|-------------|--------|------------------|-----------------|----------|----------------|
 | L1 | **Frontend `apiFetch` does not retry or handle network errors gracefully.** | Transient errors show raw error text | `frontend` | Add exponential backoff for idempotent GETs and user-friendly error toasts | P4 | Open |
 | L2 | **Project `key` field is limited to 10 uppercase characters.** | Some teams may want longer/more readable keys | `project` | Relax or configure key rules | P4 | Open |
-| L3 | **Removed `.dockerignore` in `apps/api`** | Larger build context, slower builds | `apps/api` | Restore `.dockerignore` | P4 | Open |
+| L3 | **`.dockerignore` remains in `apps/api`.** | Not needed because Docker is not used | `apps/api` | Remove `.dockerignore` | P4 | ✅ Closed |
 | L4 | **No global error boundary or loading state.** | Each page duplicates loader/error handling | `frontend` | Add `error.tsx` and `loading.tsx` in route groups and feature wrappers | P4 | Open |
 | L5 | **`localStorage` keys are not namespaced.** | Risk of collision with other apps or future keys | `frontend` | Prefix with `testra_` consistently (already partially true) | P5 | Open |
-| L6 | **Stale or sample files remain in `.github/workflows` and `infra` directories.** | Confusion for new engineers | `infra`, `.github` | Remove sample placeholders or document them | P5 | Open |
+| L6 | **Stale or sample files remain in `.github/workflows` and documentation.** | Confusion for new engineers | `.github`, `docs/` | Remove sample placeholders or document them | P5 | Open |
 
 ---
 
@@ -592,11 +592,41 @@ Documentation is "done" for a feature when:
 | Priority | What to fix |
 |----------|--------------|
 | **P0 — Critical** | ✅ Rate limiting, ✅ API-key auth, SSE auth, secrets management, ✅ frontend route guards + token refresh, audit durability |
-| **P1 — High** | Permission-name alignment, org permission gates, tenant resolver, ✅ token refresh (completed), K8s/Terraform completion, tests, observability |
-| **P2 — Medium** | Route consolidation, global state, OpenAPI completion, worker implementation, settings pages, audit middleware, env vars, Docker app services |
+| **P1 — High** | Permission-name alignment, org permission gates, tenant resolver, ✅ token refresh (completed), systemd/nginx deployment runbooks, tests, observability |
+| **P2 — Medium** | Route consolidation, global state, OpenAPI completion, worker implementation, settings pages, audit middleware, env vars, local service helper scripts |
 | **P3+ — Lower** | Bulk import, advanced UX polish, error boundaries, key namespaces, cleanup |
 
 For the exact implementation order, see this `ROADMAP.md` file.
+
+---
+
+## Production Launch Roadmap — 2026-08-02 Update
+
+**Status:** Active planning  
+**Source of truth for launch readiness:** `docs/engineering/LAUNCH_READINESS_PLAN.md`  
+**Detailed task backlog:** `docs/engineering/SPRINT_BACKLOG.md`  
+
+| Milestone | Target | Definition of Done | Status |
+|-----------|--------|--------------------|--------|
+| **M1 — Production Security & Trust** | 2026-09 | Cookie/session auth, CSRF, hardened password policy, audit read, PII redaction, host firewall rules, secrets store | Not started |
+| **M2 — Production Infrastructure & Deploy** | 2026-10 | Ubuntu VPS provisioning runbook, systemd service units, nginx TLS, PostgreSQL/Redis/MinIO setup, GitHub Actions artifact delivery, secrets store | Not started |
+| **M3 — Observability & Reliability** | 2026-10 | OpenTelemetry, Grafana/Tempo/Loki, SLO dashboards, alerting, incident runbooks | Not started |
+| **M4 — Commercial SaaS Core** | 2026-11 | Stripe billing, entitlements, OpenAPI-generated SDK, member/role UI, audit UI, admin console | Not started |
+| **M5 — Data & Performance at Scale** | 2026-12 | Missing DB indexes, pagination remaining lists, retention jobs, SSR/caching, load tests | Not started |
+| **M6 — Enterprise & Phase 4+ Features** | 2027-Q1 | SSO/SAML/SCIM, custom roles, data residency, advanced intelligence, partner marketplace | Not started |
+
+### Launch Gates
+
+- **Alpha Ready:** Build/test gates pass; core auth, test management, runs, ingestion work end-to-end on a local developer machine.
+- **Beta Ready:** Cookie auth, real single-Ubuntu-VPS staging with TLS, OpenAPI/SDK, observability, pagination/indexes in place; first design partners onboarded.
+- **GA Ready:** Production single-Ubuntu-VPS deployment, DB backups, billing/entitlements, security audit, SLO monitoring, load tests passed.
+- **Enterprise Ready:** SSO/SAML/SCIM, custom roles, audit export, data residency, SLA reporting.
+
+### Phase Status Update
+
+- **Phase 4 — API Testing & Defects:** Backend routes wired; UI and full business logic remain partial. Continue in parallel with M5/M6.
+- **Phase 5 — Dashboard, Analytics & Launch:** Re-scoped into M1–M5 of the production launch roadmap.
+- **Phase 6 — V2 Intelligence:** Moved to M6 enterprise/scale phase.
 
 ## See Also
 

@@ -10,5 +10,9 @@
   "exports": {
     "./typescript/*": "./typescript/*",
     "./eslint/*": "./eslint/*"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.9.0",
+    "typescript-eslint": "^8.2.0"
   }
 }

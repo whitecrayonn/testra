@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
+	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
@@ -29,6 +30,10 @@ func (s *Service) CreateRun(ctx context.Context, input CreateRunInput) (*TestRun
 	}
 
 	now := time.Now().UTC()
+	metadata := make(map[string]interface{})
+	if input.PlanID != nil {
+		metadata["plan_id"] = input.PlanID.String()
+	}
 	run := &TestRun{
 		ID:          uuid.New(),
 		WorkspaceID: input.WorkspaceID,
@@ -38,7 +43,7 @@ func (s *Service) CreateRun(ctx context.Context, input CreateRunInput) (*TestRun
 		Status:      RunStatusPending,
 		Total:       len(input.TestCaseIDs),
 		Source:      input.Source,
-		Metadata:    make(map[string]interface{}),
+		Metadata:    metadata,
 		CreatedBy:   input.CreatedBy,
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -47,6 +52,17 @@ func (s *Service) CreateRun(ctx context.Context, input CreateRunInput) (*TestRun
 	if err := s.repo.CreateRun(ctx, run); err != nil {
 		return nil, err
 	}
+
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     "test_run.created",
+		TenantID: input.WorkspaceID.String(),
+		Payload: map[string]interface{}{
+			"run_id":       run.ID.String(),
+			"project_id":   input.ProjectID.String(),
+			"workspace_id": input.WorkspaceID.String(),
+			"status":       string(run.Status),
+		},
+	})
 
 	for i, tcID := range input.TestCaseIDs {
 		item := &TestRunItem{
@@ -116,6 +132,26 @@ func (s *Service) UpdateRunStatus(ctx context.Context, id uuid.UUID, status RunS
 		Progress: float64(run.Passed+run.Failed+run.Skipped+run.Blocked) / float64(max(run.Total, 1)),
 	})
 
+	eventType := "test_run.status_changed"
+	if IsTerminalRunStatus(status) {
+		eventType = "test_run.completed"
+	}
+	eventbus.Default().Publish(ctx, eventbus.Event{
+		Type:     eventType,
+		TenantID: run.WorkspaceID.String(),
+		Payload: map[string]interface{}{
+			"run_id":       run.ID.String(),
+			"project_id":   run.ProjectID.String(),
+			"workspace_id": run.WorkspaceID.String(),
+			"status":       string(status),
+			"passed":       run.Passed,
+			"failed":       run.Failed,
+			"skipped":      run.Skipped,
+			"blocked":      run.Blocked,
+			"total":        run.Total,
+		},
+	})
+
 	return run, nil
 }
 
@@ -150,7 +186,9 @@ func (s *Service) UpdateItemStatus(ctx context.Context, itemID uuid.UUID, status
 
 	run, err := s.repo.GetRunByID(ctx, item.RunID)
 	if err == nil {
-		s.recalcRunCounts(ctx, run)
+		if err := s.recalcRunCounts(ctx, run); err != nil {
+			return nil, err
+		}
 		s.progress.broadcast(run.ID, RunProgressEvent{
 			RunID:    run.ID,
 			ItemID:   item.ID,
@@ -180,10 +218,10 @@ func (s *Service) SubscribeRunProgress(ctx context.Context, runID uuid.UUID) (<-
 	return s.progress.subscribe(runID), nil
 }
 
-func (s *Service) recalcRunCounts(ctx context.Context, run *TestRun) {
+func (s *Service) recalcRunCounts(ctx context.Context, run *TestRun) error {
 	items, err := s.repo.ListItems(ctx, run.ID)
 	if err != nil {
-		return
+		return err
 	}
 	run.Total = len(items)
 	run.Passed = 0
@@ -206,7 +244,7 @@ func (s *Service) recalcRunCounts(ctx context.Context, run *TestRun) {
 	}
 	run.DurationMs = totalDuration
 	run.UpdatedAt = time.Now().UTC()
-	_ = s.repo.UpdateRun(ctx, run)
+	return s.repo.UpdateRun(ctx, run)
 }
 
 func max(a, b int) int {

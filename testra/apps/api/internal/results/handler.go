@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/pagination"
@@ -43,18 +42,66 @@ type runResponse struct {
 }
 
 type itemResponse struct {
-	ID           string    `json:"id"`
-	RunID        string    `json:"run_id"`
-	TestCaseID   *string   `json:"test_case_id"`
-	Title        string    `json:"title"`
-	Status       string    `json:"status"`
-	DurationMs   int64     `json:"duration_ms"`
-	ErrorMessage string    `json:"error_message"`
-	StackTrace   string    `json:"stack_trace"`
-	Artifacts    []string  `json:"artifacts"`
-	SortOrder    int       `json:"sort_order"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string       `json:"id"`
+	RunID        string       `json:"run_id"`
+	TestCaseID   *string      `json:"test_case_id"`
+	Title        string       `json:"title"`
+	Status       string       `json:"status"`
+	DurationMs   int64        `json:"duration_ms"`
+	ErrorMessage string       `json:"error_message"`
+	StackTrace   string       `json:"stack_trace"`
+	Artifacts    []string     `json:"artifacts"`
+	StepResults  []StepResult `json:"step_results"`
+	Comment      string       `json:"comment"`
+	ExecutedBy   *string      `json:"executed_by"`
+	ExecutedAt   *time.Time   `json:"executed_at"`
+	SortOrder    int          `json:"sort_order"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+}
+
+type evidenceResponse struct {
+	ID          string    `json:"id"`
+	RunItemID   string    `json:"run_item_id"`
+	StepOrder   int       `json:"step_order"`
+	FileName    string    `json:"file_name"`
+	ContentType string    `json:"content_type"`
+	StoragePath string    `json:"storage_path"`
+	UploadedBy  *string   `json:"uploaded_by"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type historyResponse struct {
+	ID          string       `json:"id"`
+	RunItemID   string       `json:"run_item_id"`
+	Status      string       `json:"status"`
+	StepResults []StepResult `json:"step_results"`
+	Comment     string       `json:"comment"`
+	DurationMs  int64        `json:"duration_ms"`
+	ExecutedBy  *string      `json:"executed_by"`
+	CreatedAt   time.Time    `json:"created_at"`
+}
+
+type planResponse struct {
+	ID            string                 `json:"id"`
+	WorkspaceID   string                 `json:"workspace_id"`
+	ProjectID     string                 `json:"project_id"`
+	SuiteID       *string                `json:"suite_id"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	Status        string                 `json:"status"`
+	Configuration map[string]interface{} `json:"configuration"`
+	CreatedBy     string                 `json:"created_by"`
+	CreatedAt     time.Time              `json:"created_at"`
+	UpdatedAt     time.Time              `json:"updated_at"`
+}
+
+type planItemResponse struct {
+	ID         string    `json:"id"`
+	PlanID     string    `json:"plan_id"`
+	TestCaseID string    `json:"test_case_id"`
+	SortOrder  int       `json:"sort_order"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 func mapRunResponse(run *TestRun) runResponse {
@@ -93,6 +140,8 @@ func mapItemResponse(item *TestRunItem) itemResponse {
 		ErrorMessage: item.ErrorMessage,
 		StackTrace:   item.StackTrace,
 		Artifacts:    item.Artifacts,
+		StepResults:  item.StepResults,
+		Comment:      item.Comment,
 		SortOrder:    item.SortOrder,
 		CreatedAt:    item.CreatedAt,
 		UpdatedAt:    item.UpdatedAt,
@@ -100,25 +149,75 @@ func mapItemResponse(item *TestRunItem) itemResponse {
 	if item.TestCaseID != nil {
 		resp.TestCaseID = strPtr(item.TestCaseID.String())
 	}
+	if item.ExecutedBy != nil {
+		resp.ExecutedBy = strPtr(item.ExecutedBy.String())
+	}
+	resp.ExecutedAt = item.ExecutedAt
 	return resp
 }
 
-func strPtr(s string) *string { return &s }
+func mapEvidenceResponse(e *EvidenceRef) evidenceResponse {
+	resp := evidenceResponse{
+		ID:          e.ID.String(),
+		RunItemID:   e.RunItemID.String(),
+		StepOrder:   e.StepOrder,
+		FileName:    e.FileName,
+		ContentType: e.ContentType,
+		StoragePath: e.StoragePath,
+		CreatedAt:   e.CreatedAt,
+	}
+	if e.UploadedBy != nil {
+		resp.UploadedBy = strPtr(e.UploadedBy.String())
+	}
+	return resp
+}
 
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrConflict:
-		apihttp.ErrorJSON(w, http.StatusConflict, "CONFLICT", err.Error())
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "An unexpected error occurred")
+func mapHistoryResponse(h *RunItemHistory) historyResponse {
+	resp := historyResponse{
+		ID:          h.ID.String(),
+		RunItemID:   h.RunItemID.String(),
+		Status:      string(h.Status),
+		StepResults: h.StepResults,
+		Comment:     h.Comment,
+		DurationMs:  h.DurationMs,
+		CreatedAt:   h.CreatedAt,
+	}
+	if h.ExecutedBy != nil {
+		resp.ExecutedBy = strPtr(h.ExecutedBy.String())
+	}
+	return resp
+}
+
+func mapPlanResponse(plan *TestPlan) planResponse {
+	resp := planResponse{
+		ID:            plan.ID.String(),
+		WorkspaceID:   plan.WorkspaceID.String(),
+		ProjectID:     plan.ProjectID.String(),
+		Name:          plan.Name,
+		Description:   plan.Description,
+		Status:        string(plan.Status),
+		Configuration: plan.Configuration,
+		CreatedBy:     plan.CreatedBy.String(),
+		CreatedAt:     plan.CreatedAt,
+		UpdatedAt:     plan.UpdatedAt,
+	}
+	if plan.SuiteID != nil {
+		resp.SuiteID = strPtr(plan.SuiteID.String())
+	}
+	return resp
+}
+
+func mapPlanItemResponse(item *TestPlanItem) planItemResponse {
+	return planItemResponse{
+		ID:         item.ID.String(),
+		PlanID:     item.PlanID.String(),
+		TestCaseID: item.TestCaseID.String(),
+		SortOrder:  item.SortOrder,
+		CreatedAt:  item.CreatedAt,
 	}
 }
+
+func strPtr(s string) *string { return &s }
 
 type createRunRequest struct {
 	WorkspaceID string   `json:"workspace_id"`
@@ -185,7 +284,7 @@ func (h *Handler) CreateRun(w http.ResponseWriter, r *http.Request) {
 		TestCaseIDs: tcIDs,
 	})
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -201,7 +300,7 @@ func (h *Handler) GetRun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := h.service.GetRun(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -224,7 +323,7 @@ func (h *Handler) ListRuns(w http.ResponseWriter, r *http.Request) {
 	params := pagination.ParseParams(r)
 	runs, err := h.service.ListRuns(r.Context(), projectID, params.Cursor, params.Limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -266,7 +365,7 @@ func (h *Handler) UpdateRunStatus(w http.ResponseWriter, r *http.Request) {
 
 	run, err := h.service.UpdateRunStatus(r.Context(), id, RunStatus(req.Status))
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -281,32 +380,11 @@ func (h *Handler) DeleteRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteRun(r.Context(), id); err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
-	runID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid id")
-		return
-	}
-
-	items, err := h.service.ListItems(r.Context(), runID)
-	if err != nil {
-		mapError(w, err)
-		return
-	}
-
-	resp := make([]itemResponse, len(items))
-	for i, item := range items {
-		resp[i] = mapItemResponse(&item)
-	}
-
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
 }
 
 type updateItemStatusRequest struct {
@@ -331,7 +409,7 @@ func (h *Handler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.service.UpdateItemStatus(r.Context(), itemID, RunItemStatus(req.Status), req.DurationMs, req.ErrorMessage, req.StackTrace)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 
@@ -347,7 +425,7 @@ func (h *Handler) StreamRunProgress(w http.ResponseWriter, r *http.Request) {
 
 	ch, err := h.service.SubscribeRunProgress(r.Context(), runID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 

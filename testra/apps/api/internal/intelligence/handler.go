@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 )
 
@@ -43,7 +42,7 @@ func (h *Handler) PredictFlaky(w http.ResponseWriter, r *http.Request) {
 		History:       req.History,
 	}, wsID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusCreated, toPredictionResponse(p))
@@ -60,7 +59,7 @@ func (h *Handler) ListPredictions(w http.ResponseWriter, r *http.Request) {
 
 	predictions, err := h.service.ListPredictions(r.Context(), wsID, minScore, limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	resp := make([]predictionResponse, len(predictions))
@@ -78,7 +77,7 @@ func (h *Handler) GetPrediction(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := h.service.GetPrediction(r.Context(), id)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, toPredictionResponse(p))
@@ -101,7 +100,7 @@ func (h *Handler) ClassifyFailure(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := h.service.ClassifyFailure(r.Context(), ClassifyFailureInput{ErrorMessage: req.ErrorMessage, StackTrace: req.StackTrace}, wsID)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, result)
@@ -116,7 +115,7 @@ func (h *Handler) ListClusters(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	clusters, err := h.service.ListClusters(r.Context(), wsID, limit)
 	if err != nil {
-		mapError(w, err)
+		apihttp.MapError(w, err)
 		return
 	}
 	apihttp.JSON(w, http.StatusOK, clusters)
@@ -143,18 +142,5 @@ func toPredictionResponse(p *FlakyPrediction) predictionResponse {
 		Confidence:     p.Confidence,
 		Features:       p.Features,
 		PredictedAt:    p.PredictedAt.Format(time.RFC3339),
-	}
-}
-
-func mapError(w http.ResponseWriter, err error) {
-	switch err {
-	case sharederrors.ErrNotFound:
-		apihttp.ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-	case sharederrors.ErrInvalidInput:
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-	case sharederrors.ErrForbidden:
-		apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", err.Error())
-	default:
-		apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}
 }

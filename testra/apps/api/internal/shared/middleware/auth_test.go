@@ -12,14 +12,17 @@ import (
 )
 
 func TestAuthAcceptsBearerHeader(t *testing.T) {
-	secret := "test-secret"
+	tm, err := jwt.NewTestManager("test-issuer", "test-audience")
+	if err != nil {
+		t.Fatalf("create token manager: %v", err)
+	}
 	userID := uuid.New()
-	token, err := jwt.Sign(userID, "test@example.com", secret, time.Hour)
+	token, err := tm.Sign(userID, "test@example.com", time.Hour)
 	if err != nil {
 		t.Fatalf("sign token: %v", err)
 	}
 
-	handler := Auth(AuthConfig{JWTSecret: secret})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := Auth(AuthConfig{TokenManager: tm})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := UserIDFromContext(r.Context())
 		if !ok || uid != userID {
 			t.Fatalf("expected user id in context")
@@ -37,15 +40,42 @@ func TestAuthAcceptsBearerHeader(t *testing.T) {
 	}
 }
 
-func TestAuthAcceptsAccessTokenQueryParam(t *testing.T) {
-	secret := "test-secret"
+func TestAuthRejectsAccessTokenQueryParam(t *testing.T) {
+	tm, err := jwt.NewTestManager("test-issuer", "test-audience")
+	if err != nil {
+		t.Fatalf("create token manager: %v", err)
+	}
 	userID := uuid.New()
-	token, err := jwt.Sign(userID, "test@example.com", secret, time.Hour)
+	token, err := tm.Sign(userID, "test@example.com", time.Hour)
 	if err != nil {
 		t.Fatalf("sign token: %v", err)
 	}
 
-	handler := Auth(AuthConfig{JWTSecret: secret})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := Auth(AuthConfig{TokenManager: tm})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be called")
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/?access_token="+token, nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestAuthAcceptsAccessTokenCookie(t *testing.T) {
+	tm, err := jwt.NewTestManager("test-issuer", "test-audience")
+	if err != nil {
+		t.Fatalf("create token manager: %v", err)
+	}
+	userID := uuid.New()
+	token, err := tm.Sign(userID, "test@example.com", time.Hour)
+	if err != nil {
+		t.Fatalf("sign token: %v", err)
+	}
+
+	handler := Auth(AuthConfig{TokenManager: tm})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := UserIDFromContext(r.Context())
 		if !ok || uid != userID {
 			t.Fatalf("expected user id in context")
@@ -53,17 +83,19 @@ func TestAuthAcceptsAccessTokenQueryParam(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/?access_token="+token, nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.AddCookie(&http.Cookie{Name: AccessTokenCookieName, Value: token})
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200 for query token, got %d: %s", rr.Code, rr.Body.String())
+		t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
 }
 
 func TestAuthRejectsMissingToken(t *testing.T) {
-	handler := Auth(AuthConfig{JWTSecret: "secret"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	tm, _ := jwt.NewTestManager("test-issuer", "test-audience")
+	handler := Auth(AuthConfig{TokenManager: tm})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 

@@ -23,19 +23,30 @@ export function RouteGuard({
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    const auth = isAuthenticated();
-    setAuthenticated(auth);
+    let cancelled = false;
 
-    if (requireAuth && !auth) {
-      const returnUrl = encodeURIComponent(pathname);
-      router.replace(`${redirectTo}?returnUrl=${returnUrl}`);
-    } else if (!requireAuth && auth) {
-      const params = new URLSearchParams(window.location.search);
-      const returnUrl = params.get("returnUrl");
-      router.replace(returnUrl || redirectTo);
-    } else {
-      setReady(true);
+    async function check() {
+      const auth = await isAuthenticated();
+      if (cancelled) return;
+
+      setAuthenticated(auth);
+
+      if (requireAuth && !auth) {
+        const returnUrl = encodeURIComponent(pathname);
+        router.replace(`${redirectTo}?returnUrl=${returnUrl}`);
+      } else if (!requireAuth && auth) {
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get("returnUrl");
+        router.replace(returnUrl || redirectTo);
+      } else {
+        setReady(true);
+      }
     }
+
+    check();
+    return () => {
+      cancelled = true;
+    };
   }, [requireAuth, redirectTo, pathname, router]);
 
   if (!ready) {

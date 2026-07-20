@@ -12,16 +12,17 @@ The Software Architecture Decision Document (§7) originally specified Clerk for
 Replace Clerk with **self-hosted core authentication** implemented in the Go `identity` module:
 
 - Password hashing using the approved maintained password-hashing policy, with migration from the current bcrypt baseline to Argon2id when implementation readiness permits
-- 15-minute access JWTs issued by the API
-- Rotating opaque refresh tokens stored as hashes, with 30-day inactivity and 90-day absolute expiry
+- 15-minute access JWTs issued by the API and delivered as httpOnly, Secure, SameSite=Lax cookies (`testra_access_token`) for browser clients, while still accepting `Authorization: Bearer` headers for non-browser/API clients
+- Rotating opaque refresh tokens stored as hashes and delivered as httpOnly cookies (`testra_refresh_token`), with 30-day inactivity and 90-day absolute expiry
 - TOTP MFA required for organization administrators and enterprise users, enforceable organization-wide
 - Scoped, hashed API keys for CI/CD ingestion, 90-day default expiry and 365-day maximum
 - Password reset via SMTP (Mailpit locally)
+- Double-submit CSRF protection for all cookie-authenticated mutating requests, with a `GET /auth/csrf` endpoint that sets the `testra_csrf_token` cookie
 
 **WorkOS is deferred** and will be added behind a clean port in the `identity` module only when the first enterprise deal requires SAML/SCIM.
 
 ## Consequences
 
 - **Positive:** zero identity vendor cost; no customer PII shared with third parties; full control over session and API-key semantics; stronger privacy story for enterprise buyers.
-- **Negative:** we own security-sensitive code (hashing, session revocation, MFA); enterprise SSO is not available until WorkOS integration lands.
-- **Mitigation:** use well-audited libraries only, mandatory security review checklist before production, and rate limiting on all auth endpoints.
+- **Negative:** we own security-sensitive code (hashing, session revocation, MFA); enterprise SSO is not available until WorkOS integration lands; cookie-based auth requires careful CSRF and XSS handling.
+- **Mitigation:** use well-audited libraries only, mandatory security review checklist before production, rate limiting on all auth endpoints, httpOnly Secure SameSite cookies for tokens, and double-submit CSRF tokens for mutating requests.

@@ -97,12 +97,12 @@ func (p *stripeProvider) request(ctx context.Context, method, urlStr string, bod
 
 func parseStripeSubscription(orgID uuid.UUID, body []byte) (*Subscription, error) {
 	var raw struct {
-		ID                   string `json:"id"`
-		Status               string `json:"status"`
-		CurrentPeriodStart   int64  `json:"current_period_start"`
-		CurrentPeriodEnd     int64  `json:"current_period_end"`
-		CancelAtPeriodEnd    bool   `json:"cancel_at_period_end"`
-		Items                struct {
+		ID                 string `json:"id"`
+		Status             string `json:"status"`
+		CurrentPeriodStart int64  `json:"current_period_start"`
+		CurrentPeriodEnd   int64  `json:"current_period_end"`
+		CancelAtPeriodEnd  bool   `json:"cancel_at_period_end"`
+		Items              struct {
 			Data []struct {
 				Quantity int `json:"quantity"`
 				Price    struct {
@@ -142,12 +142,12 @@ func parseStripeSubscription(orgID uuid.UUID, body []byte) (*Subscription, error
 func parseStripeInvoices(body []byte) ([]Invoice, error) {
 	var raw struct {
 		Data []struct {
-			ID        string `json:"id"`
-			AmountDue int    `json:"amount_due"`
-			Currency  string `json:"currency"`
-			Status    string `json:"status"`
-			PeriodStart int64 `json:"period_start"`
-			PeriodEnd   int64 `json:"period_end"`
+			ID          string `json:"id"`
+			AmountDue   int    `json:"amount_due"`
+			Currency    string `json:"currency"`
+			Status      string `json:"status"`
+			PeriodStart int64  `json:"period_start"`
+			PeriodEnd   int64  `json:"period_end"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &raw); err != nil {

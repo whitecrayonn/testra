@@ -47,6 +47,7 @@ Route group `(dashboard)` applies `app/(dashboard)/layout.tsx` (sidebar + main c
 | `/dashboard/settings/billing` | `apps/web/app/(dashboard)/dashboard/settings/billing/page.tsx` | Placeholder |
 | `/dashboard/settings/notifications` | `apps/web/app/(dashboard)/dashboard/settings/notifications/page.tsx` | Notification preferences and channels |
 | `/dashboard/notifications` | `apps/web/app/(dashboard)/dashboard/notifications/page.tsx` | In-app notification list, mark read/delete |
+| `/dashboard/api-tests` | `apps/web/app/(dashboard)/dashboard/api-tests/page.tsx` | API Testing Studio (re-export from `[workspace]/api-tests`) |
 | `/dashboard/settings/profile` | `apps/web/app/(dashboard)/dashboard/settings/profile/page.tsx` | Placeholder |
 | `/dashboard/settings/security` | `apps/web/app/(dashboard)/dashboard/settings/security/page.tsx` | Placeholder |
 | `/dashboard/settings/organization` | `apps/web/app/(dashboard)/dashboard/settings/organization/page.tsx` | Placeholder |
@@ -67,6 +68,8 @@ Route group `(dashboard)` applies `app/(dashboard)/layout.tsx` (sidebar + main c
 | `/[workspace]/test-runs/new` | `apps/web/app/(dashboard)/[workspace]/test-runs/new/page.tsx` | Create manual test run |
 | `/[workspace]/test-runs/[id]` | `apps/web/app/(dashboard)/[workspace]/test-runs/[id]/page.tsx` | Run detail + SSE progress |
 | `/[workspace]/defects` | `apps/web/app/(dashboard)/[workspace]/defects/page.tsx` | List, create, and paginate defects for the selected project |
+| `/[workspace]/defects/[id]` | `apps/web/app/(dashboard)/[workspace]/defects/[id]/page.tsx` | Defect detail, edit, and delete |
+| `/[workspace]/api-tests` | `apps/web/app/(dashboard)/[workspace]/api-tests/page.tsx` | API Testing Studio: collections, folders, requests, environments, execution |
 
 ### Workspace context persistence
 
@@ -185,6 +188,40 @@ PUT    /defects/{id}                           (TenantContext via defect_id + de
 DELETE /defects/{id}                           (TenantContext via defect_id + defects:delete + AuditLog)
 ```
 
+### API Testing
+
+```
+POST   /api-collections                       (TenantContext via body workspace_id + api_testing:create + AuditLog + IdempotencyKey)
+GET    /api-collections?workspace_id=...      (TenantContext via query workspace_id + api_testing:read)
+GET    /api-collections/{id}                  (TenantContext via collection_id + api_testing:read)
+PUT    /api-collections/{id}                  (TenantContext via collection_id + api_testing:update + AuditLog + IdempotencyKey)
+DELETE /api-collections/{id}                  (TenantContext via collection_id + api_testing:delete + AuditLog)
+
+POST   /api-folders                           (TenantContext via body workspace_id + api_testing:create + AuditLog + IdempotencyKey)
+GET    /api-folders?collection_id=...         (TenantContext via query collection_id + api_testing:read)
+GET    /api-folders/{id}                      (TenantContext via folder_id + api_testing:read)
+PUT    /api-folders/{id}                      (TenantContext via folder_id + api_testing:update + AuditLog + IdempotencyKey)
+DELETE /api-folders/{id}                      (TenantContext via folder_id + api_testing:delete + AuditLog)
+
+POST   /api-environments                      (TenantContext via body workspace_id + api_testing:create + AuditLog + IdempotencyKey)
+GET    /api-environments?workspace_id=...     (TenantContext via query workspace_id + api_testing:read)
+GET    /api-environments/{id}                 (TenantContext via environment_id + api_testing:read)
+PUT    /api-environments/{id}                 (TenantContext via environment_id + api_testing:update + AuditLog + IdempotencyKey)
+DELETE /api-environments/{id}                 (TenantContext via environment_id + api_testing:delete + AuditLog)
+
+POST   /api-requests                          (TenantContext via body workspace_id + api_testing:create + AuditLog + IdempotencyKey)
+GET    /api-requests?collection_id=...        (TenantContext via query collection_id + api_testing:read)
+GET    /api-requests/search?workspace_id=...  (TenantContext via query workspace_id + api_testing:read)
+GET    /api-requests/{id}                     (TenantContext via request_id + api_testing:read)
+PUT    /api-requests/{id}                     (TenantContext via request_id + api_testing:update + AuditLog + IdempotencyKey)
+DELETE /api-requests/{id}                     (TenantContext via request_id + api_testing:delete + AuditLog)
+GET    /api-requests/{id}/history             (TenantContext via request_id + api_testing:read)
+
+POST   /api-executions                        (TenantContext via body workspace_id + api_testing:execute + AuditLog + IdempotencyKey)
+GET    /api-executions?workspace_id=...       (TenantContext via query workspace_id + api_testing:read)
+GET    /api-executions/{id}                   (TenantContext via execution_id + api_testing:read)
+```
+
 ---
 
 ## Dynamic routes
@@ -209,6 +246,11 @@ DELETE /defects/{id}                           (TenantContext via defect_id + de
 | `{id}` (test runs) | `/test-runs/{id}` | Resolves via project/workspace | SSE uses same route group |
 | `{id}` (run items) | `/test-run-items/{id}` | `RunItemToOrg` | Resolves run item → run → workspace → organization |
 | `{id}` (defects) | `/defects/{id}` | `DefectToOrg` | Resolves defect → workspace → organization |
+| `{id}` (api-collections) | `/api-collections/{id}` | `APITestingCollectionToWorkspace` | Resolves collection → workspace |
+| `{id}` (api-folders) | `/api-folders/{id}` | `APITestingFolderToWorkspace` | Resolves folder → collection → workspace |
+| `{id}` (api-environments) | `/api-environments/{id}` | `APITestingEnvironmentToWorkspace` | Resolves environment → workspace |
+| `{id}` (api-requests) | `/api-requests/{id}` | `APITestingRequestToWorkspace` | Resolves request → collection → workspace |
+| `{id}` (api-executions) | `/api-executions/{id}` | `APITestingHistoryToWorkspace` | Resolves execution history → workspace |
 
 ---
 
