@@ -53,23 +53,12 @@ allOk = checkService("PostgreSQL", () => {
   return true;
 }) && allOk;
 
-// Redis — try redis-cli ping
-allOk = checkService("Redis", () => {
-  if (hasCommand("redis-cli")) {
-    const r = spawnSync("redis-cli", ["-h", "localhost", "-p", "6379", "ping"], {
-      stdio: "pipe",
-      shell: true,
-      encoding: "utf-8",
-    });
-    return (r.stdout || "").trim() === "PONG";
-  }
-  console.warn("  redis-cli not found — skipping Redis check (ensure it is running on localhost:6379)");
-  return true;
-}) && allOk;
+// Redis is optional in MVP (the code falls back to an in-memory rate limiter),
+// so we only verify PostgreSQL before continuing.
 
 if (!allOk) {
-  console.error("\nSome local services are not reachable.");
-  console.error("Install and start: PostgreSQL 16+, Redis 7+, Mailpit, MinIO");
+  console.error("\nPostgreSQL is not reachable.");
+  console.error("Install and start PostgreSQL 16+ and create the testra database/user.");
   console.error("See README.md for platform-specific installation instructions.");
   process.exit(1);
 }

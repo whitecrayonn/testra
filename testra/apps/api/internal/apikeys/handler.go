@@ -126,10 +126,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {

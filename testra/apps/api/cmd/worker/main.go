@@ -246,7 +246,7 @@ func (r *Runner) processOne(ctx context.Context) (bool, error) {
 	}()
 
 	// Set tenant context on the transaction for RLS.
-	if _, err := tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", job.TenantID.String()); err != nil {
+	if err := db.SetLocalTenantID(ctx, tx, job.TenantID); err != nil {
 		return false, fmt.Errorf("set tenant id: %w", err)
 	}
 	workCtx := db.WithTx(ctx, tx)

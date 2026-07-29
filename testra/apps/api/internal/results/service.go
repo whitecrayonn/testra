@@ -49,7 +49,27 @@ func (s *Service) CreateRun(ctx context.Context, input CreateRunInput) (*TestRun
 		UpdatedAt:   now,
 	}
 
-	if err := s.repo.CreateRun(ctx, run); err != nil {
+	if err := s.repo.RunInTx(ctx, func(tx Repository) error {
+		if err := tx.CreateRun(ctx, run); err != nil {
+			return err
+		}
+		for i, tcID := range input.TestCaseIDs {
+			item := &TestRunItem{
+				ID:         uuid.New(),
+				RunID:      run.ID,
+				TestCaseID: &tcID,
+				Title:      fmt.Sprintf("Test case %d", i+1),
+				Status:     RunItemStatusPending,
+				SortOrder:  i,
+				CreatedAt:  now,
+				UpdatedAt:  now,
+			}
+			if err := tx.CreateItem(ctx, item); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -63,22 +83,6 @@ func (s *Service) CreateRun(ctx context.Context, input CreateRunInput) (*TestRun
 			"status":       string(run.Status),
 		},
 	})
-
-	for i, tcID := range input.TestCaseIDs {
-		item := &TestRunItem{
-			ID:         uuid.New(),
-			RunID:      run.ID,
-			TestCaseID: &tcID,
-			Title:      fmt.Sprintf("Test case %d", i+1),
-			Status:     RunItemStatusPending,
-			SortOrder:  i,
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		}
-		if err := s.repo.CreateItem(ctx, item); err != nil {
-			return nil, err
-		}
-	}
 
 	return run, nil
 }
@@ -180,27 +184,31 @@ func (s *Service) UpdateItemStatus(ctx context.Context, itemID uuid.UUID, status
 	item.StackTrace = stackTrace
 	item.UpdatedAt = now
 
-	if err := s.repo.UpdateItem(ctx, item); err != nil {
+	run, err := s.repo.GetRunByID(ctx, item.RunID)
+	if err != nil {
 		return nil, err
 	}
 
-	run, err := s.repo.GetRunByID(ctx, item.RunID)
-	if err == nil {
-		if err := s.recalcRunCounts(ctx, run); err != nil {
-			return nil, err
+	if err := s.repo.RunInTx(ctx, func(tx Repository) error {
+		if err := tx.UpdateItem(ctx, item); err != nil {
+			return err
 		}
-		s.progress.broadcast(run.ID, RunProgressEvent{
-			RunID:    run.ID,
-			ItemID:   item.ID,
-			Status:   string(status),
-			Total:    run.Total,
-			Passed:   run.Passed,
-			Failed:   run.Failed,
-			Skipped:  run.Skipped,
-			Blocked:  run.Blocked,
-			Progress: float64(run.Passed+run.Failed+run.Skipped+run.Blocked) / float64(max(run.Total, 1)),
-		})
+		return s.recalcRunCounts(ctx, tx, run)
+	}); err != nil {
+		return nil, err
 	}
+
+	s.progress.broadcast(run.ID, RunProgressEvent{
+		RunID:    run.ID,
+		ItemID:   item.ID,
+		Status:   string(status),
+		Total:    run.Total,
+		Passed:   run.Passed,
+		Failed:   run.Failed,
+		Skipped:  run.Skipped,
+		Blocked:  run.Blocked,
+		Progress: float64(run.Passed+run.Failed+run.Skipped+run.Blocked) / float64(max(run.Total, 1)),
+	})
 
 	return item, nil
 }
@@ -218,8 +226,8 @@ func (s *Service) SubscribeRunProgress(ctx context.Context, runID uuid.UUID) (<-
 	return s.progress.subscribe(runID), nil
 }
 
-func (s *Service) recalcRunCounts(ctx context.Context, run *TestRun) error {
-	items, err := s.repo.ListItems(ctx, run.ID)
+func (s *Service) recalcRunCounts(ctx context.Context, repo Repository, run *TestRun) error {
+	items, err := repo.ListItems(ctx, run.ID)
 	if err != nil {
 		return err
 	}
@@ -244,7 +252,7 @@ func (s *Service) recalcRunCounts(ctx context.Context, run *TestRun) error {
 	}
 	run.DurationMs = totalDuration
 	run.UpdatedAt = time.Now().UTC()
-	return s.repo.UpdateRun(ctx, run)
+	return repo.UpdateRun(ctx, run)
 }
 
 func max(a, b int) int {

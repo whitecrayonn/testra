@@ -1,6 +1,7 @@
 package automationhub
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,14 @@ const (
 func IsValidFormat(s string) bool {
 	switch IngestionFormat(s) {
 	case FormatJUnit, FormatPytestJUnit, FormatPlaywright, FormatCypress, FormatNewman, FormatRobot:
+		return true
+	}
+	return false
+}
+
+func IsValidFramework(s string) bool {
+	switch strings.ToLower(s) {
+	case "playwright", "cypress", "selenium", "pytest", "junit", "testng", "mocha", "jest", "robot", "newman", "k6", "jasmine", "puppeteer":
 		return true
 	}
 	return false

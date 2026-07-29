@@ -25,6 +25,12 @@ func JSON(w http.ResponseWriter, status int, data any) {
 	_ = json.NewEncoder(w).Encode(Envelope{Data: data})
 }
 
+func JSONWithMeta(w http.ResponseWriter, status int, data any, meta any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(Envelope{Data: data, Meta: meta})
+}
+
 func ErrorJSON(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

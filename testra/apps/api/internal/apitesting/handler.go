@@ -30,6 +30,17 @@ func parseUUIDParam(r *http.Request, param string) (uuid.UUID, error) {
 	return uuid.Parse(chi.URLParam(r, param))
 }
 
+func mapToKeyValuePairs(m map[string]string) []KeyValuePair {
+	if len(m) == 0 {
+		return nil
+	}
+	pairs := make([]KeyValuePair, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, KeyValuePair{Key: k, Value: v, Enabled: true})
+	}
+	return pairs
+}
+
 func parseUUIDString(s string) (*uuid.UUID, error) {
 	if s == "" {
 		return nil, nil
@@ -162,10 +173,7 @@ func (h *Handler) ListCollections(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) UpdateCollection(w http.ResponseWriter, r *http.Request) {
@@ -344,10 +352,7 @@ func (h *Handler) ListFolders(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) UpdateFolder(w http.ResponseWriter, r *http.Request) {
@@ -399,9 +404,9 @@ func (h *Handler) DeleteFolder(w http.ResponseWriter, r *http.Request) {
 // Environments
 
 type createEnvironmentRequest struct {
-	WorkspaceID string         `json:"workspace_id"`
-	Name        string         `json:"name"`
-	Variables   []KeyValuePair `json:"variables"`
+	WorkspaceID string            `json:"workspace_id"`
+	Name        string            `json:"name"`
+	Variables   map[string]string `json:"variables"`
 }
 
 type updateEnvironmentRequest struct {
@@ -445,7 +450,7 @@ func (h *Handler) CreateEnvironment(w http.ResponseWriter, r *http.Request) {
 	env, err := h.service.CreateEnvironment(r.Context(), CreateEnvironmentInput{
 		WorkspaceID: workspaceID,
 		Name:        req.Name,
-		Variables:   req.Variables,
+		Variables:   mapToKeyValuePairs(req.Variables),
 	})
 	if err != nil {
 		apihttp.MapError(w, err)
@@ -508,10 +513,7 @@ func (h *Handler) ListEnvironments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) UpdateEnvironment(w http.ResponseWriter, r *http.Request) {
@@ -721,6 +723,20 @@ func (h *Handler) CreateRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.WorkspaceID == "" {
+		collectionID, err := uuid.Parse(req.CollectionID)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid collection_id")
+			return
+		}
+		collection, err := h.service.GetCollection(r.Context(), collectionID)
+		if err != nil {
+			apihttp.MapError(w, err)
+			return
+		}
+		req.WorkspaceID = collection.WorkspaceID.String()
+	}
+
 	input, err := decodeCreateRequest(&req, uid)
 	if err != nil {
 		apihttp.MapError(w, err)
@@ -795,10 +811,7 @@ func (h *Handler) ListRequests(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) UpdateRequest(w http.ResponseWriter, r *http.Request) {
@@ -872,10 +885,7 @@ func (h *Handler) SearchRequests(w http.ResponseWriter, r *http.Request) {
 		NextCursor: nextCursor,
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 // Executions
@@ -1099,8 +1109,5 @@ func (h *Handler) ListRequestHistory(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }

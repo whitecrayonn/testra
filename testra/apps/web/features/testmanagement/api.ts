@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   TestCase,
   TestCaseVersion,
@@ -20,9 +20,8 @@ export async function listTestCases(
   if (params?.suiteId) searchParams.set("suite_id", params.suiteId);
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/test-cases?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<TestCase>
-  >;
+  const result = await apiFetchWithMeta<TestCase>(`/api/v1/test-cases?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function searchTestCases(
@@ -36,9 +35,10 @@ export async function searchTestCases(
   });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(
+  const result = await apiFetchWithMeta<TestCase>(
     `/api/v1/test-cases/search?${searchParams.toString()}`,
-  ) as Promise<PaginatedResponse<TestCase>>;
+  );
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getTestCase(id: string): Promise<TestCase> {

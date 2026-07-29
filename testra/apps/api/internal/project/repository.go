@@ -81,6 +81,19 @@ func (r *SQLRepository) ListForWorkspace(ctx context.Context, workspaceID uuid.U
 	return projects, rows.Err()
 }
 
+func (r *SQLRepository) Update(ctx context.Context, project *Project) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE projects SET name = $2, key = $3, description = $4, updated_at = $5 WHERE id = $1`,
+		project.ID, project.Name, project.Key, project.Description, project.UpdatedAt,
+	)
+	return err
+}
+
+func (r *SQLRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM projects WHERE id = $1`, id)
+	return err
+}
+
 func (r *SQLRepository) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]Project, error) {
 	if cursor != "" {
 		rows, err := r.db.QueryContext(ctx,

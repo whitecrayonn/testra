@@ -86,7 +86,7 @@ func TestTenantIsolation(t *testing.T) {
 	resolver := tenant.NewResolver(dbHandle)
 
 	// --- lookup mode: user A resolving their own workspace ---
-	if _, err := conn.ExecContext(ctx, "SET app.lookup_user_id = $1", userA.String()); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.lookup_user_id = '%s'", userA.String())); err != nil {
 		t.Fatalf("set lookup user id: %v", err)
 	}
 	lookupCtx := db.WithConn(ctx, conn)
@@ -101,7 +101,7 @@ func TestTenantIsolation(t *testing.T) {
 	}
 
 	// --- lookup mode: user A resolving workspace B (cross-tenant) ---
-	if _, err := conn.ExecContext(ctx, "SET app.lookup_user_id = $1", userA.String()); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.lookup_user_id = '%s'", userA.String())); err != nil {
 		t.Fatalf("set lookup user id for cross-tenant: %v", err)
 	}
 	_, err = resolver.ResolveOrgFromWorkspace(lookupCtx, wsB)
@@ -113,7 +113,7 @@ func TestTenantIsolation(t *testing.T) {
 	if _, err := conn.ExecContext(ctx, "RESET app.lookup_user_id"); err != nil {
 		t.Fatalf("reset lookup user id: %v", err)
 	}
-	if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", orgA.String()); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.tenant_id = '%s'", orgA.String())); err != nil {
 		t.Fatalf("set tenant id: %v", err)
 	}
 	tenantCtx := db.WithTenantID(lookupCtx, orgA)

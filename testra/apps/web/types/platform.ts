@@ -2,6 +2,7 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -11,6 +12,7 @@ export interface Workspace {
   organization_id: string;
   name: string;
   slug: string;
+  description?: string;
   created_at: string;
   updated_at: string;
 }

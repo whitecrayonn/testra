@@ -90,7 +90,16 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := pagination.ParseParams(r)
-	orgs, err := h.service.ListForUserPaginated(r.Context(), userID, params.Cursor, params.Limit)
+	cursorID := params.Cursor
+	if cursorID != "" {
+		decoded, err := pagination.DecodeCursor(cursorID)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+		cursorID = decoded
+	}
+	orgs, err := h.service.ListForUserPaginated(r.Context(), userID, cursorID, params.Limit)
 	if err != nil {
 		apihttp.MapError(w, err)
 		return
@@ -109,8 +118,5 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }

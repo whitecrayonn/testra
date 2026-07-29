@@ -1,0 +1,319 @@
+﻿
+> playwright-run1.log:313:  1) [chromium] ΓÇ║ e2e\accessibility\accessibility-expanded.spec.ts:7:7 ΓÇ║ Accessibility - Expanded @a11y @accessibility ΓÇ║ login page has no detectable accessibility violations 
+  playwright-run1.log:314:
+  playwright-run1.log:315:    Error: expect(received).toEqual(expected) // deep equality
+  playwright-run1.log:316:
+  playwright-run1.log:317:    - Expected  -   1
+  playwright-run1.log:318:    + Received  + 261
+  playwright-run1.log:319:
+  playwright-run1.log:320:    - Array []
+  playwright-run1.log:321:    + Array [
+  playwright-run1.log:322:    +   Object {
+  playwright-run1.log:323:    +     "description": "Ensure the document has a main landmark",
+  playwright-run1.log:324:    +     "help": "Document should have one main landmark",
+  playwright-run1.log:325:    +     "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-one-main?application=playwright",
+  playwright-run1.log:326:    +     "id": "landmark-one-main",
+  playwright-run1.log:327:    +     "impact": "moderate",
+  playwright-run1.log:328:    +     "nodes": Array [
+  playwright-run1.log:329:    +       Object {
+  playwright-run1.log:330:    +         "all": Array [
+  playwright-run1.log:331:    +           Object {
+  playwright-run1.log:332:    +             "data": null,
+  playwright-run1.log:333:    +             "id": "page-has-main",
+  playwright-run1.log:334:    +             "impact": "moderate",
+  playwright-run1.log:335:    +             "message": "Document does not have a main landmark",
+  playwright-run1.log:336:    +             "relatedNodes": Array [],
+  playwright-run1.log:337:    +           },
+  playwright-run1.log:338:    +         ],
+  playwright-run1.log:339:    +         "any": Array [],
+  playwright-run1.log:340:    +         "failureSummary": "Fix all of the following:
+  playwright-run1.log:341:    +   Document does not have a main landmark",
+  playwright-run1.log:342:    +         "html": "<html lang=\"en\">",
+  playwright-run1.log:343:    +         "impact": "moderate",
+  playwright-run1.log:344:    +         "none": Array [],
+  playwright-run1.log:345:    +         "target": Array [
+  playwright-run1.log:346:    +           "html",
+  playwright-run1.log:347:    +         ],
+  playwright-run1.log:348:    +       },
+  playwright-run1.log:349:    +     ],
+  playwright-run1.log:350:    +     "tags": Array [
+  playwright-run1.log:351:    +       "cat.semantics",
+  playwright-run1.log:352:    +       "best-practice",
+  playwright-run1.log:353:    +     ],
+> playwright-run1.log:3111:  11) [chromium] ΓÇ║ e2e\auth\session.spec.ts:149:7 ΓÇ║ Password Reset Flow @password-reset @auth ΓÇ║ request password reset for existing user succeeds 
+  playwright-run1.log:3112:
+  playwright-run1.log:3113:    Error: expect(received).resolves.toBeUndefined()
+  playwright-run1.log:3114:
+  playwright-run1.log:3115:    Received promise rejected instead of resolved
+  playwright-run1.log:3116:    Rejected to value: [Error: internal server error]
+  playwright-run1.log:3117:
+  playwright-run1.log:3118:      154 |     await expect(
+  playwright-run1.log:3119:      155 |       api.requestPasswordReset(created.user.email),
+  playwright-run1.log:3120:    > 156 |     ).resolves.toBeUndefined();
+  playwright-run1.log:3121:          |                ^
+  playwright-run1.log:3122:      157 |   });
+  playwright-run1.log:3123:      158 |
+  playwright-run1.log:3124:      159 |   test("request password reset for non-existent user does not error", async ({ request }) => {
+  playwright-run1.log:3125:        at C:\Private\project\testra\tests\e2e\auth\session.spec.ts:156:16
+  playwright-run1.log:3126:
+  playwright-run1.log:3127:    Error Context: reports\test-results\auth-session-Password-Rese-75307--for-existing-user-succeeds-chromium\error-context.md
+  playwright-run1.log:3128:
+  playwright-run1.log:3129:    attachment #2: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3130:    reports\test-results\auth-session-Password-Rese-75307--for-existing-user-succeeds-chromium\trace.zip
+  playwright-run1.log:3131:    Usage:
+  playwright-run1.log:3132:
+  playwright-run1.log:3133:        npx playwright show-trace reports\test-results\auth-session-Password-Rese-75307--for-existing-user-succeeds-chromium\trace.zip
+  playwright-run1.log:3134:
+  playwright-run1.log:3135:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3136:
+  playwright-run1.log:3137:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3138:
+  playwright-run1.log:3139:    Error: expect(received).resolves.toBeUndefined()
+  playwright-run1.log:3140:
+  playwright-run1.log:3141:    Received promise rejected instead of resolved
+  playwright-run1.log:3142:    Rejected to value: [Error: internal server error]
+  playwright-run1.log:3143:
+  playwright-run1.log:3144:      154 |     await expect(
+  playwright-run1.log:3145:      155 |       api.requestPasswordReset(created.user.email),
+  playwright-run1.log:3146:    > 156 |     ).resolves.toBeUndefined();
+  playwright-run1.log:3147:          |                ^
+  playwright-run1.log:3148:      157 |   });
+  playwright-run1.log:3149:      158 |
+  playwright-run1.log:3150:      159 |   test("request password reset for non-existent user does not error", async ({ request }) => {
+  playwright-run1.log:3151:        at C:\Private\project\testra\tests\e2e\auth\session.spec.ts:156:16
+> playwright-run1.log:3698:  21) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:99:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard analytics section loads when workspace is set 
+  playwright-run1.log:3699:
+  playwright-run1.log:3700:    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
+  playwright-run1.log:3701:
+  playwright-run1.log:3702:      108 |     const dashboard = new DashboardPage(authPage);
+  playwright-run1.log:3703:      109 |     await dashboard.goto();
+  playwright-run1.log:3704:    > 110 |     await authPage.waitForLoadState("networkidle");
+  playwright-run1.log:3705:          |                    ^
+  playwright-run1.log:3706:      111 |   });
+  playwright-run1.log:3707:      112 | });
+  playwright-run1.log:3708:      113 |
+  playwright-run1.log:3709:        at C:\Private\project\testra\tests\e2e\dashboard\dashboard-expanded.spec.ts:110:20
+  playwright-run1.log:3710:
+  playwright-run1.log:3711:    attachment #1: screenshot (image/png) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3712:    reports\test-results\dashboard-dashboard-expand-787cc-loads-when-workspace-is-set-chromium\test-failed-1.png
+  playwright-run1.log:3713:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3714:
+  playwright-run1.log:3715:    Error Context: reports\test-results\dashboard-dashboard-expand-787cc-loads-when-workspace-is-set-chromium\error-context.md
+  playwright-run1.log:3716:
+  playwright-run1.log:3717:    attachment #3: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3718:    reports\test-results\dashboard-dashboard-expand-787cc-loads-when-workspace-is-set-chromium\trace.zip
+  playwright-run1.log:3719:    Usage:
+  playwright-run1.log:3720:
+  playwright-run1.log:3721:        npx playwright show-trace reports\test-results\dashboard-dashboard-expand-787cc-loads-when-workspace-is-set-chromium\trace.zip
+  playwright-run1.log:3722:
+  playwright-run1.log:3723:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3724:
+  playwright-run1.log:3725:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:3726:
+  playwright-run1.log:3727:    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
+  playwright-run1.log:3728:
+  playwright-run1.log:3729:      108 |     const dashboard = new DashboardPage(authPage);
+  playwright-run1.log:3730:      109 |     await dashboard.goto();
+  playwright-run1.log:3731:    > 110 |     await authPage.waitForLoadState("networkidle");
+  playwright-run1.log:3732:          |                    ^
+  playwright-run1.log:3733:      111 |   });
+  playwright-run1.log:3734:      112 | });
+  playwright-run1.log:3735:      113 |
+  playwright-run1.log:3736:        at C:\Private\project\testra\tests\e2e\dashboard\dashboard-expanded.spec.ts:110:20
+  playwright-run1.log:3737:
+  playwright-run1.log:3738:    attachment #1: screenshot (image/png) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+> playwright-run1.log:4277:  31) [chromium] ΓÇ║ e2e\manual-run\manual-run.spec.ts:32:7 ΓÇ║ Manual Test Runner @manual @runs ΓÇ║ negative: create run without test cases returns error 
+  playwright-run1.log:4278:
+  playwright-run1.log:4279:    Error: expect(received).rejects.toThrow()
+  playwright-run1.log:4280:
+  playwright-run1.log:4281:    Received promise resolved instead of rejected
+  playwright-run1.log:4282:    Resolved to value: {"blocked": 0, "completed_at": null, "created_at": "2026-07-28T14:33:53.8374006Z", "created_by": "d337e139-7265-4938-9cb3-0a654bdc0609", "duration_ms": 0, 
+"failed": 0, "id": "2262697b-aaf3-49a5-b057-79fb949b4502", "name": "Empty Run", "passed": 0, "project_id": "1517f894-6028-4a4a-ac3b-3cfd28444072", "skipped": 0, "source": "manual", "started_at": null, "status": 
+"pending", "suite_id": null, "total": 0, "updated_at": "2026-07-28T14:33:53.8374006Z", "workspace_id": "bfe4caa2-eb7b-4a1a-a929-e7a4c9a738ba"}
+  playwright-run1.log:4283:
+  playwright-run1.log:4284:      33 |     await expect(
+  playwright-run1.log:4285:      34 |       api.createTestRun({ workspace_id: workspace.id, project_id: project.id, name: "Empty Run", test_case_ids: [] }),
+  playwright-run1.log:4286:    > 35 |     ).rejects.toThrow();
+  playwright-run1.log:4287:         |               ^
+  playwright-run1.log:4288:      36 |   });
+  playwright-run1.log:4289:      37 | });
+  playwright-run1.log:4290:      38 |
+  playwright-run1.log:4291:        at C:\Private\project\testra\tests\e2e\manual-run\manual-run.spec.ts:35:15
+  playwright-run1.log:4292:
+  playwright-run1.log:4293:    Error Context: reports\test-results\manual-run-manual-run-Manu-c29fc-ut-test-cases-returns-error-chromium\error-context.md
+  playwright-run1.log:4294:
+  playwright-run1.log:4295:    attachment #2: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4296:    reports\test-results\manual-run-manual-run-Manu-c29fc-ut-test-cases-returns-error-chromium\trace.zip
+  playwright-run1.log:4297:    Usage:
+  playwright-run1.log:4298:
+  playwright-run1.log:4299:        npx playwright show-trace reports\test-results\manual-run-manual-run-Manu-c29fc-ut-test-cases-returns-error-chromium\trace.zip
+  playwright-run1.log:4300:
+  playwright-run1.log:4301:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4302:
+  playwright-run1.log:4303:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4304:
+  playwright-run1.log:4305:    Error: expect(received).rejects.toThrow()
+  playwright-run1.log:4306:
+  playwright-run1.log:4307:    Received promise resolved instead of rejected
+  playwright-run1.log:4308:    Resolved to value: {"blocked": 0, "completed_at": null, "created_at": "2026-07-28T14:33:54.41792Z", "created_by": "70b734b5-5427-488a-9108-3a321fff65c6", "duration_ms": 0, 
+"failed": 0, "id": "fac76e3f-64be-458b-9ab2-007a6d946583", "name": "Empty Run", "passed": 0, "project_id": "89c45442-b466-4cdf-9ae2-ce213e0845f4", "skipped": 0, "source": "manual", "started_at": null, "status": 
+"pending", "suite_id": null, "total": 0, "updated_at": "2026-07-28T14:33:54.41792Z", "workspace_id": "55fb37fc-e10c-494d-9254-4e48603afb8e"}
+  playwright-run1.log:4309:
+  playwright-run1.log:4310:      33 |     await expect(
+  playwright-run1.log:4311:      34 |       api.createTestRun({ workspace_id: workspace.id, project_id: project.id, name: "Empty Run", test_case_ids: [] }),
+  playwright-run1.log:4312:    > 35 |     ).rejects.toThrow();
+  playwright-run1.log:4313:         |               ^
+  playwright-run1.log:4314:      36 |   });
+  playwright-run1.log:4315:      37 | });
+  playwright-run1.log:4316:      38 |
+  playwright-run1.log:4317:        at C:\Private\project\testra\tests\e2e\manual-run\manual-run.spec.ts:35:15
+> playwright-run1.log:4805:  41) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:76:7 ΓÇ║ Search & Filtering @search @filtering ΓÇ║ search test cases by title returns matching results 
+  playwright-run1.log:4806:
+  playwright-run1.log:4807:    Error: expect(received).toBeGreaterThan(expected)
+  playwright-run1.log:4808:
+  playwright-run1.log:4809:    Expected: > 0
+  playwright-run1.log:4810:    Received:   0
+  playwright-run1.log:4811:
+  playwright-run1.log:4812:      76 |   test("search test cases by title returns matching results", async ({ api, workspace, testCase }) => {
+  playwright-run1.log:4813:      77 |     const results = await api.searchCases(workspace.id, testCase.title);
+  playwright-run1.log:4814:    > 78 |     expect(results.data.length).toBeGreaterThan(0);
+  playwright-run1.log:4815:         |                                 ^
+  playwright-run1.log:4816:      79 |     expect(
+  playwright-run1.log:4817:      80 |       results.data.some((tc: any) => tc.id === testCase.id),
+  playwright-run1.log:4818:      81 |     ).toBeTruthy();
+  playwright-run1.log:4819:        at C:\Private\project\testra\tests\e2e\pagination\pagination.spec.ts:78:33
+  playwright-run1.log:4820:
+  playwright-run1.log:4821:    Error Context: reports\test-results\pagination-pagination-Sear-40beb-le-returns-matching-results-chromium\error-context.md
+  playwright-run1.log:4822:
+  playwright-run1.log:4823:    attachment #2: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4824:    reports\test-results\pagination-pagination-Sear-40beb-le-returns-matching-results-chromium\trace.zip
+  playwright-run1.log:4825:    Usage:
+  playwright-run1.log:4826:
+  playwright-run1.log:4827:        npx playwright show-trace reports\test-results\pagination-pagination-Sear-40beb-le-returns-matching-results-chromium\trace.zip
+  playwright-run1.log:4828:
+  playwright-run1.log:4829:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4830:
+  playwright-run1.log:4831:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:4832:
+  playwright-run1.log:4833:    Error: expect(received).toBeGreaterThan(expected)
+  playwright-run1.log:4834:
+  playwright-run1.log:4835:    Expected: > 0
+  playwright-run1.log:4836:    Received:   0
+  playwright-run1.log:4837:
+  playwright-run1.log:4838:      76 |   test("search test cases by title returns matching results", async ({ api, workspace, testCase }) => {
+  playwright-run1.log:4839:      77 |     const results = await api.searchCases(workspace.id, testCase.title);
+  playwright-run1.log:4840:    > 78 |     expect(results.data.length).toBeGreaterThan(0);
+  playwright-run1.log:4841:         |                                 ^
+  playwright-run1.log:4842:      79 |     expect(
+  playwright-run1.log:4843:      80 |       results.data.some((tc: any) => tc.id === testCase.id),
+  playwright-run1.log:4844:      81 |     ).toBeTruthy();
+  playwright-run1.log:4845:        at C:\Private\project\testra\tests\e2e\pagination\pagination.spec.ts:78:33
+> playwright-run1.log:5357:  51) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:12:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ search UI displays results 
+  playwright-run1.log:5358:
+  playwright-run1.log:5359:    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+  playwright-run1.log:5360:    Call log:
+  playwright-run1.log:5361:      - waiting for getByPlaceholder(/search/i).or(locator('input[type="search"]')).first()
+  playwright-run1.log:5362:
+  playwright-run1.log:5363:
+  playwright-run1.log:5364:       at ..\pages\SearchPage.ts:11
+  playwright-run1.log:5365:
+  playwright-run1.log:5366:       9 |   async search(query: string) {
+  playwright-run1.log:5367:      10 |     const searchInput = this.page.getByPlaceholder(/search/i).or(this.page.locator('input[type="search"]')).first();
+  playwright-run1.log:5368:    > 11 |     await searchInput.fill(query);
+  playwright-run1.log:5369:         |                       ^
+  playwright-run1.log:5370:      12 |     await searchInput.press("Enter");
+  playwright-run1.log:5371:      13 |   }
+  playwright-run1.log:5372:      14 |
+  playwright-run1.log:5373:        at SearchPage.search (C:\Private\project\testra\tests\pages\SearchPage.ts:11:23)
+  playwright-run1.log:5374:        at C:\Private\project\testra\tests\e2e\search\search-expanded.spec.ts:23:18
+  playwright-run1.log:5375:
+  playwright-run1.log:5376:    attachment #1: screenshot (image/png) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5377:    reports\test-results\search-search-expanded-Sea-9fb91--search-UI-displays-results-chromium\test-failed-1.png
+  playwright-run1.log:5378:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5379:
+  playwright-run1.log:5380:    Error Context: reports\test-results\search-search-expanded-Sea-9fb91--search-UI-displays-results-chromium\error-context.md
+  playwright-run1.log:5381:
+  playwright-run1.log:5382:    attachment #3: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5383:    reports\test-results\search-search-expanded-Sea-9fb91--search-UI-displays-results-chromium\trace.zip
+  playwright-run1.log:5384:    Usage:
+  playwright-run1.log:5385:
+  playwright-run1.log:5386:        npx playwright show-trace reports\test-results\search-search-expanded-Sea-9fb91--search-UI-displays-results-chromium\trace.zip
+  playwright-run1.log:5387:
+  playwright-run1.log:5388:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5389:
+  playwright-run1.log:5390:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5391:
+  playwright-run1.log:5392:    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+  playwright-run1.log:5393:    Call log:
+  playwright-run1.log:5394:      - waiting for getByPlaceholder(/search/i).or(locator('input[type="search"]')).first()
+  playwright-run1.log:5395:
+  playwright-run1.log:5396:
+  playwright-run1.log:5397:       at ..\pages\SearchPage.ts:11
+> playwright-run1.log:5968:  61) [chromium] ΓÇ║ e2e\testplans\testplans.spec.ts:6:7 ΓÇ║ Test Plans @testplans ΓÇ║ user can create a test plan through UI 
+  playwright-run1.log:5969:
+  playwright-run1.log:5970:    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+  playwright-run1.log:5971:    Call log:
+  playwright-run1.log:5972:      - waiting for getByLabel('Test Case IDs')
+  playwright-run1.log:5973:
+  playwright-run1.log:5974:
+  playwright-run1.log:5975:       at ..\pages\BasePage.ts:38
+  playwright-run1.log:5976:
+  playwright-run1.log:5977:      36 |
+  playwright-run1.log:5978:      37 |   async fillByLabel(label: string | RegExp, value: string) {
+  playwright-run1.log:5979:    > 38 |     await this.getByLabel(label).fill(value);
+  playwright-run1.log:5980:         |                                  ^
+  playwright-run1.log:5981:      39 |   }
+  playwright-run1.log:5982:      40 |
+  playwright-run1.log:5983:      41 |   async clickByName(name: string | RegExp) {
+  playwright-run1.log:5984:        at TestPlanPage.fillByLabel (C:\Private\project\testra\tests\pages\BasePage.ts:38:34)
+  playwright-run1.log:5985:        at TestPlanPage.create (C:\Private\project\testra\tests\pages\TestPlanPage.ts:24:16)
+  playwright-run1.log:5986:        at C:\Private\project\testra\tests\e2e\testplans\testplans.spec.ts:16:5
+  playwright-run1.log:5987:
+  playwright-run1.log:5988:    attachment #1: screenshot (image/png) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5989:    reports\test-results\testplans-testplans-Test-P-945df-eate-a-test-plan-through-UI-chromium\test-failed-1.png
+  playwright-run1.log:5990:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5991:
+  playwright-run1.log:5992:    Error Context: reports\test-results\testplans-testplans-Test-P-945df-eate-a-test-plan-through-UI-chromium\error-context.md
+  playwright-run1.log:5993:
+  playwright-run1.log:5994:    attachment #3: trace (application/zip) 
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:5995:    reports\test-results\testplans-testplans-Test-P-945df-eate-a-test-plan-through-UI-chromium\trace.zip
+  playwright-run1.log:5996:    Usage:
+  playwright-run1.log:5997:
+  playwright-run1.log:5998:        npx playwright show-trace reports\test-results\testplans-testplans-Test-P-945df-eate-a-test-plan-through-UI-chromium\trace.zip
+  playwright-run1.log:5999:
+  playwright-run1.log:6000:    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:6001:
+  playwright-run1.log:6002:    Retry #1 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  playwright-run1.log:6003:
+  playwright-run1.log:6004:    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+  playwright-run1.log:6005:    Call log:
+  playwright-run1.log:6006:      - waiting for getByLabel('Test Case IDs')
+  playwright-run1.log:6007:
+  playwright-run1.log:6008:
+
+

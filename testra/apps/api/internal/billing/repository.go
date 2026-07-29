@@ -82,7 +82,7 @@ func (r *SQLRepository) RunInTx(ctx context.Context, fn func(Repository) error) 
 		return err
 	}
 	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
-		_, _ = tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", tenantID.String())
+		_ = db.SetLocalTenantID(ctx, tx, tenantID)
 	}
 	txRepo := &SQLRepository{db: tx}
 	if err := fn(txRepo); err != nil {

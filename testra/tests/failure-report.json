@@ -1,0 +1,3177 @@
+[
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has no detectable accessibility violations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 283\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has no detectable accessibility violations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 283\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FLAKY",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page error messages have role alert",
+    "project": "firefox"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has no detectable accessibility violations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has proper labels for form inputs",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has proper labels for form inputs",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has proper heading structure",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has proper heading structure",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page error messages have role alert",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page is keyboard navigable",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has no detectable accessibility violations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 283\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FLAKY",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page error messages have role alert",
+    "project": "Mobile Chrome"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has no detectable accessibility violations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has proper labels for form inputs",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "register page has proper labels for form inputs",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page has proper heading structure",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "dashboard has proper heading structure",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page error messages have role alert",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility-expanded.spec.ts",
+    "title": "login page is keyboard navigable",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -   1\u001b[39m | \u001b[31m+ Received  + 261\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m |  | \u001b[32m- Expected  -  1\u001b[39m | \u001b[31m+ Received  + 35\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "login page has no detectable accessibility violations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "accessibility/accessibility.spec.ts",
+    "title": "dashboard has no critical accessibility violations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "analytics/analytics.spec.ts",
+    "title": "executive dashboard loads",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Executive Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "analytics/analytics.spec.ts",
+    "title": "executive dashboard loads",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Executive Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "analytics/analytics.spec.ts",
+    "title": "executive dashboard loads",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Executive Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "analytics/analytics.spec.ts",
+    "title": "executive dashboard loads",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Executive Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "analytics/analytics.spec.ts",
+    "title": "executive dashboard loads",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Executive Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "execute API request against external echo service",
+    "project": "chromium",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "collection and environment are scoped to workspace",
+    "project": "chromium",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "execute API request against external echo service",
+    "project": "firefox",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "collection and environment are scoped to workspace",
+    "project": "firefox",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "execute API request against external echo service",
+    "project": "webkit",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "collection and environment are scoped to workspace",
+    "project": "webkit",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "execute API request against external echo service",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "collection and environment are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "execute API request against external echo service",
+    "project": "Mobile Safari",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-integration.spec.ts",
+    "title": "collection and environment are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "user can create and view an API collection",
+    "project": "chromium",
+    "error": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /add/i }).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "API collection CRUD via API",
+    "project": "chromium",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "negative: execute request with invalid URL",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "user can create and view an API collection",
+    "project": "firefox",
+    "error": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /add/i }).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "API collection CRUD via API",
+    "project": "firefox",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "negative: execute request with invalid URL",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "user can create and view an API collection",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'API Testing' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "API collection CRUD via API",
+    "project": "webkit",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "negative: execute request with invalid URL",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "user can create and view an API collection",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /add/i }).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "API collection CRUD via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "negative: execute request with invalid URL",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "user can create and view an API collection",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'API Testing' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "API collection CRUD via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "api-testing/api-testing.spec.ts",
+    "title": "negative: execute request with invalid URL",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "user can register and log in",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "login with invalid credentials shows error",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "unauthenticated user is redirected to login",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed |  | Expected pattern: \u001b[32m/.*\\/login/\u001b[39m | Received string:  \u001b[31m\"http://localhost:3000/dashboard\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "register enforces password minimum length",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "user can register and log in",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "login with invalid credentials shows error",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "unauthenticated user is redirected to login",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed |  | Expected pattern: \u001b[32m/.*\\/login/\u001b[39m | Received string:  \u001b[31m\"http://localhost:3000/dashboard\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/login.spec.ts",
+    "title": "register enforces password minimum length",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "refresh token returns new access token",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m |  | Expected: not \u001b[32m\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTI1ZmFhMjQtNWQwMC00MjlhLWJmZDUtZGE4NDcyYjViYzYzIiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjMyMzE4Mi1rOHEyQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiOTI1ZmFhMjQtNWQwMC00MjlhLWJmZDUtZGE4NDcyYjViYzYzIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3MjIzLCJpYXQiOjE3ODQ4ODYzMjN9.Wuhh43SJkQFXRuIJq6HTL0qhP-ERx4a1VOc5EAbQWApjmg4dhkgAO3zhIoekKaSkbY3X7hgtgyGjm_yeuJKOlM7zvqg1KULxKtw1mv519bk6-q_afUWMktaNxhwm2ny7tIqVCFPwmhQ_wAI5NcNiDzf7AZi_F-h05AhORVirpJxzlBWO0t5zvzEQqOQ6xFoLnYkoCvGeA8yDhzhVCdvNH7kQLfKVai22Y2yifHu0Baj2ICVD8YqV2kaqEpRNvL0lfXqgIiBnvg1vCDHs7XfRWURW2W5ytIYrKlgoWxVVpL_TEqEpYxJdvcnwCGkQYRsJGFDwdXl995FltdwDa7tT3g\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "double refresh with same token fails (token rotation)",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"refresh_token\": \"rt_d5c72b7343ff3bf4a032294d491a81913c0e1271354ae07565457ed9a669b35e\", \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOWIxOTRkYWUtZDlmYS00N2Q2LTk2NGYtMGNiNjJhZjc5NzMzIiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjMyMzA3NS04Z2pyQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiOWIxOTRkYWUtZDlmYS00N2Q2LTk2NGYtMGNiNjJhZjc5NzMzIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3MjIzLCJpYXQiOjE3ODQ4ODYzMjN9.gw26B3ylMRaamotyC6bSowXxfw_m73qjYzgZXdwScOzcpi4ZuU-Y9mV8E2mcrJ8Dxvq1eGAf33P05_P9MK-jetMkD9sdHe3A2NZl0ZCUvp1N09fdZqHnSfQKcEV7839ERQVsoh6YsdoHiu5COdSDOpOdnABNy8CoonRtwp_7kkWIiJA2hhxlwHPpuYzIYwYqCRI_U9AVpYq0mOdPM3o6O-F-f3JwkEDKbbPNYNmblVJZ02ZW9uChO_tcftE_fsMEBFMTv6v7Cg_RCSY7xwtFnNoL2XidU7k9uZXD6UzIBG-hiiI36A-Pa3eTKxsCIbZE8pJ3uAMVmcbfCO66stZ5fw\", \"user\": {\"email\": \"testra+1784886323075-8gjr@example.com\", \"id\": \"9b194dae-d9fa-47d6-964f-0cb62af79733\", \"mfa_enabled\": false, \"name\": \"Test User testra-1784886323075-m0544f\"}}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "refresh token returns new access token",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m |  | Expected: not \u001b[32m\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWQ2YmUwMmMtODBjYS00NzkyLWExMmYtN2UxYTA4NjYzMDA5IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjM5MjQ5NS1vaHlmQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiZWQ2YmUwMmMtODBjYS00NzkyLWExMmYtN2UxYTA4NjYzMDA5IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3MjkyLCJpYXQiOjE3ODQ4ODYzOTJ9.Fx7k5y4x78u8KSOTPiwbPxkvST1lNcrYugMHUE2tXhnQJixNZ2T0qMQLiIWmNvdojSa4WmS7P6Aog8-Wzuri2pG7WhqYDy8CjzWFvCvWJZlwgRSM4cd9ScWfckAS6tpZWFbif0zOkm7-O0jKfEil1D7ulR1dveyTzkv_F6mGyJeNh2W1aMumT2hvHU5y73iph8bLbj_g5TKiAs7RGZpoadw2ARzSzooOJuFpcIi-pnRXFh4Vsf0Gk0DhMMomzAgQfs09ddtqhwkzTVJeyoYtEruKwQXF3LVE04dweSEeKl7gakwYEVvZZSY7a4c6Ugkl9WWYm6mM-IiT0Rezmt0jig\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "double refresh with same token fails (token rotation)",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"refresh_token\": \"rt_0048d8f3865bcdd4f4b463ffd3115b533e03ce756cdf55b0d0a3434468b49e38\", \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmQ0NjIyMGQtM2MyNC00MTI4LWIyMTktOGZiOGQwOTdjOGM5IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjM5MzI0Ny04aGx6QGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiYmQ0NjIyMGQtM2MyNC00MTI4LWIyMTktOGZiOGQwOTdjOGM5IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3MjkzLCJpYXQiOjE3ODQ4ODYzOTN9.YcXKwDo8GFvrrwrh8_2KNI1WwLS7ljQCyBIDXMxuEq3EJC-flgdcXSzIPsvSGr9De0w2QllD3gGZ9T_3VWqevIJ4tJlZdn96eWX8yOKUW6KXQpWuBNbXUNPblMdt11bwx1foO3cUA7m3L-ObheUbzOya2T6v-4O4cMa47pFxZ5Tls18GSQ9LUgHzGZkI1phnAmzKT-IgdxiAueai3kCJ1lqiIwJK6IgrA3ms2Smc6Gz0IvF-ipY3GnInT6pIXEmItLwe8uQg7Ou4S_y0Gakq-C0DwiNipVtsyx5FCZMf6HmMIt2k0ebvtEWjh_Aa4LeeJMMTx5ZuoXEw3wz3HLFJ4Q\", \"user\": {\"email\": \"testra+1784886393247-8hlz@example.com\", \"id\": \"bd46220d-3c24-4128-b219-8fb8d097c8c9\", \"mfa_enabled\": false, \"name\": \"Test User testra-1784886393247-9ecn0s\"}}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "refresh token returns new access token",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m |  | Expected: not \u001b[32m\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiN2RjNDM5MzItNWRkMy00NWE2LTljNTEtMzdhM2FhNWYwMzg4IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjUyMjg4OC1qN3J5QGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiN2RjNDM5MzItNWRkMy00NWE2LTljNTEtMzdhM2FhNWYwMzg4IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NDIzLCJpYXQiOjE3ODQ4ODY1MjN9.QrEUX7glnGKrVGUNjUjO8rZ8WGgbzqb-OAOJ8y3Z5jjtQnnFkpdD-hl5HWbiN-rzUrNUxMcwaC9VLr4fgHGArFDsWt4YbcLMlUXQeccTM8gBXWw_eLEP4r6tgoayy6vhfalEMTvohCemcgoVT6Dy4nnKZuW0CywwC7yu7Rj7DiIMRwOBV6ApoPimTWNe5xQgWFE9s31M8art699pjK7HfrWXsVTAZR8O6JvWbcvExPS7xNU3vhz73cBpqM1rDdge65N84Qa7CQ5AQgDXVriHlVKJ-txT4-02ZNay5_RaswwU8smLajnUvop42F6ydnLMdLv6CROgJdRAhcp_ApSysg\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "double refresh with same token fails (token rotation)",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"refresh_token\": \"rt_de083e2443b3498065cab344e5d1739d2d23c22edf53bb72bb24dfa795538483\", \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNmU3MmJjZmUtZDhhZi00YTZiLWJhYmYtZWUyNDYxOTNjZDA3IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjUyMzM2OC1mMWxvQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiNmU3MmJjZmUtZDhhZi00YTZiLWJhYmYtZWUyNDYxOTNjZDA3IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NDIzLCJpYXQiOjE3ODQ4ODY1MjN9.CVLmAkLDWVFapokUvlEXLTG6u67MjZekYzoK7buE3GP5oSTJzEXenWhupamTKkuOjYC7-k8BTVP35s65VCjtGrc8dL1HWNtV2zXMGx85T13iEip0R6I1RMdOVG4HS34QIVMI_WXHsYkbZrko0w8FcGI1SlflOxxeker_2EBWqOEG5G4ALovvLyYXQeYilLfbMXI6bf_xwDqmzRcaHW-ikBCwOBF2F8dT8ibQwp0JzCVatZXomDxtgmMCGug8_IpslWto-r5Y8sL1XAik7hf1HFPVpXRLHp7_qKEQrA9qhptwg-zSnssIUBLNho_LZtzyHiz8AHPO6DKOeOV792B8tA\", \"user\": {\"email\": \"testra+1784886523368-f1lo@example.com\", \"id\": \"6e72bcfe-d8af-4a6b-babf-ee246193cd07\", \"mfa_enabled\": false, \"name\": \"Test User testra-1784886523368-2741jg\"}}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "refresh token returns new access token",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m |  | Expected: not \u001b[32m\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNzFkNDkzM2YtM2QxMS00YTM2LWEzNTAtYjcwNDZlOTUwMjc2IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjY4Njc3MC1jaXFmQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiNzFkNDkzM2YtM2QxMS00YTM2LWEzNTAtYjcwNDZlOTUwMjc2IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NTg2LCJpYXQiOjE3ODQ4ODY2ODZ9.EQ3pZ1oFS3Bzk6oE0q2pAXq8-9g-WzKoImvrVbgGUq6BWP9L6SI5HZonSkBub7QC1QtoA4FlKnB1rkNCM1zYME3Nat_JoKaSb9-gDrc_T7WuceoZegVv4ZJsG3SM1SBI3AZIqyGDQRZmeYT_knJMqD5TFI0RqbRxCW99IT9oEEvJrItvIPGip8xaZBCGN42aMCcb0qjgU_qhJY7n_EbatU47o9CmF9YmWb39BR9n9cgfmZrMzR785lCslGCinK6hYg6P0DQ8Yz6imsCw9dvjLviJmUnrkL7t-fE3BwS1tSUj3g1Iqcj0G8HD7K0NnCuYxZ3A2tQzY522SnWhPuaHhA\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "double refresh with same token fails (token rotation)",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"refresh_token\": \"rt_a1d0e32bbc145873aab187860c9a4087452916f146ed10c34a749396de5c51c5\", \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjg3NjM0ODUtOTEzYS00NzFhLWEyNzQtYzkwZDY1OTc2OWQ1IiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4NjY4NzQxNy1vcWs1QGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiNjg3NjM0ODUtOTEzYS00NzFhLWEyNzQtYzkwZDY1OTc2OWQ1IiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NTg3LCJpYXQiOjE3ODQ4ODY2ODd9.RxyGDvxaiqu0LS3NK2WhENBcHH65yQrWirQGxZ6q13B0ZV4cM0m2nF7Obu7sS6uRR8E-jhqzesLkAnTLiWCJ5LzB2KOlUD0VvmY0OalU8h-32TVrXF3sVNOh3WDi_LAOo1OSnGZEukX7jBNmtCGpUjwQFi_APKQC1RFwCn8tUM8u8mxDX-Y9VJzb1fI6vIFKpFDNqj9mTs21IF9vgftmJ9scYMMJRIGpIh6qCKiyx0XHMPgGuanbPKxGtf05f-oFHLpdUmLeGUpHX6duzdTHDtATq6tFpmPmaQZ9Pe1SDz_SA-DUVcbpjV0z9nftayQiG3ln0ACC1m8F5tBhAqnhxQ\", \"user\": {\"email\": \"testra+1784886687417-oqk5@example.com\", \"id\": \"68763485-913a-471a-a274-c90d659769d5\", \"mfa_enabled\": false, \"name\": \"Test User testra-1784886687417-1lcgxc\"}}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "refresh token returns new access token",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m |  | Expected: not \u001b[32m\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNDMyM2UxNWItMDFhMS00OGY1LWE5N2MtYjJkZWIxOWJkY2UzIiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4Njc5MjExMi13emF1QGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiNDMyM2UxNWItMDFhMS00OGY1LWE5N2MtYjJkZWIxOWJkY2UzIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NjkyLCJpYXQiOjE3ODQ4ODY3OTJ9.JMcIA-SSlAaVmnYr8ZxONBBqhVrDn1c9PvysBMApXnLZpeHwwHlzTMHN-8ccD_O2HwySoL9A9wGQT9o-KBb8eEIUei8ICqDc2omZQT_uk-f9YPSMb44LP8RsnnOl7OK-48RobarcpKCc5lAp0GsSoBnhoNLuzl3_PAlKF6dVpEqZ2pTalYN7qoOkmhuqaBAvv1k2XPleQxSAzicraAjt1WdS6SiCBq7eeWC2E4kn-nJtTykJ51zIJiGHFpHL_xR3v4xgTKc7rHm3SM0iDmzDNBoPVY6ThmykJ_dycT6j_NiwE9PgE8vz45_vN2TboJVDmQQY8d_WI8NWapdtsm2OJQ\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "double refresh with same token fails (token rotation)",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"refresh_token\": \"rt_5b50eefa0e408fa31a6e3db384d34b89397031ec25cc7a02ed50554a8881f256\", \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWQxNzZjNTYtYTQyYi00NTg2LThiOWUtMDI0YmEyZGQ2NjBkIiwiZW1haWwiOiJ0ZXN0cmErMTc4NDg4Njc5Mjc3OC1mOWRuQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiZWQxNzZjNTYtYTQyYi00NTg2LThiOWUtMDI0YmEyZGQ2NjBkIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg0ODg3NjkyLCJpYXQiOjE3ODQ4ODY3OTJ9.jwS5uMYhCwtag4Ne034Tlk9m3g8QUwdLB6X31wBpqIc1EFWAhPxQV8ix6ABre3cfOt3FwDrMg9E5LG7izwIyYbra2RNTsoB-zbn0I-sXT4s8qyxJQlPnKAbs3uUT5GFiF0zAx6aGgmZadziGbauky-LC9PbVzLWDkWNaG8b_LZZ0VIlfsg5gbK-sNEJ-aJ8xn6sZD1hsJTXzThLeaT-MWDUitpl0ddMhPnbcRQpOaOOobqZwjOYdN00Bt-U03wqFVQcSOQexORmMpuRgVd-dDg8z-DyDdrdikkUi9Xk4yfB8D08OBWKQ8A-hX4WceJH3njZaUXFWgP48IeUuW4iNVA\", \"user\": {\"email\": \"testra+1784886792778-f9dn@example.com\", \"id\": \"ed176c56-a42b-4586-8b9e-024ba2dd660d\", \"mfa_enabled\": false, \"name\": \"Test User testra-1784886792778-t8b1ew\"}}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "register sets auth cookies",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m |  | Received: \u001b[31mfalse\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "register sets auth cookies",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m |  | Received: \u001b[31mfalse\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "register sets auth cookies",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m |  | Received: \u001b[31mfalse\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "register sets auth cookies",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m |  | Received: \u001b[31mfalse\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "register sets auth cookies",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m |  | Received: \u001b[31mfalse\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "request password reset for existing user succeeds",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mresolves\u001b[2m.\u001b[22mtoBeUndefined\u001b[2m()\u001b[22m |  | Received promise rejected instead of resolved | Rejected to value: \u001b[31m[Error: internal server error]\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "request password reset for existing user succeeds",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mresolves\u001b[2m.\u001b[22mtoBeUndefined\u001b[2m()\u001b[22m |  | Received promise rejected instead of resolved | Rejected to value: \u001b[31m[Error: internal server error]\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "request password reset for existing user succeeds",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mresolves\u001b[2m.\u001b[22mtoBeUndefined\u001b[2m()\u001b[22m |  | Received promise rejected instead of resolved | Rejected to value: \u001b[31m[Error: internal server error]\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "request password reset for existing user succeeds",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mresolves\u001b[2m.\u001b[22mtoBeUndefined\u001b[2m()\u001b[22m |  | Received promise rejected instead of resolved | Rejected to value: \u001b[31m[Error: internal server error]\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "auth/session.spec.ts",
+    "title": "request password reset for existing user succeeds",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mresolves\u001b[2m.\u001b[22mtoBeUndefined\u001b[2m()\u001b[22m |  | Received promise rejected instead of resolved | Rejected to value: \u001b[31m[Error: internal server error]\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "user can create an automation project through UI",
+    "project": "chromium",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('input[placeholder*=\"Project name\"], input[placeholder*=\"project name\"]').first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "automation project via API stores framework",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "negative: create automation project with unsupported framework",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:45:24Z\", \"framework\": \"unknown\", \"id\": \"eb70671f-000a-49e1-8667-a14d06ac6447\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:45:24Z\", \"workspace_id\": \"057c0523-3f34-4027-ae95-e37bcb1f7e8a\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "user can create an automation project through UI",
+    "project": "firefox",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('input[placeholder*=\"Project name\"], input[placeholder*=\"project name\"]').first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "automation project via API stores framework",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "negative: create automation project with unsupported framework",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:46:34Z\", \"framework\": \"unknown\", \"id\": \"e5056353-4b3e-43f8-99aa-fb79ebae5e83\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:46:34Z\", \"workspace_id\": \"12c4427c-a8aa-4170-8604-c2027c1ffe3c\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "user can create an automation project through UI",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Automation Hub' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "automation project via API stores framework",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "negative: create automation project with unsupported framework",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:48:47Z\", \"framework\": \"unknown\", \"id\": \"5c130fdc-f5d0-4f72-8a09-c342140680df\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:48:47Z\", \"workspace_id\": \"ab13703f-fc4b-4a73-acca-266f4da24af8\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "user can create an automation project through UI",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('input[placeholder*=\"Project name\"], input[placeholder*=\"project name\"]').first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "automation project via API stores framework",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "negative: create automation project with unsupported framework",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:51:29Z\", \"framework\": \"unknown\", \"id\": \"b19b4d7b-5be6-430a-a750-e21215240765\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:51:29Z\", \"workspace_id\": \"8fc8dc1e-e237-40f9-8eee-e030bd7742a7\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "user can create an automation project through UI",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Automation Hub' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "automation project via API stores framework",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "automation/automation.spec.ts",
+    "title": "negative: create automation project with unsupported framework",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:53:16Z\", \"framework\": \"unknown\", \"id\": \"78c4726c-c5d4-4190-8d3d-6750cc6a0cf8\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:53:16Z\", \"workspace_id\": \"e7b713dd-b375-419b-b55b-5218e4dbaac8\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list test cases for project",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list test cases for project",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list test cases for project",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list test cases for project",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list test cases for project",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "update project via API",
+    "project": "chromium",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "delete project via API",
+    "project": "chromium",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "update project via API",
+    "project": "firefox",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "delete project via API",
+    "project": "firefox",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "update project via API",
+    "project": "webkit",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "delete project via API",
+    "project": "webkit",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "update project via API",
+    "project": "Mobile Chrome",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "delete project via API",
+    "project": "Mobile Chrome",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "update project via API",
+    "project": "Mobile Safari",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "delete project via API",
+    "project": "Mobile Safari",
+    "error": "Error: Request failed with 405"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list defects for project",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list defects for project",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list defects for project",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list defects for project",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list defects for project",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create automation project with unsupported framework fails",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:45:26Z\", \"framework\": \"unsupported_framework_xyz\", \"id\": \"b4f7855b-d48c-4623-9c03-cca390ae7ac2\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:45:26Z\", \"workspace_id\": \"de761b3b-c2d5-4407-87c5-525f361d7e8f\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list automation projects for workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create automation project with unsupported framework fails",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:46:36Z\", \"framework\": \"unsupported_framework_xyz\", \"id\": \"4119a9f2-ef9f-4ed6-8fe5-102fb0365de0\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:46:36Z\", \"workspace_id\": \"343c66a7-d2b0-420e-83f2-e5d7f00eec99\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list automation projects for workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create automation project with unsupported framework fails",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:48:51Z\", \"framework\": \"unsupported_framework_xyz\", \"id\": \"168cb668-9b8e-4380-990c-cb7a03211410\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:48:51Z\", \"workspace_id\": \"0967c19f-2b65-4cd4-8fef-9546c7030e87\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list automation projects for workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create automation project with unsupported framework fails",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:51:32Z\", \"framework\": \"unsupported_framework_xyz\", \"id\": \"d2bcd789-25e1-4013-99a3-349891e64abb\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:51:32Z\", \"workspace_id\": \"deac1cac-ef04-44a3-a510-0f59d2e66f61\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list automation projects for workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create automation project with unsupported framework fails",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"branch\": \"\", \"command\": \"\", \"created_at\": \"2026-07-24T09:53:25Z\", \"framework\": \"unsupported_framework_xyz\", \"id\": \"e9b6736f-f61d-4b2b-b23f-d763c348b0ae\", \"name\": \"Bad Framework\", \"repository_url\": \"\", \"updated_at\": \"2026-07-24T09:53:25Z\", \"workspace_id\": \"9ef75149-9c3a-4b4b-8892-0d33a0266419\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "list automation projects for workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "read api collection via API",
+    "project": "chromium",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "read api collection via API",
+    "project": "firefox",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "read api collection via API",
+    "project": "webkit",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "read api collection via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "read api collection via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid JSON body"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create test run without test cases fails",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:45:27.6503017Z\", \"created_by\": \"45c71e02-d30a-43b6-a3dd-d8c693aca24c\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"e3dc3130-715f-42aa-b0f1-446d789c094a\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"7305d596-650d-4fc6-96ee-1f158c711d5c\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:45:27.6503017Z\", \"workspace_id\": \"51eb94f7-25e2-41cf-9e73-2755f9332def\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create test run without test cases fails",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:46:38.4870331Z\", \"created_by\": \"73498149-0d01-4652-bd7c-2e59adb2ef9f\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"4592a0d2-62e9-4dc4-a204-129c880996b4\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"f8c99bba-b53f-48db-83db-ae2bd24b5a71\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:46:38.4870331Z\", \"workspace_id\": \"754b6080-d34c-492b-8665-d2af63c82bc3\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create test run without test cases fails",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:48:54.4175112Z\", \"created_by\": \"5fbe7ef7-a282-49f0-890e-5aa924a8a1e5\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"eeb6fae2-b263-4f16-ae32-af84b98691e0\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"a5dcb25e-8b66-4478-9464-8867aa02d926\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:48:54.4175112Z\", \"workspace_id\": \"775754e1-3238-49b7-8848-129dd64aba41\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create test run without test cases fails",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:51:34.2487713Z\", \"created_by\": \"6aa5bad2-dc94-40c3-95ec-56016442e4a4\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"8bc45283-6089-47e2-87d2-f531a695e574\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"510de7e3-d9f8-4fbe-90a3-96190f7e3f8e\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:51:34.2487713Z\", \"workspace_id\": \"cc4493a9-c728-49c2-b4ce-b1566e5f651c\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "crud/crud.spec.ts",
+    "title": "create test run without test cases fails",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:53:29.772544Z\", \"created_by\": \"8a93f3e5-0add-46fc-81c8-58b60ecd1c2d\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"49c4a2f0-dcde-44e6-9f7b-1a201c210520\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"b3b8c0fa-1b9e-4e70-a204-a799b4e50fc9\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:53:29.772544Z\", \"workspace_id\": \"5cac1ac9-6b3d-4772-bd5f-cc5e268aa48f\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard has quick action links",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('link', { name: /test cases/i }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard analytics section loads when workspace is set",
+    "project": "chromium",
+    "error": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded."
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard shows no project warning when project is not set",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText(/no project/i) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard has quick action links",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('link', { name: /test cases/i }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard displays workspace context",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard shows project badge when project is set",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard shows no project warning when project is not set",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard has quick action links",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard quick action new test case navigates correctly",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard quick action new test run navigates correctly",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard redirects unauthenticated user to login",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed |  | Expected pattern: \u001b[32m/.*login.*/\u001b[39m | Received string:  \u001b[31m\"http://localhost:3000/dashboard\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard analytics section loads when workspace is set",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard has quick action links",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('link', { name: /test cases/i }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard analytics section loads when workspace is set",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded."
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard displays workspace context",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard shows project badge when project is set",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard shows no project warning when project is not set",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard has quick action links",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard quick action new test case navigates correctly",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard quick action new test run navigates correctly",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard redirects unauthenticated user to login",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed |  | Expected pattern: \u001b[32m/.*login.*/\u001b[39m | Received string:  \u001b[31m\"http://localhost:3000/dashboard\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard-expanded.spec.ts",
+    "title": "dashboard analytics section loads when workspace is set",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard.spec.ts",
+    "title": "authenticated user sees dashboard workspace context",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard.spec.ts",
+    "title": "dashboard navigation links work",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard.spec.ts",
+    "title": "authenticated user sees dashboard workspace context",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "dashboard/dashboard.spec.ts",
+    "title": "dashboard navigation links work",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "user can create a defect through UI",
+    "project": "chromium",
+    "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: /new defect/i }) resolved to 2 elements: |     1) <button class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">…</button> aka getByRole('button', { name: 'New Defect' }).first() |     2) <button class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">New Defect</button> aka getByRole('button', { name: 'New Defect' }).nth(1) | "
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "defect via API carries severity and priority",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "defect via API carries severity and priority",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "user can create a defect through UI",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Defects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "defect via API carries severity and priority",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "user can create a defect through UI",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Defects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "defect via API carries severity and priority",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "user can create a defect through UI",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Defects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "defects/defects.spec.ts",
+    "title": "defect via API carries severity and priority",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "file-upload/file-upload.spec.ts",
+    "title": "upload JUnit XML report to automation project",
+    "project": "chromium",
+    "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Import' }) resolved to 2 elements: |     1) <button class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">…</button> aka getByRole('button', { name: 'Import Report' }) |     2) <button type=\"submit\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">Import</button> aka getByRole('button', { name: 'Import', exact: true }) | "
+  },
+  {
+    "type": "FAIL",
+    "file": "file-upload/file-upload.spec.ts",
+    "title": "upload JUnit XML report to automation project",
+    "project": "firefox",
+    "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Import' }) resolved to 2 elements: |     1) <button class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">…</button> aka getByRole('button', { name: 'Import Report' }) |     2) <button type=\"submit\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">Import</button> aka getByRole('button', { name: 'Import', exact: true }) | "
+  },
+  {
+    "type": "FAIL",
+    "file": "file-upload/file-upload.spec.ts",
+    "title": "upload JUnit XML report to automation project",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText('Upload Target') | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "file-upload/file-upload.spec.ts",
+    "title": "upload JUnit XML report to automation project",
+    "project": "Mobile Chrome",
+    "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Import' }) resolved to 2 elements: |     1) <button class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">…</button> aka getByRole('button', { name: 'Import Report' }) |     2) <button type=\"submit\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500 h-10 px-4 text-sm\">Import</button> aka getByRole('button', { name: 'Import', exact: true }) | "
+  },
+  {
+    "type": "FAIL",
+    "file": "file-upload/file-upload.spec.ts",
+    "title": "upload JUnit XML report to automation project",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText('Upload Target') | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration via API",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "list integrations via API",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "delete integration via API",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "integrations are scoped to workspace",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration with different providers",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration via API",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "list integrations via API",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "delete integration via API",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "integrations are scoped to workspace",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration with different providers",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration via API",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "list integrations via API",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "delete integration via API",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "integrations are scoped to workspace",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration with different providers",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "list integrations via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "delete integration via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "integrations are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration with different providers",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "list integrations via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "delete integration via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "integrations are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations-expanded.spec.ts",
+    "title": "create integration with different providers",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations.spec.ts",
+    "title": "create and list integration via API",
+    "project": "chromium",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations.spec.ts",
+    "title": "create and list integration via API",
+    "project": "firefox",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations.spec.ts",
+    "title": "create and list integration via API",
+    "project": "webkit",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations.spec.ts",
+    "title": "create and list integration via API",
+    "project": "Mobile Chrome",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "integrations/integrations.spec.ts",
+    "title": "create and list integration via API",
+    "project": "Mobile Safari",
+    "error": "Error: invalid input"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "negative: create run without test cases returns error",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:45:35.2579161Z\", \"created_by\": \"6e77a484-3d65-4339-98c9-2550027ff00a\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"91c85cfe-db3b-4040-8e0a-ce1c02b1d818\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"7a24c9ab-e7a3-4cb4-9b56-34bd1be15ebd\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:45:35.2579161Z\", \"workspace_id\": \"8059fbdb-da54-4a4c-84a3-1511374925f7\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "negative: create run without test cases returns error",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:46:55.7681936Z\", \"created_by\": \"80e3c47a-0587-433e-810a-556e77ad4cdb\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"f9b3b6dd-8cf7-4a22-b74b-f9bfe410b4c8\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"cc7dc660-b025-4c00-8f13-2446b6c110e6\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:46:55.7681936Z\", \"workspace_id\": \"1120387c-7582-4769-be7f-528eeac4a3e2\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "user can create a manual test run",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Run' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "negative: create run without test cases returns error",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:49:41.86499Z\", \"created_by\": \"39472aea-8451-409f-99a3-f8d212195231\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"7baa293c-bd93-4f9c-8e18-4f492b39a4dd\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"bc41294b-7f95-487e-a73c-05c8edd1920a\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:49:41.86499Z\", \"workspace_id\": \"27c2489d-aa40-49f4-bf17-8d20a3eee6ec\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "negative: create run without test cases returns error",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:51:42.2075318Z\", \"created_by\": \"7bfa862e-a146-47d8-8271-6b217970fba3\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"d27e029c-c668-40ac-9886-5593cdfe5d31\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"c904ba1c-43cc-4d0e-94cb-110998fb9339\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:51:42.2075318Z\", \"workspace_id\": \"10c1246a-e84c-428a-b84a-22cc2c9d041e\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "user can create a manual test run",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Run' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "manual-run/manual-run.spec.ts",
+    "title": "negative: create run without test cases returns error",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m()\u001b[22m |  | Received promise resolved instead of rejected | Resolved to value: \u001b[31m{\"blocked\": 0, \"completed_at\": null, \"created_at\": \"2026-07-24T09:54:16.7592267Z\", \"created_by\": \"f9c884ac-508f-4c6f-ac2b-7d0618b14656\", \"duration_ms\": 0, \"failed\": 0, \"id\": \"383bbef1-e308-431e-a56c-350de5d0135e\", \"name\": \"Empty Run\", \"passed\": 0, \"project_id\": \"30da6221-1d2a-4d0b-b128-e2854e3dd095\", \"skipped\": 0, \"source\": \"manual\", \"started_at\": null, \"status\": \"pending\", \"suite_id\": null, \"total\": 0, \"updated_at\": \"2026-07-24T09:54:16.7592267Z\", \"workspace_id\": \"eb48745b-73f3-4339-9cee-2d16e3002889\"}\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "create notification via API",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "list notifications via API",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "mark notification as read via API",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications are scoped to workspace",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "create notification via API",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "list notifications via API",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "mark notification as read via API",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications are scoped to workspace",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "create notification via API",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "list notifications via API",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "mark notification as read via API",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications are scoped to workspace",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "create notification via API",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "list notifications via API",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "mark notification as read via API",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "create notification via API",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "list notifications via API",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "mark notification as read via API",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications-expanded.spec.ts",
+    "title": "notifications are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "create and mark notification read via API",
+    "project": "chromium",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "create and mark notification read via API",
+    "project": "firefox",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "create and mark notification read via API",
+    "project": "webkit",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "create and mark notification read via API",
+    "project": "Mobile Chrome",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "notifications page loads for authenticated user",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Notifications' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "notifications/notifications.spec.ts",
+    "title": "create and mark notification read via API",
+    "project": "Mobile Safari",
+    "error": "Error: could not resolve organization from request"
+  },
+  {
+    "type": "FAIL",
+    "file": "onboarding/onboarding.spec.ts",
+    "title": "new user can register and create workspace through onboarding",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "onboarding/onboarding.spec.ts",
+    "title": "onboarding flow creates organization and workspace",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your workspace' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "onboarding/onboarding.spec.ts",
+    "title": "new user can register and create workspace through onboarding",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "onboarding/onboarding.spec.ts",
+    "title": "onboarding flow creates organization and workspace",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your workspace' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "test cases list returns pagination metadata",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination with limit=1 returns at most 1 item",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination cursor returns next page",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "defects list returns pagination metadata",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "organizations list returns pagination metadata",
+    "project": "chromium",
+    "error": "Error: unauthorized"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "workspaces list returns pagination metadata",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "test cases list returns pagination metadata",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination with limit=1 returns at most 1 item",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination cursor returns next page",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "defects list returns pagination metadata",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "organizations list returns pagination metadata",
+    "project": "firefox",
+    "error": "Error: unauthorized"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "workspaces list returns pagination metadata",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "test cases list returns pagination metadata",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination with limit=1 returns at most 1 item",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination cursor returns next page",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "defects list returns pagination metadata",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "organizations list returns pagination metadata",
+    "project": "webkit",
+    "error": "Error: unauthorized"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "workspaces list returns pagination metadata",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "test cases list returns pagination metadata",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination with limit=1 returns at most 1 item",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination cursor returns next page",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "defects list returns pagination metadata",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "organizations list returns pagination metadata",
+    "project": "Mobile Chrome",
+    "error": "Error: unauthorized"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "workspaces list returns pagination metadata",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "test cases list returns pagination metadata",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination with limit=1 returns at most 1 item",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "pagination cursor returns next page",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "defects list returns pagination metadata",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "organizations list returns pagination metadata",
+    "project": "Mobile Safari",
+    "error": "Error: unauthorized"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "workspaces list returns pagination metadata",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search test cases by title returns matching results",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search with non-matching query returns empty results",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "global search API returns results",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search test cases by title returns matching results",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search with non-matching query returns empty results",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "global search API returns results",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search test cases by title returns matching results",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search with non-matching query returns empty results",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "global search API returns results",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search test cases by title returns matching results",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search with non-matching query returns empty results",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "global search API returns results",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search test cases by title returns matching results",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search with non-matching query returns empty results",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "global search API returns results",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "analytics recent activity returns data",
+    "project": "chromium",
+    "error": "Error: Request failed with 404"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "analytics recent activity returns data",
+    "project": "firefox",
+    "error": "Error: Request failed with 404"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "analytics recent activity returns data",
+    "project": "webkit",
+    "error": "Error: Request failed with 404"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "analytics recent activity returns data",
+    "project": "Mobile Chrome",
+    "error": "Error: Request failed with 404"
+  },
+  {
+    "type": "FAIL",
+    "file": "pagination/pagination.spec.ts",
+    "title": "analytics recent activity returns data",
+    "project": "Mobile Safari",
+    "error": "Error: Request failed with 404"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/permissions.spec.ts",
+    "title": "missing permission blocks workspace mutations",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|unauthorized|permission/i\u001b[39m | Received message: \u001b[31m\"resource already exists\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/permissions.spec.ts",
+    "title": "missing permission blocks workspace mutations",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|unauthorized|permission/i\u001b[39m | Received message: \u001b[31m\"resource already exists\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/permissions.spec.ts",
+    "title": "missing permission blocks workspace mutations",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|unauthorized|permission/i\u001b[39m | Received message: \u001b[31m\"resource already exists\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/permissions.spec.ts",
+    "title": "missing permission blocks workspace mutations",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|unauthorized|permission/i\u001b[39m | Received message: \u001b[31m\"resource already exists\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/permissions.spec.ts",
+    "title": "missing permission blocks workspace mutations",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|unauthorized|permission/i\u001b[39m | Received message: \u001b[31m\"resource already exists\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "test cases are scoped to their workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "automation projects are scoped to workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "test cases are scoped to their workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "automation projects are scoped to workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "test cases are scoped to their workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "automation projects are scoped to workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "test cases are scoped to their workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "automation projects are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "test cases are scoped to their workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "automation projects are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "permissions/rbac-expanded.spec.ts",
+    "title": "search results are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "user can create and select a project through UI",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Projects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "project list loads existing project",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText('Project testra-1784886362565-p1oc05') | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "user can create and select a project through UI",
+    "project": "firefox",
+    "error": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /new project|create project/i })\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "project list loads existing project",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText('Project testra-1784886452112-ss1xxr') | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "user can create and select a project through UI",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Projects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "project list loads existing project",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Projects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "user can create and select a project through UI",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /new project|create project/i })\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "project list loads existing project",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByText('Project testra-1784886727809-el0jby') | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "user can create and select a project through UI",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Projects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "projects/projects.spec.ts",
+    "title": "project list loads existing project",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Projects' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search returns test case via API",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search UI displays results",
+    "project": "chromium",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search via test-cases search endpoint returns matching cases",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search with partial title matches",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search is case-insensitive",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search results include pagination metadata",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns results for test cases",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns empty for non-matching query",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search returns test case via API",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search UI displays results",
+    "project": "firefox",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search via test-cases search endpoint returns matching cases",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search with partial title matches",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search is case-insensitive",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search results include pagination metadata",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns results for test cases",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns empty for non-matching query",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search returns test case via API",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search UI displays results",
+    "project": "webkit",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search via test-cases search endpoint returns matching cases",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search with partial title matches",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search is case-insensitive",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search results include pagination metadata",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns results for test cases",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns empty for non-matching query",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search returns test case via API",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search UI displays results",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search via test-cases search endpoint returns matching cases",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search with partial title matches",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search is case-insensitive",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search results include pagination metadata",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns results for test cases",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns empty for non-matching query",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search returns test case via API",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search UI displays results",
+    "project": "Mobile Safari",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search via test-cases search endpoint returns matching cases",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search with partial title matches",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search is case-insensitive",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "search results include pagination metadata",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeDefined\u001b[2m()\u001b[22m |  | Received: \u001b[31mundefined\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns results for test cases",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search-expanded.spec.ts",
+    "title": "global search API returns empty for non-matching query",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search returns test case via API",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search UI displays results",
+    "project": "chromium",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search returns test case via API",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search UI displays results",
+    "project": "firefox",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search returns test case via API",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search UI displays results",
+    "project": "webkit",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search returns test case via API",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search UI displays results",
+    "project": "Mobile Chrome",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search returns test case via API",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'results')"
+  },
+  {
+    "type": "FAIL",
+    "file": "search/search.spec.ts",
+    "title": "search UI displays results",
+    "project": "Mobile Safari",
+    "error": "TimeoutError: locator.fill: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for getByPlaceholder(/search/i).or(locator('input[type=\"search\"]')).first()\u001b[22m | "
+  },
+  {
+    "type": "FAIL",
+    "file": "smoke/smoke.spec.ts",
+    "title": "login page loads",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "smoke/smoke.spec.ts",
+    "title": "authenticated user can access dashboard",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "smoke/smoke.spec.ts",
+    "title": "login page loads",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "smoke/smoke.spec.ts",
+    "title": "authenticated user can access dashboard",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "user cannot access workspace they do not belong to",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|not found|unauthorized/i\u001b[39m | Received message: \u001b[31m\"not a member of this organization\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "resources are scoped to workspace",
+    "project": "chromium",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "user cannot access workspace they do not belong to",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|not found|unauthorized/i\u001b[39m | Received message: \u001b[31m\"not a member of this organization\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "resources are scoped to workspace",
+    "project": "firefox",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "user cannot access workspace they do not belong to",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|not found|unauthorized/i\u001b[39m | Received message: \u001b[31m\"not a member of this organization\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "resources are scoped to workspace",
+    "project": "webkit",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "user cannot access workspace they do not belong to",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|not found|unauthorized/i\u001b[39m | Received message: \u001b[31m\"not a member of this organization\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "resources are scoped to workspace",
+    "project": "Mobile Chrome",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "user cannot access workspace they do not belong to",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mrejects\u001b[2m.\u001b[22mtoThrow\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m |  | Expected pattern: \u001b[32m/forbidden|not found|unauthorized/i\u001b[39m | Received message: \u001b[31m\"not a member of this organization\"\u001b[39m"
+  },
+  {
+    "type": "FAIL",
+    "file": "tenant/tenant-isolation.spec.ts",
+    "title": "resources are scoped to workspace",
+    "project": "Mobile Safari",
+    "error": "TypeError: Cannot read properties of undefined (reading 'some')"
+  },
+  {
+    "type": "FLAKY",
+    "file": "testcases/testcases.spec.ts",
+    "title": "test case search returns expected result",
+    "project": "firefox"
+  },
+  {
+    "type": "FAIL",
+    "file": "testcases/testcases.spec.ts",
+    "title": "user can create a test case through UI",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Case' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testcases/testcases.spec.ts",
+    "title": "test case search returns expected result",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Test Cases' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testcases/testcases.spec.ts",
+    "title": "user can create a test case through UI",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Case' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testcases/testcases.spec.ts",
+    "title": "test case search returns expected result",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Test Cases' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "test plan via API includes test cases",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m |  | \u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must not be null nor undefined | "
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "test plan via API includes test cases",
+    "project": "firefox",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m |  | \u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must not be null nor undefined | "
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "user can create a test plan through UI",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Plan' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "test plan via API includes test cases",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m |  | \u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must not be null nor undefined | "
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "test plan via API includes test cases",
+    "project": "Mobile Chrome",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m |  | \u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must not be null nor undefined | "
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "user can create a test plan through UI",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'New Test Plan' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "testplans/testplans.spec.ts",
+    "title": "test plan via API includes test cases",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m |  | \u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must not be null nor undefined | "
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "login page screenshot",
+    "project": "chromium",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\login-chromium-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "register page screenshot",
+    "project": "chromium",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\register-chromium-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "chromium",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-chromium-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard without project context screenshot",
+    "project": "chromium",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-no-project-chromium-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "login page screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\login-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "register page screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\register-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard without project context screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-no-project-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "login page screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "register page screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard without project context screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "login page screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\login-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "register page screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\register-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard without project context screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression-expanded.spec.ts-snapshots\\dashboard-no-project-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "login page screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "register page screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Create your account' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression-expanded.spec.ts",
+    "title": "dashboard without project context screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "chromium",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed |  |   1096 pixels (ratio 0.01 of all image pixels) are different. | "
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "login page screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression.spec.ts-snapshots\\login-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "firefox",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression.spec.ts-snapshots\\dashboard-firefox-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "login page screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "webkit",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "login page screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression.spec.ts-snapshots\\login-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "Mobile Chrome",
+    "error": "Error: A snapshot doesn't exist at C:\\Private\\project\\testra\\tests\\e2e\\visual\\visual-regression.spec.ts-snapshots\\dashboard-Mobile-Chrome-win32.png, writing actual."
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "login page screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Sign in to Testra' }) | Expected: visible"
+  },
+  {
+    "type": "FAIL",
+    "file": "visual/visual-regression.spec.ts",
+    "title": "dashboard screenshot",
+    "project": "Mobile Safari",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('heading', { name: 'Dashboard' }) | Expected: visible"
+  }
+]

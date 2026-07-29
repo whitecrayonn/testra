@@ -227,6 +227,21 @@ func (r *Resolver) ResolveOrgFromAutomationArtifact(ctx context.Context, id uuid
 	return orgID, err
 }
 
+func (r *Resolver) ResolveOrgFromTestCase(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT w.organization_id
+		 FROM test_cases tc
+		 JOIN workspaces w ON tc.workspace_id = w.id
+		 WHERE tc.id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
 func (r *Resolver) ResolveOrgFromTestPlan(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
 	var orgID uuid.UUID
 	err := r.db.QueryRowContext(ctx,
@@ -235,6 +250,87 @@ func (r *Resolver) ResolveOrgFromTestPlan(ctx context.Context, id uuid.UUID) (uu
 		 JOIN workspaces w ON p.workspace_id = w.id
 		 WHERE p.id = $1`,
 		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveOrgFromNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT organization_id FROM notifications WHERE id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveOrgFromIntegration(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT w.organization_id
+		 FROM integrations i
+		 JOIN workspaces w ON i.workspace_id = w.id
+		 WHERE i.id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveOrgFromIntegrationEvent(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT w.organization_id
+		 FROM integration_events e
+		 JOIN workspaces w ON e.workspace_id = w.id
+		 WHERE e.id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveOrgFromNotificationChannel(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT w.organization_id
+		 FROM notification_channels ch
+		 JOIN workspaces w ON ch.workspace_id = w.id
+		 WHERE ch.id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveOrgFromNotificationTemplate(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT organization_id FROM notification_templates WHERE id = $1`,
+		id,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return orgID, err
+}
+
+func (r *Resolver) ResolveDefaultOrgForUser(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT organization_id FROM organization_members WHERE user_id = $1 LIMIT 1`,
+		userID,
 	).Scan(&orgID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return uuid.Nil, ErrNotFound

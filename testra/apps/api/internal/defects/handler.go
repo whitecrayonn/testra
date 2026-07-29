@@ -175,10 +175,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		resp[i] = toDefectResponse(&d)
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {

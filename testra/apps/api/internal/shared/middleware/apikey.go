@@ -29,10 +29,6 @@ type APIKeyValidator interface {
 	Validate(ctx context.Context, rawKey string) (APIKeyInfo, error)
 }
 
-// nilTenantID is used while the real tenant is still unknown so that existing
-// RLS policies see a valid UUID expression without matching any real tenant.
-var nilTenantID = uuid.Nil.String()
-
 type apiKeyContextKey string
 
 const (
@@ -71,11 +67,11 @@ func APIKeyAuth(pool *sql.DB, validator APIKeyValidator) func(http.Handler) http
 			defer release()
 
 			hash := hashAPIKey(rawKey)
-			if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", nilTenantID); err != nil {
+			if err := db.SetSessionTenantID(ctx, conn, uuid.Nil); err != nil {
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to initialize tenant context")
 				return
 			}
-			if _, err := conn.ExecContext(ctx, "SET app.lookup_key_hash = $1", hash); err != nil {
+			if err := db.SetLookupKeyHash(ctx, conn, hash); err != nil {
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to initialize API key lookup")
 				return
 			}
@@ -87,7 +83,7 @@ func APIKeyAuth(pool *sql.DB, validator APIKeyValidator) func(http.Handler) http
 				return
 			}
 
-			if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", key.GetOrganizationID().String()); err != nil {
+			if err := db.SetSessionTenantID(ctx, conn, key.GetOrganizationID()); err != nil {
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to set tenant context")
 				return
 			}

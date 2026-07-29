@@ -54,6 +54,9 @@ func (s *Service) CreateNotification(ctx context.Context, input CreateNotificati
 	if !validation.IsValidName(input.Title) || !IsValidNotificationType(input.Type) {
 		return nil, sharederrors.ErrInvalidInput
 	}
+	if strings.TrimSpace(input.Body) == "" {
+		return nil, sharederrors.ErrInvalidInput
+	}
 
 	n := &Notification{
 		ID:             uuid.New(),
@@ -333,6 +336,9 @@ func (s *Service) dispatchEmail(ctx context.Context, ch NotificationChannel, inp
 	if !ok || to == "" {
 		return 0, nil
 	}
+	if containsHeaderInjection(to) || containsHeaderInjection(s.smtp.From) || containsHeaderInjection(input.Title) {
+		return 0, fmt.Errorf("%w: email headers contain line breaks", sharederrors.ErrInvalidInput)
+	}
 
 	password := s.smtp.Password
 	if s.smtp.SecretProvider != nil && s.smtp.PasswordSecret != "" {
@@ -433,7 +439,7 @@ func (s *Service) retry(ctx context.Context, f func() error) (int, error) {
 }
 
 func (s *Service) CreateTemplate(ctx context.Context, input CreateTemplateInput, createdBy uuid.UUID) (*NotificationTemplate, error) {
-	if input.OrganizationID == uuid.Nil || !validation.IsValidName(input.Name) || input.EventType == "" || input.ChannelType == "" {
+	if input.OrganizationID == uuid.Nil || !validation.IsValidName(input.Name) || input.EventType == "" || input.ChannelType == "" || !IsValidChannelType(input.ChannelType) {
 		return nil, sharederrors.ErrInvalidInput
 	}
 	now := time.Now().UTC()
@@ -473,12 +479,15 @@ func (s *Service) UpdateTemplate(ctx context.Context, id uuid.UUID, input Update
 	if id == uuid.Nil {
 		return nil, sharederrors.ErrInvalidInput
 	}
+	if input.ChannelType != "" && !IsValidChannelType(input.ChannelType) {
+		return nil, sharederrors.ErrInvalidInput
+	}
 	t, err := s.repo.GetTemplate(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if input.Name != "" {
-		t.Name = input.Name
+		t.Name = strings.TrimSpace(input.Name)
 	}
 	if input.EventType != "" {
 		t.EventType = input.EventType
@@ -487,10 +496,10 @@ func (s *Service) UpdateTemplate(ctx context.Context, id uuid.UUID, input Update
 		t.ChannelType = input.ChannelType
 	}
 	if input.Subject != "" {
-		t.Subject = input.Subject
+		t.Subject = strings.TrimSpace(input.Subject)
 	}
 	if input.Body != "" {
-		t.Body = input.Body
+		t.Body = strings.TrimSpace(input.Body)
 	}
 	t.UpdatedAt = time.Now().UTC()
 	if err := s.repo.UpdateTemplate(ctx, t); err != nil {
@@ -511,6 +520,10 @@ func (s *Service) ListHistory(ctx context.Context, notificationID uuid.UUID, lim
 		return nil, sharederrors.ErrInvalidInput
 	}
 	return s.repo.ListHistory(ctx, notificationID, limit)
+}
+
+func containsHeaderInjection(s string) bool {
+	return strings.ContainsAny(s, "\r\n")
 }
 
 func validateChannelConfig(t NotificationChannelType, config map[string]string) error {

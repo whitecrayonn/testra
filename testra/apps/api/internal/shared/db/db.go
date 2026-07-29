@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -44,6 +45,26 @@ type BeginTxer interface {
 // calls on that request use the same connection.
 type DB struct {
 	db *sql.DB
+}
+
+// SetSessionTenantID sets app.tenant_id for the current database session.
+// PostgreSQL SET does not support parameters, so the safe UUID is interpolated.
+func SetSessionTenantID(ctx context.Context, exec DBTX, tenantID uuid.UUID) error {
+	_, err := exec.ExecContext(ctx, fmt.Sprintf("SET app.tenant_id = '%s'", tenantID.String()))
+	return err
+}
+
+// SetLocalTenantID sets app.tenant_id for the current transaction.
+// PostgreSQL SET LOCAL does not support parameters, so the safe UUID is interpolated.
+func SetLocalTenantID(ctx context.Context, exec DBTX, tenantID uuid.UUID) error {
+	_, err := exec.ExecContext(ctx, fmt.Sprintf("SET LOCAL app.tenant_id = '%s'", tenantID.String()))
+	return err
+}
+
+// SetLookupKeyHash sets app.lookup_key_hash for API-key lookup policies.
+func SetLookupKeyHash(ctx context.Context, exec DBTX, hash string) error {
+	_, err := exec.ExecContext(ctx, fmt.Sprintf("SET app.lookup_key_hash = '%s'", hash))
+	return err
 }
 
 func Wrap(db *sql.DB) *DB {
@@ -100,7 +121,7 @@ func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) 
 	}
 
 	if tenantID, ok := TenantIDFromContext(ctx); ok {
-		_, _ = tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", tenantID.String())
+		_ = SetLocalTenantID(ctx, tx, tenantID)
 	}
 	return tx, nil
 }

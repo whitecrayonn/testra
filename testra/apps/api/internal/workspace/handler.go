@@ -24,6 +24,7 @@ type workspaceResponse struct {
 	OrganizationID string `json:"organization_id"`
 	Name           string `json:"name"`
 	Slug           string `json:"slug"`
+	Description    string `json:"description"`
 }
 
 func mapWorkspaceResponse(w *Workspace) workspaceResponse {
@@ -32,6 +33,7 @@ func mapWorkspaceResponse(w *Workspace) workspaceResponse {
 		OrganizationID: w.OrganizationID.String(),
 		Name:           w.Name,
 		Slug:           w.Slug,
+		Description:    w.Description,
 	}
 }
 
@@ -39,6 +41,7 @@ type createWorkspaceRequest struct {
 	OrganizationID string `json:"organization_id"`
 	Name           string `json:"name"`
 	Slug           string `json:"slug"`
+	Description    string `json:"description"`
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +67,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: orgID,
 		Name:           req.Name,
 		Slug:           req.Slug,
+		Description:    req.Description,
 		OwnerID:        userID,
 	})
 	if err != nil {
@@ -104,7 +108,16 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := pagination.ParseParams(r)
-	workspaces, err := h.service.ListForOrganizationPaginated(r.Context(), orgID, params.Cursor, params.Limit)
+	cursorID := params.Cursor
+	if cursorID != "" {
+		decoded, err := pagination.DecodeCursor(cursorID)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+		cursorID = decoded
+	}
+	workspaces, err := h.service.ListForOrganizationPaginated(r.Context(), orgID, cursorID, params.Limit)
 	if err != nil {
 		apihttp.MapError(w, err)
 		return
@@ -123,8 +136,5 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }

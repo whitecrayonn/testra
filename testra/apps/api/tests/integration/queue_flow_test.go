@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -71,7 +72,7 @@ func TestIngestionQueueFlow(t *testing.T) {
 	}
 
 	// Bind the transaction to the tenant so downstream data access obeys RLS.
-	if _, err := tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", ten.OrgID.String()); err != nil {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL app.tenant_id = '%s'", ten.OrgID.String())); err != nil {
 		t.Fatalf("set tenant context on worker tx: %v", err)
 	}
 

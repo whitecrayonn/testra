@@ -28,7 +28,7 @@ interface DashboardAnalyticsProps {
 export function DashboardAnalytics({
   workspaceId,
   projectId,
-  title = "Dashboard",
+  title = "Analytics Overview",
   description = "Executive overview of test execution, defects, and team activity.",
   source,
   tester,
@@ -57,7 +57,7 @@ export function DashboardAnalytics({
   }, [filter]);
 
   const trendData = useMemo(
-    () => (metrics?.execution_timeline ?? []).slice().reverse().map((p) => ({ ...p, date: p.date.slice(5) })),
+    () => (metrics?.execution_timeline ?? []).slice().reverse().map((p) => ({ ...p, date: p.date?.slice(5) ?? p.date })),
     [metrics?.execution_timeline],
   );
 
@@ -76,7 +76,7 @@ export function DashboardAnalytics({
   const topFailedData = useMemo(
     () =>
       (metrics?.top_failed_test_cases ?? []).map((it) => ({
-        name: it.title || it.test_case_id.slice(0, 8),
+        name: it.title || it.test_case_id?.slice(0, 8) || "Unknown",
         failures: it.failures,
       })),
     [metrics?.top_failed_test_cases],
@@ -85,7 +85,7 @@ export function DashboardAnalytics({
   const topApiData = useMemo(
     () =>
       (metrics?.top_failed_apis ?? []).map((it) => ({
-        name: it.name || it.request_id.slice(0, 8),
+        name: it.name || it.request_id?.slice(0, 8) || "Unknown",
         failures: it.failures,
       })),
     [metrics?.top_failed_apis],
@@ -94,7 +94,7 @@ export function DashboardAnalytics({
   const activeQaData = useMemo(
     () =>
       (metrics?.most_active_qa ?? []).map((u) => ({
-        name: u.name || u.user_id.slice(0, 8),
+        name: u.name || u.user_id?.slice(0, 8) || "Unknown",
         executions: u.count,
       })),
     [metrics?.most_active_qa],
@@ -169,7 +169,7 @@ export function DashboardAnalytics({
           <LineChartComponent data={trendData.length ? trendData : placeholderTrend()} xKey="date" yKey="total_runs" className="h-64" />
         </ChartCard>
 
-        <ChartCard title="Weekly Trend" data={metrics.weekly_trend}>
+        <ChartCard title="Weekly Trend" data={metrics.weekly_trend ?? []}>
           <StackedBarChart
             data={stackTrend(metrics.weekly_trend)}
             xKey="date"
@@ -208,13 +208,13 @@ export function DashboardAnalytics({
         <ChartCard title="Recent Activity" data={activity}>
           <div className="h-64 overflow-y-auto pr-2">
             <div className="space-y-2">
-              {activity.slice(0, 20).map((a) => (
+              {(activity ?? []).slice(0, 20).map((a) => (
                 <div key={a.id + a.type} className="flex items-center justify-between rounded-lg border border-slate-100 p-2 text-sm dark:border-slate-700">
                   <span className="font-medium text-slate-900 dark:text-slate-100">{a.title}</span>
                   <span className="text-xs capitalize text-slate-500 dark:text-slate-400">{a.type}</span>
                 </div>
               ))}
-              {activity.length === 0 && <p className="text-sm text-slate-500">No recent activity.</p>}
+              {(activity ?? []).length === 0 && <p className="text-sm text-slate-500">No recent activity.</p>}
             </div>
           </div>
         </ChartCard>
@@ -274,11 +274,11 @@ function ChartCard({
   );
 }
 
-function stackTrend(trends: TrendPoint[]) {
-  return trends
+function stackTrend(trends: TrendPoint[] | null | undefined) {
+  return (trends ?? [])
     .slice()
     .reverse()
-    .map((p) => ({ ...p, date: p.date.slice(5) }));
+    .map((p) => ({ ...p, date: p.date?.slice(5) ?? "" }));
 }
 
 function placeholderTrend(): TrendPoint[] {

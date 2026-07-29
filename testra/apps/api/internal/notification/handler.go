@@ -146,10 +146,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meta := pagination.Meta{HasMore: nextCursor != "", NextCursor: nextCursor}
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
@@ -219,15 +216,17 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 type createNotificationRequest struct {
-	UserID string `json:"user_id"`
-	Type   string `json:"type"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-	Link   string `json:"link"`
+	UserID      string `json:"user_id"`
+	WorkspaceID string `json:"workspace_id"`
+	Type        string `json:"type"`
+	Title       string `json:"title"`
+	Body        string `json:"body"`
+	Message     string `json:"message"`
+	Link        string `json:"link"`
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	_, ok := middleware.UserIDFromContext(r.Context())
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
 		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
 		return
@@ -239,31 +238,47 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaceID, err := uuid.Parse(r.URL.Query().Get("workspace_id"))
-	if err != nil {
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace id")
-		return
-	}
-
 	var req createNotificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
 		return
 	}
 
-	targetUserID, err := uuid.Parse(req.UserID)
+	wsIDStr := r.URL.Query().Get("workspace_id")
+	if wsIDStr == "" && req.WorkspaceID != "" {
+		wsIDStr = req.WorkspaceID
+	}
+	workspaceID, err := uuid.Parse(wsIDStr)
 	if err != nil {
-		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid user id")
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace id")
 		return
+	}
+
+	targetUserID := authUserID
+	if req.UserID != "" {
+		targetUserID, err = uuid.Parse(req.UserID)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid user id")
+			return
+		}
+	}
+
+	notifType := req.Type
+	if notifType == "" {
+		notifType = "system"
+	}
+	body := req.Body
+	if body == "" {
+		body = req.Message
 	}
 
 	n, err := h.service.CreateNotification(r.Context(), CreateNotificationInput{
 		OrganizationID: orgID,
 		WorkspaceID:    workspaceID,
 		UserID:         targetUserID,
-		Type:           req.Type,
+		Type:           notifType,
 		Title:          req.Title,
-		Body:           req.Body,
+		Body:           body,
 		Link:           req.Link,
 	})
 	if err != nil {
@@ -271,7 +286,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapNotificationResponse(n)})
+	apihttp.JSON(w, http.StatusCreated, mapNotificationResponse(n))
 }
 
 func (h *Handler) GetPreferences(w http.ResponseWriter, r *http.Request) {
@@ -293,7 +308,7 @@ func (h *Handler) GetPreferences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapPreferencesResponse(p)})
+	apihttp.JSON(w, http.StatusOK, mapPreferencesResponse(p))
 }
 
 type updatePreferencesRequest struct {
@@ -336,7 +351,7 @@ func (h *Handler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapPreferencesResponse(p)})
+	apihttp.JSON(w, http.StatusOK, mapPreferencesResponse(p))
 }
 
 func (h *Handler) ListChannels(w http.ResponseWriter, r *http.Request) {
@@ -376,10 +391,7 @@ func (h *Handler) ListChannels(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type createChannelRequest struct {
@@ -426,7 +438,7 @@ func (h *Handler) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapChannelResponse(ch)})
+	apihttp.JSON(w, http.StatusCreated, mapChannelResponse(ch))
 }
 
 type updateChannelRequest struct {
@@ -458,7 +470,7 @@ func (h *Handler) UpdateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapChannelResponse(ch)})
+	apihttp.JSON(w, http.StatusOK, mapChannelResponse(ch))
 }
 
 func (h *Handler) DeleteChannel(w http.ResponseWriter, r *http.Request) {
@@ -543,7 +555,7 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapTemplateResponse(t)})
+	apihttp.JSON(w, http.StatusCreated, mapTemplateResponse(t))
 }
 
 func (h *Handler) ListTemplates(w http.ResponseWriter, r *http.Request) {
@@ -567,7 +579,7 @@ func (h *Handler) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	for i, t := range templates {
 		resp[i] = mapTemplateResponse(&t)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
@@ -583,7 +595,7 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapTemplateResponse(t)})
+	apihttp.JSON(w, http.StatusOK, mapTemplateResponse(t))
 }
 
 type updateTemplateRequest struct {
@@ -619,7 +631,7 @@ func (h *Handler) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapTemplateResponse(t)})
+	apihttp.JSON(w, http.StatusOK, mapTemplateResponse(t))
 }
 
 func (h *Handler) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
@@ -687,5 +699,5 @@ func (h *Handler) ListHistory(w http.ResponseWriter, r *http.Request) {
 	for i, hist := range history {
 		resp[i] = mapHistoryResponse(&hist)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }

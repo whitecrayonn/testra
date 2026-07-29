@@ -33,6 +33,11 @@ func (s *Service) ExecuteItem(ctx context.Context, itemID uuid.UUID, input Execu
 	item.ExecutedAt = &now
 	item.UpdatedAt = now
 
+	run, err := s.repo.GetRunByID(ctx, item.RunID)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := s.repo.RunInTx(ctx, func(tx Repository) error {
 		if err := tx.CreateItemExecution(ctx, item); err != nil {
 			return err
@@ -47,28 +52,25 @@ func (s *Service) ExecuteItem(ctx context.Context, itemID uuid.UUID, input Execu
 			ExecutedBy:  item.ExecutedBy,
 			CreatedAt:   now,
 		}
-		return tx.CreateItemHistory(ctx, history)
+		if err := tx.CreateItemHistory(ctx, history); err != nil {
+			return err
+		}
+		return s.recalcRunCounts(ctx, tx, run)
 	}); err != nil {
 		return nil, err
 	}
 
-	run, err := s.repo.GetRunByID(ctx, item.RunID)
-	if err == nil {
-		if err := s.recalcRunCounts(ctx, run); err != nil {
-			return nil, err
-		}
-		s.progress.broadcast(run.ID, RunProgressEvent{
-			RunID:    run.ID,
-			ItemID:   item.ID,
-			Status:   string(item.Status),
-			Total:    run.Total,
-			Passed:   run.Passed,
-			Failed:   run.Failed,
-			Skipped:  run.Skipped,
-			Blocked:  run.Blocked,
-			Progress: float64(run.Passed+run.Failed+run.Skipped+run.Blocked) / float64(max(run.Total, 1)),
-		})
-	}
+	s.progress.broadcast(run.ID, RunProgressEvent{
+		RunID:    run.ID,
+		ItemID:   item.ID,
+		Status:   string(item.Status),
+		Total:    run.Total,
+		Passed:   run.Passed,
+		Failed:   run.Failed,
+		Skipped:  run.Skipped,
+		Blocked:  run.Blocked,
+		Progress: float64(run.Passed+run.Failed+run.Skipped+run.Blocked) / float64(max(run.Total, 1)),
+	})
 
 	return item, nil
 }
@@ -139,43 +141,46 @@ func (s *Service) BulkUpdateItems(ctx context.Context, runID uuid.UUID, itemIDs 
 		return nil, sharederrors.ErrInvalidInput
 	}
 
-	var updated []TestRunItem
-	now := time.Now().UTC()
-	for _, itemID := range itemIDs {
-		item, err := s.repo.GetItemByID(ctx, itemID)
-		if err != nil {
-			return nil, err
-		}
-		if item.RunID != runID {
-			return nil, sharederrors.ErrInvalidInput
-		}
-		item.Status = status
-		item.ExecutedBy = &executedBy
-		item.ExecutedAt = &now
-		item.UpdatedAt = now
-		if err := s.repo.CreateItemExecution(ctx, item); err != nil {
-			return nil, err
-		}
-		history := &RunItemHistory{
-			ID:         uuid.New(),
-			RunItemID:  item.ID,
-			Status:     item.Status,
-			Comment:    item.Comment,
-			DurationMs: item.DurationMs,
-			ExecutedBy: item.ExecutedBy,
-			CreatedAt:  now,
-		}
-		if err := s.repo.CreateItemHistory(ctx, history); err != nil {
-			return nil, err
-		}
-		updated = append(updated, *item)
+	run, err := s.repo.GetRunByID(ctx, runID)
+	if err != nil {
+		return nil, err
 	}
 
-	run, err := s.repo.GetRunByID(ctx, runID)
-	if err == nil {
-		if err := s.recalcRunCounts(ctx, run); err != nil {
-			return nil, err
+	var updated []TestRunItem
+	now := time.Now().UTC()
+	if err := s.repo.RunInTx(ctx, func(tx Repository) error {
+		for _, itemID := range itemIDs {
+			item, err := tx.GetItemByID(ctx, itemID)
+			if err != nil {
+				return err
+			}
+			if item.RunID != runID {
+				return sharederrors.ErrInvalidInput
+			}
+			item.Status = status
+			item.ExecutedBy = &executedBy
+			item.ExecutedAt = &now
+			item.UpdatedAt = now
+			if err := tx.CreateItemExecution(ctx, item); err != nil {
+				return err
+			}
+			history := &RunItemHistory{
+				ID:         uuid.New(),
+				RunItemID:  item.ID,
+				Status:     item.Status,
+				Comment:    item.Comment,
+				DurationMs: item.DurationMs,
+				ExecutedBy: item.ExecutedBy,
+				CreatedAt:  now,
+			}
+			if err := tx.CreateItemHistory(ctx, history); err != nil {
+				return err
+			}
+			updated = append(updated, *item)
 		}
+		return s.recalcRunCounts(ctx, tx, run)
+	}); err != nil {
+		return nil, err
 	}
 	return updated, nil
 }

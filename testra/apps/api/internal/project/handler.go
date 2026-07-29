@@ -119,8 +119,52 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
+}
+
+type updateProjectRequest struct {
+	Name        *string `json:"name"`
+	Key         *string `json:"key"`
+	Description *string `json:"description"`
+}
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project id")
+		return
+	}
+
+	var req updateProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+		return
+	}
+
+	project, err := h.service.Update(r.Context(), id, UpdateInput{
+		Name:        req.Name,
+		Key:         req.Key,
+		Description: req.Description,
 	})
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusOK, mapProjectResponse(project))
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project id")
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

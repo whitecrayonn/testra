@@ -18,10 +18,10 @@ Testra's production target is a **single Ubuntu VPS** managed with `systemd` and
 
 | Stage | Compute | Database | Cache | Storage | Analytics | Reverse Proxy / TLS |
 |---|---|---|---|---|---|---|
-| Local | Native binaries (Go, Node.js, Python) | Local PostgreSQL | Local Redis | Local MinIO or filesystem | ClickHouse (optional) | HTTP on localhost |
-| MVP | Single Ubuntu VPS + systemd | PostgreSQL on the same VPS | Redis on the same VPS | MinIO on the same VPS or filesystem-backed S3-compatible store | ClickHouse (optional) | Nginx + Let's Encrypt |
-| Beta | Single VPS or small VPS fleet | PostgreSQL with backups | Redis with persistence | Filesystem / MinIO backups | ClickHouse Cloud only if justified | Let's Encrypt + optional CDN/WAF |
-| Enterprise | Single VPS fleet or managed platform only if justified | Managed PostgreSQL only after measured need | Managed Redis only after measured need | Object-store backups with immutability | ClickHouse Cloud only if justified | Let's Encrypt + optional CDN/WAF |
+| Local | Native binaries (Go, Node.js, Python) | Local PostgreSQL | None (local in-memory rate limiter) | Local filesystem | In-PostgreSQL aggregations | HTTP on localhost |
+| MVP | Single Ubuntu VPS + systemd | PostgreSQL on the same VPS | None (local in-memory rate limiter) | Local filesystem | In-PostgreSQL aggregations | Nginx + Let's Encrypt |
+| Beta | Single VPS or small VPS fleet | PostgreSQL with backups | Optional Redis only if justified | Filesystem backups | Optional ClickHouse only if justified | Let's Encrypt + optional CDN/WAF |
+| Enterprise | Single VPS fleet or managed platform only if justified | Managed PostgreSQL only after measured need | Managed Redis only after measured need | Object-store backups with immutability | Optional ClickHouse Cloud only if justified | Let's Encrypt + optional CDN/WAF |
 
 MVP runs the Go API, Go worker, Next.js web app, and Python ML service as `systemd` services. Nginx terminates TLS and reverse-proxies to the application services. Migrations run from CI/CD via `apps/api/cmd/migrator` and are never applied manually in production.
 
@@ -30,13 +30,11 @@ MVP runs the Go API, Go worker, Next.js web app, and Python ML service as `syste
 | Service | Process Manager | Port | Notes |
 |---|---|---|---|
 | Go API | `systemd` unit | 8080 | Compiled `linux/amd64` Go binary |
-| Go Worker | `systemd` unit | — | Background job processor (currently a stub) |
+| Go Worker | `systemd` unit | — | Background job processor (`apps/api/cmd/worker`) |
 | Next.js Web | `systemd` unit | 3000 | Standalone `next` build |
 | Python ML | `systemd` unit | 8000 | `uvicorn` behind `systemd` |
 | Nginx | `systemd` | 80 / 443 | TLS termination, reverse proxy, static file serving |
 | PostgreSQL | `systemd` | 5432 | Application database |
-| Redis | `systemd` | 6379 | Sessions, rate limits, future queues |
-| MinIO | `systemd` | 9002 / 9001 | S3-compatible object storage for artifacts |
 
 ## Promotion Sequence
 

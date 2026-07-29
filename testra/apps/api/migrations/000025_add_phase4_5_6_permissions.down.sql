@@ -6,7 +6,7 @@ WHERE permission_id IN (
         'intelligence:read','intelligence:create','intelligence:update',
         'integrations:read','integrations:create','integrations:update','integrations:delete',
         'billing:read','billing:update',
-        'members:read','members:create','members:update','members:delete',
+        'members:create','members:update','members:delete',
         'roles:read','roles:create','roles:update','roles:delete'
     )
 );
@@ -17,6 +17,6 @@ WHERE name IN (
     'intelligence:read','intelligence:create','intelligence:update',
     'integrations:read','integrations:create','integrations:update','integrations:delete',
     'billing:read','billing:update',
-    'members:read','members:create','members:update','members:delete',
+    'members:create','members:update','members:delete',
     'roles:read','roles:create','roles:update','roles:delete'
 );

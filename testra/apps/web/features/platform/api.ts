@@ -2,7 +2,8 @@ import { apiFetch } from "@/lib/api";
 import type { Organization, Workspace, Project, APIKey, User } from "@/types/platform";
 
 export async function listOrganizations(): Promise<Organization[]> {
-  return apiFetch("/api/v1/organizations");
+  const res = await apiFetch<Organization[]>("/api/v1/organizations");
+  return res ?? [];
 }
 
 export async function getOrganization(id: string): Promise<Organization> {
@@ -10,11 +11,31 @@ export async function getOrganization(id: string): Promise<Organization> {
 }
 
 export async function listWorkspaces(organizationId: string): Promise<Workspace[]> {
-  return apiFetch(`/api/v1/workspaces?organization_id=${organizationId}`);
+  const res = await apiFetch<Workspace[]>(`/api/v1/workspaces?organization_id=${organizationId}`);
+  return res ?? [];
 }
 
 export async function getWorkspace(id: string): Promise<Workspace> {
   return apiFetch(`/api/v1/workspaces/${id}`);
+}
+
+export async function createOrganization(input: { name: string; slug: string; description?: string }): Promise<Organization> {
+  return apiFetch("/api/v1/organizations", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createWorkspace(input: {
+  organization_id: string;
+  name: string;
+  slug: string;
+  description?: string;
+}): Promise<Workspace> {
+  return apiFetch("/api/v1/workspaces", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function listProjects(workspaceId: string): Promise<Project[]> {

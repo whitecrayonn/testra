@@ -248,15 +248,17 @@ type refreshRequest struct {
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	refreshToken := ""
-	if cookieToken, ok := middleware.RefreshTokenFromCookie(r); ok {
-		refreshToken = cookieToken
-	} else {
-		var req refreshRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
-			return
-		}
+
+	var req refreshRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.RefreshToken != "" {
 		refreshToken = req.RefreshToken
+	} else if cookieToken, ok := middleware.RefreshTokenFromCookie(r); ok {
+		refreshToken = cookieToken
+	}
+
+	if refreshToken == "" {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "refresh token is required")
+		return
 	}
 
 	result, err := h.service.RefreshToken(r.Context(), RefreshTokenInput{

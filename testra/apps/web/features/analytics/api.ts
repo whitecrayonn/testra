@@ -45,7 +45,7 @@ export async function getMetrics(filter: MetricsFilter): Promise<Metrics> {
 }
 
 export async function getActivity(filter: MetricsFilter): Promise<Activity[]> {
-  return apiFetch(`/api/v1/analytics/activity?${buildParams(filter).toString()}`);
+  return apiFetch(`/api/v1/analytics/recent-activity?${buildParams(filter).toString()}`);
 }
 
 export function getMetricsCSVUrl(filter: MetricsFilter): string {

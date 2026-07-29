@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -16,6 +18,51 @@ import (
 
 type MembershipChecker interface {
 	CheckMembership(ctx context.Context, userID, orgID uuid.UUID) error
+}
+
+// LookupContext acquires a dedicated database connection and sets
+// app.lookup_user_id without resolving or narrowing to a single tenant.
+// This allows handlers like GET /organizations to list all orgs the user
+// is a member of via RLS lookup policies.
+func LookupContext(pool *sql.DB) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := UserIDFromContext(r.Context())
+			if !ok {
+				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+				return
+			}
+
+			ctx := r.Context()
+			conn, err := pool.Conn(ctx)
+			if err != nil {
+				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "database connection failed")
+				return
+			}
+
+			released := false
+			release := func() {
+				if released {
+					return
+				}
+				released = true
+				_, _ = conn.ExecContext(context.Background(), "RESET app.lookup_user_id")
+				_ = conn.Close()
+			}
+			defer release()
+
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.lookup_user_id = '%s'", userID.String())); err != nil {
+				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to set lookup user context")
+				return
+			}
+
+			ctx = db.WithConn(ctx, conn)
+			ctx = db.WithLookupUserID(ctx, userID)
+			r = r.WithContext(ctx)
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 type OrgResolverFunc func(*http.Request) (uuid.UUID, error)
@@ -61,16 +108,20 @@ func TenantContext(pool *sql.DB, resolveOrg OrgResolverFunc, checker MembershipC
 			defer release()
 
 			// 1. Allow the connection to resolve the tenant by the authenticated user.
-			if _, err := conn.ExecContext(ctx, "SET app.lookup_user_id = $1", userID.String()); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.lookup_user_id = '%s'", userID.String())); err != nil {
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to set lookup user context")
 				return
 			}
 
 			// 2. Bind the dedicated connection to the context so resolveOrg uses it.
+			// Use the same request pointer for resolution so that body-reading
+			// resolvers (e.g. OrgIDFromBody) can reset r.Body and have that
+			// reset preserved for downstream handlers.
 			ctx = db.WithConn(ctx, conn)
 			ctx = db.WithLookupUserID(ctx, userID)
+			r = r.WithContext(ctx)
 
-			orgID, err := resolveOrg(r.WithContext(ctx))
+			orgID, err := resolveOrg(r)
 			if err != nil {
 				apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "could not resolve organization from request")
 				return
@@ -81,19 +132,20 @@ func TenantContext(pool *sql.DB, resolveOrg OrgResolverFunc, checker MembershipC
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to reset lookup user context")
 				return
 			}
-			if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", orgID.String()); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET app.tenant_id = '%s'", orgID.String())); err != nil {
 				apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to set tenant context")
 				return
 			}
 
 			ctx = db.WithTenantID(ctx, orgID)
+			r = r.WithContext(ctx)
 
 			if err := checker.CheckMembership(ctx, userID, orgID); err != nil {
 				apihttp.ErrorJSON(w, http.StatusForbidden, "FORBIDDEN", "not a member of this organization")
 				return
 			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -105,6 +157,7 @@ type WorkspaceOrgResolver interface {
 	ResolveOrgFromRunItem(ctx context.Context, itemID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromRun(ctx context.Context, runID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromTestPlan(ctx context.Context, planID uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromTestCase(ctx context.Context, caseID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromDefect(ctx context.Context, defectID uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromAPICollection(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromAPIFolder(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
@@ -114,6 +167,12 @@ type WorkspaceOrgResolver interface {
 	ResolveOrgFromAutomationProject(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromAutomationExecution(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	ResolveOrgFromAutomationArtifact(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromIntegration(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromIntegrationEvent(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromNotificationChannel(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveOrgFromNotificationTemplate(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ResolveDefaultOrgForUser(ctx context.Context, userID uuid.UUID) (uuid.UUID, error)
 }
 
 func WorkspaceToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
@@ -173,6 +232,16 @@ func TestPlanToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) Org
 			return uuid.Nil, err
 		}
 		return resolver.ResolveOrgFromTestPlan(r.Context(), planID)
+	}
+}
+
+func TestCaseToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		caseID, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromTestCase(r.Context(), caseID)
 	}
 }
 
@@ -263,6 +332,66 @@ func AutomationArtifactToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgRes
 			return uuid.Nil, err
 		}
 		return resolver.ResolveOrgFromAutomationArtifact(r.Context(), id)
+	}
+}
+
+func NotificationToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		id, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromNotification(r.Context(), id)
+	}
+}
+
+func IntegrationToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		id, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromIntegration(r.Context(), id)
+	}
+}
+
+func IntegrationEventToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		id, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromIntegrationEvent(r.Context(), id)
+	}
+}
+
+func NotificationChannelToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		id, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromNotificationChannel(r.Context(), id)
+	}
+}
+
+func NotificationTemplateToOrg(extractID OrgResolverFunc, resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		id, err := extractID(r)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return resolver.ResolveOrgFromNotificationTemplate(r.Context(), id)
+	}
+}
+
+func DefaultOrgForUser(resolver WorkspaceOrgResolver) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		userID, ok := UserIDFromContext(r.Context())
+		if !ok {
+			return uuid.Nil, errors.New("missing user context")
+		}
+		return resolver.ResolveDefaultOrgForUser(r.Context(), userID)
 	}
 }
 

@@ -102,12 +102,12 @@ export default function LoginPage() {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-2 text-sm text-slate-600">
-        <Link href="/forgot-password" className="text-brand-600 hover:underline">
+        <Link href="/forgot-password" className="text-brand-600 underline hover:no-underline">
           Forgot your password?
         </Link>
         <span>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-brand-600 hover:underline">
+          <Link href="/register" className="text-brand-600 underline hover:no-underline">
             Sign up
           </Link>
         </span>

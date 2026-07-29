@@ -159,3 +159,13 @@ func (r *SQLRepository) GetMember(ctx context.Context, orgID, userID uuid.UUID) 
 	}
 	return &member, nil
 }
+
+func (r *SQLRepository) AssignRole(ctx context.Context, userID, roleID uuid.UUID, scopeType string, scopeID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO role_assignments (id, user_id, role_id, scope_type, scope_id, created_at)
+		 VALUES ($1, $2, $3, $4, $5, NOW())
+		 ON CONFLICT (user_id, role_id, scope_type, scope_id) DO NOTHING`,
+		uuid.New(), userID, roleID, scopeType, scopeID,
+	)
+	return err
+}

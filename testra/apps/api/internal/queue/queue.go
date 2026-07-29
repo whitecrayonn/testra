@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	apidb "github.com/testra/testra/apps/api/internal/shared/db"
 )
 
 type Job struct {
@@ -36,7 +37,7 @@ func Enqueue(ctx context.Context, db *sql.DB, tenantID uuid.UUID, queueName, job
 	}
 	defer conn.Close()
 
-	if _, err := conn.ExecContext(ctx, "SET app.tenant_id = $1", tenantID.String()); err != nil {
+	if err := apidb.SetSessionTenantID(ctx, conn, tenantID); err != nil {
 		return fmt.Errorf("set tenant context: %w", err)
 	}
 

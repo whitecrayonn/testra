@@ -175,6 +175,7 @@ func (m *Manager) Sign(userID uuid.UUID, email string, expiry time.Duration) (st
 		UserID: userID,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
 			Subject:   userID.String(),
 			Issuer:    m.issuer,
 			Audience:  jwt.ClaimStrings{m.audience},

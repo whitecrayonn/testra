@@ -29,6 +29,7 @@ import (
 	"github.com/testra/testra/apps/api/internal/project"
 	"github.com/testra/testra/apps/api/internal/rbac"
 	"github.com/testra/testra/apps/api/internal/results"
+	"github.com/testra/testra/apps/api/internal/search"
 	"github.com/testra/testra/apps/api/internal/shared/db"
 	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
@@ -59,6 +60,7 @@ type Config struct {
 	MLServiceURL        string
 	StripeSecretKey     string
 	StripePriceID       string
+	RateLimitDisabled   bool
 }
 
 type apiKeyValidatorAdapter struct {
@@ -154,6 +156,7 @@ func New(cfg Config) http.Handler {
 	defectsModule := defects.NewModule(cfg.DB)
 	apiTestingModule := apitesting.NewModule(cfg.DB)
 	notificationModule := notification.NewModule(cfg.DB, cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPFrom, cfg.SMTPUsername, cfg.SecretProvider, cfg.SMTPPasswordSecret)
+	searchModule := search.NewModule(cfg.DB)
 
 	automationStoragePath := os.Getenv("AUTOMATION_STORAGE_PATH")
 	if automationStoragePath == "" {
@@ -199,8 +202,8 @@ func New(cfg Config) http.Handler {
 	if cfg.RedisAddr != "" {
 		limiter = sharedmiddleware.NewRedisRateLimiter(cfg.RedisAddr, localLimiter)
 	}
-	rateLimitCfg := sharedmiddleware.RateLimitConfig{Limiter: limiter}
-	authRateLimitCfg := sharedmiddleware.RateLimitConfig{Limiter: limiter, FailClosed: true}
+	rateLimitCfg := sharedmiddleware.RateLimitConfig{Limiter: limiter, Disabled: cfg.RateLimitDisabled}
+	authRateLimitCfg := sharedmiddleware.RateLimitConfig{Limiter: limiter, FailClosed: true, Disabled: cfg.RateLimitDisabled}
 
 	auditLogFn := func(input sharedmiddleware.AuditLogInput) {
 		// Use a bounded, detached context so audit persistence is not tied to
@@ -276,7 +279,11 @@ func New(cfg Config) http.Handler {
 			})
 
 			r.Post("/organizations", organizationModule.Create)
-			r.Get("/organizations", organizationModule.List)
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.LookupContext(cfg.DB))
+				r.Get("/organizations", organizationModule.List)
+			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,
@@ -339,6 +346,22 @@ func New(cfg Config) http.Handler {
 				))
 				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "projects:read")).Get("/projects/{id}", projectModule.Get)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "projects:update"),
+					sharedmiddleware.AuditLog("project.update", "project",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return chi.URLParam(r, "id") },
+						auditLogFn,
+					),
+				).Put("/projects/{id}", projectModule.Update)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "projects:delete"),
+					sharedmiddleware.AuditLog("project.delete", "project",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return chi.URLParam(r, "id") },
+						auditLogFn,
+					),
+				).Delete("/projects/{id}", projectModule.Delete)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -395,7 +418,7 @@ func New(cfg Config) http.Handler {
 
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,
-					sharedmiddleware.ProjectToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					sharedmiddleware.TestCaseToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
 					tenantResolver,
 				))
 				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
@@ -892,14 +915,6 @@ func New(cfg Config) http.Handler {
 					),
 				).Post("/api-environments", apiTestingModule.Handler.CreateEnvironment)
 				r.With(
-					sharedmiddleware.RequirePermission(rbacCfg, "api_tests:create"),
-					sharedmiddleware.AuditLog("api_request.create", "api_request",
-						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
-						func(r *http.Request) string { return "" },
-						auditLogFn,
-					),
-				).Post("/api-requests", apiTestingModule.Handler.CreateRequest)
-				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "api_tests:execute"),
 					sharedmiddleware.AuditLog("api_request.execute", "api_request",
 						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
@@ -907,6 +922,22 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/api-executions", apiTestingModule.Handler.ExecuteRequest)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.APICollectionToOrg(sharedmiddleware.OrgIDFromBody("collection_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "api_tests:create"),
+					sharedmiddleware.AuditLog("api_request.create", "api_request",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/api-requests", apiTestingModule.Handler.CreateRequest)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -1044,15 +1075,31 @@ func New(cfg Config) http.Handler {
 			// --- Notification Center ---
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,
-					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					sharedmiddleware.DefaultOrgForUser(tenantResolver),
 					tenantResolver,
 				))
 				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notifications", notificationModule.Handler.List)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notifications/unread-count", notificationModule.Handler.UnreadCount)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.NotificationToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:update")).Patch("/notifications/{id}", notificationModule.Handler.MarkRead)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:delete")).Delete("/notifications/{id}", notificationModule.Handler.Delete)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "notifications:create"),
 					sharedmiddleware.AuditLog("notification.create", "notification",
@@ -1061,11 +1108,35 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/notifications", notificationModule.Handler.Create)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.DefaultOrgForUser(tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notification_preferences:read")).Get("/notification-preferences", notificationModule.Handler.GetPreferences)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notification_preferences:update")).Put("/notification-preferences", notificationModule.Handler.UpdatePreferences)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notification_channels:read")).Get("/notification-channels", notificationModule.Handler.ListChannels)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromBody("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "notification_channels:create"),
 					sharedmiddleware.AuditLog("notification_channel.create", "notification_channel",
@@ -1074,6 +1145,14 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/notification-channels", notificationModule.Handler.CreateChannel)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.NotificationChannelToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "notification_channels:update"),
 					sharedmiddleware.AuditLog("notification_channel.update", "notification_channel",
@@ -1090,9 +1169,24 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Delete("/notification-channels/{id}", notificationModule.Handler.DeleteChannel)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.OrgIDFromQuery("organization_id"),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notification-templates", notificationModule.Handler.ListTemplates)
-				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notification-templates/{id}", notificationModule.Handler.GetTemplate)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.OrgIDFromBody("organization_id"),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "notifications:create"),
 					sharedmiddleware.AuditLog("notification_template.create", "notification_template",
@@ -1101,6 +1195,15 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/notification-templates", notificationModule.Handler.CreateTemplate)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.NotificationTemplateToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
+
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notification-templates/{id}", notificationModule.Handler.GetTemplate)
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "notifications:update"),
 					sharedmiddleware.AuditLog("notification_template.update", "notification_template",
@@ -1117,6 +1220,14 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Delete("/notification-templates/{id}", notificationModule.Handler.DeleteTemplate)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.NotificationToOrg(sharedmiddleware.OrgIDFromQuery("notification_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "notifications:read")).Get("/notification-history", notificationModule.Handler.ListHistory)
 			})
@@ -1140,8 +1251,17 @@ func New(cfg Config) http.Handler {
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/summary", analyticsModule.Handler.GetSummary)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/trends", analyticsModule.Handler.GetTrends)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/metrics", analyticsModule.Handler.GetMetrics)
-				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/activity", analyticsModule.Handler.GetRecentActivity)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/recent-activity", analyticsModule.Handler.GetRecentActivity)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "analytics:read")).Get("/analytics/export/csv", analyticsModule.Handler.ExportMetricsCSV)
+			})
+
+			// --- Global Search ---
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromQuery("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "workspaces:read")).Get("/search", searchModule.Search)
 			})
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,
@@ -1191,8 +1311,22 @@ func New(cfg Config) http.Handler {
 				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:create")).Post("/integrations", integrationhubModule.Handler.CreateIntegration)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:create")).Post("/integrations/dispatch", integrationhubModule.Handler.DispatchEvent)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.IntegrationToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Post("/integrations/{id}/enable", integrationhubModule.Handler.EnableIntegration)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Post("/integrations/{id}/disable", integrationhubModule.Handler.DisableIntegration)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.IntegrationEventToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					tenantResolver,
+				))
+				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Post("/integration-events/{id}/retry", integrationhubModule.Handler.RetryEvent)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "integrations:update")).Post("/integration-events/{id}/replay", integrationhubModule.Handler.ReplayDeadLetter)
 			})
@@ -1208,7 +1342,7 @@ func New(cfg Config) http.Handler {
 			})
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,
-					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
+					sharedmiddleware.IntegrationToOrg(sharedmiddleware.OrgIDFromURLParam("id"), tenantResolver),
 					tenantResolver,
 				))
 				r.Use(sharedmiddleware.IdempotencyKey(idempotencyStore, cfg.IdempotencyKeyTTL))

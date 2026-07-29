@@ -29,10 +29,10 @@ func TestTenantContextResolvesWithLookupUser(t *testing.T) {
 	orgID := uuid.MustParse("b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1")
 
 	// Expectations for the dedicated connection lifecycle.
-	mock.ExpectExec("SET app.lookup_user_id = \\$1").WithArgs(userID.String()).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec("SET app.lookup_user_id = '" + userID.String() + "'").WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery("SELECT organization_id FROM workspaces WHERE id = \\$1").WithArgs(wsID).WillReturnRows(sqlmock.NewRows([]string{"organization_id"}).AddRow(orgID))
 	mock.ExpectExec("RESET app.lookup_user_id").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("SET app.tenant_id = \\$1").WithArgs(orgID.String()).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec("SET app.tenant_id = '" + orgID.String() + "'").WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery("SELECT EXISTS").WithArgs(orgID, userID).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 	mock.ExpectExec("RESET app.tenant_id").WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectExec("RESET app.lookup_user_id").WillReturnResult(sqlmock.NewResult(0, 0))

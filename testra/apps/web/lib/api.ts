@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 let refreshing: Promise<void> | null = null;
 let csrfToken: string | null = null;
@@ -128,6 +128,46 @@ export async function apiFetch<T>(
   return request<T>(path, options, false);
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: Record<string, unknown>;
+}
+
+export async function apiFetchWithMeta<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<PaginatedResult<T>> {
+  const { res, body } = await rawApiFetch<T[]>(path, options);
+
+  if (res.status === 401 && path !== "/api/v1/auth/refresh" && path !== "/api/v1/auth/login") {
+    try {
+      await refreshAccessToken();
+      const retry = await rawApiFetch<T[]>(path, options);
+      return {
+        data: retry.body.data ?? [],
+        meta: (retry.body.meta as Record<string, unknown>) ?? {},
+      };
+    } catch {
+      throw new AuthExpiredError();
+    }
+  }
+
+  if (res.status === 401 && path !== "/api/v1/auth/login" && path !== "/api/v1/auth/register") {
+    redirectToLogin();
+    throw new AuthExpiredError();
+  }
+
+  if (!res.ok) {
+    const err = body.error ?? { code: "UNKNOWN", message: "Request failed" };
+    throw new ApiError(res.status, err.code, err.message);
+  }
+
+  return {
+    data: body.data ?? [],
+    meta: (body.meta as Record<string, unknown>) ?? {},
+  };
+}
+
 async function request<T>(
   path: string,
   options: RequestInit,
@@ -135,7 +175,7 @@ async function request<T>(
 ): Promise<T> {
   const { res, body } = await rawApiFetch<T>(path, options);
 
-  if (res.status === 401 && path !== "/api/v1/auth/refresh" && !isRetry) {
+  if (res.status === 401 && path !== "/api/v1/auth/refresh" && path !== "/api/v1/auth/login" && !isRetry) {
     try {
       await refreshAccessToken();
       return request<T>(path, options, true);
@@ -145,7 +185,7 @@ async function request<T>(
     }
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== "/api/v1/auth/login" && path !== "/api/v1/auth/register") {
     redirectToLogin();
     throw new AuthExpiredError();
   }

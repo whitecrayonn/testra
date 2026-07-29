@@ -642,6 +642,9 @@ func (s *Service) runHTTPRequest(ctx context.Context, req Request, vars map[stri
 	if err != nil {
 		return nil, sharederrors.ErrInvalidInput
 	}
+	if u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {
+		return nil, sharederrors.ErrInvalidInput
+	}
 
 	q := u.Query()
 	for _, p := range req.QueryParams {

@@ -98,6 +98,9 @@ func (s *Service) CreateProject(ctx context.Context, input CreateProjectInput) (
 	if !validation.IsValidName(input.Name) {
 		return nil, sharederrors.ErrInvalidInput
 	}
+	if input.Framework != "" && !IsValidFramework(input.Framework) {
+		return nil, sharederrors.ErrInvalidInput
+	}
 
 	now := nowUTC()
 	p := &AutomationProject{
@@ -557,20 +560,25 @@ func (s *Service) createResultsRun(ctx context.Context, workspaceID, projectID u
 		Metadata:    map[string]interface{}{},
 	}
 
-	if err := s.resultsRepo.CreateRun(ctx, run); err != nil {
-		return nil, err
-	}
+	if err := s.resultsRepo.RunInTx(ctx, func(tx results.Repository) error {
+		if err := tx.CreateRun(ctx, run); err != nil {
+			return err
+		}
 
-	if err := s.createRunItems(ctx, run, report, nil); err != nil {
-		return nil, err
-	}
+		if err := s.createRunItems(ctx, tx, run, report, nil); err != nil {
+			return err
+		}
 
-	run.Total, run.Passed, run.Failed, run.Skipped, run.Blocked, run.DurationMs = summarizeReport(report)
-	run.Status = runStatusFromCounts(run.Total, run.Failed)
-	run.CompletedAt = &now
-	run.UpdatedAt = now
+		run.Total, run.Passed, run.Failed, run.Skipped, run.Blocked, run.DurationMs = summarizeReport(report)
+		run.Status = runStatusFromCounts(run.Total, run.Failed)
+		run.CompletedAt = &now
+		run.UpdatedAt = now
 
-	if err := s.resultsRepo.UpdateRun(ctx, run); err != nil {
+		if err := tx.UpdateRun(ctx, run); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 	return run, nil
@@ -594,37 +602,42 @@ func (s *Service) createResultsRunTx(ctx context.Context, txRepo Repository, pro
 		Metadata:    map[string]interface{}{"automation_project_id": project.ID.String(), "format": string(input.Format)},
 	}
 
-	if err := s.resultsRepo.CreateRun(ctx, run); err != nil {
-		return nil, err
-	}
-
 	tcMap := map[string]uuid.UUID{}
 	if input.MapTestCases && project.ProjectID != nil {
 		tcMap = s.buildTestCaseMap(ctx, *project.ProjectID)
 	}
 
-	if err := s.createRunItems(ctx, run, report, tcMap); err != nil {
-		return nil, err
-	}
+	if err := s.resultsRepo.RunInTx(ctx, func(tx results.Repository) error {
+		if err := tx.CreateRun(ctx, run); err != nil {
+			return err
+		}
 
-	run.Total, run.Passed, run.Failed, run.Skipped, run.Blocked, run.DurationMs = summarizeReport(report)
-	run.Status = runStatusFromCounts(run.Total, run.Failed)
-	run.CompletedAt = &now
-	run.UpdatedAt = now
+		if err := s.createRunItems(ctx, tx, run, report, tcMap); err != nil {
+			return err
+		}
 
-	if err := s.resultsRepo.UpdateRun(ctx, run); err != nil {
+		run.Total, run.Passed, run.Failed, run.Skipped, run.Blocked, run.DurationMs = summarizeReport(report)
+		run.Status = runStatusFromCounts(run.Total, run.Failed)
+		run.CompletedAt = &now
+		run.UpdatedAt = now
+
+		if err := tx.UpdateRun(ctx, run); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 	return run, nil
 }
 
-func (s *Service) createRunItems(ctx context.Context, run *results.TestRun, report *ParsedReport, tcMap map[string]uuid.UUID) error {
+func (s *Service) createRunItems(ctx context.Context, repo results.Repository, run *results.TestRun, report *ParsedReport, tcMap map[string]uuid.UUID) error {
 	now := nowUTC()
 	sortOrder := 0
 	for _, suite := range report.Suites {
 		for _, c := range suite.Cases {
 			item := parsedCaseToRunItem(run.ID, c, sortOrder, tcMap, now)
-			if err := s.resultsRepo.CreateItem(ctx, item); err != nil {
+			if err := repo.CreateItem(ctx, item); err != nil {
 				return err
 			}
 			sortOrder++

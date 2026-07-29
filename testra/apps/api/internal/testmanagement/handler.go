@@ -281,10 +281,7 @@ func (h *Handler) ListFolders(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type updateFolderRequest struct {
@@ -441,10 +438,7 @@ func (h *Handler) ListSuites(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type updateSuiteRequest struct {
@@ -617,7 +611,15 @@ func (h *Handler) ListCases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := pagination.ParseParams(r)
-	cases, err := h.service.ListCases(r.Context(), projectID, suiteID, params.Cursor, params.Limit)
+	cursorID := ""
+	if params.Cursor != "" {
+		cursorID, err = pagination.DecodeCursor(params.Cursor)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid cursor")
+			return
+		}
+	}
+	cases, err := h.service.ListCases(r.Context(), projectID, suiteID, cursorID, params.Limit)
 	if err != nil {
 		apihttp.MapError(w, err)
 		return
@@ -636,10 +638,7 @@ func (h *Handler) ListCases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) SearchCases(w http.ResponseWriter, r *http.Request) {
@@ -678,10 +677,7 @@ func (h *Handler) SearchCases(w http.ResponseWriter, r *http.Request) {
 		meta.NextCursor = nextCursor
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type updateCaseRequest struct {
@@ -805,8 +801,5 @@ func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }

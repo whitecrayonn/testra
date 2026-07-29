@@ -38,6 +38,7 @@ type Config struct {
 	MLServiceURL             string
 	StripeSecretKey          string
 	StripePriceID            string
+	RateLimitDisabled        bool
 }
 
 func Load() Config {
@@ -64,6 +65,7 @@ func Load() Config {
 		MLServiceURL:             getEnv("ML_SERVICE_URL", ""),
 		StripeSecretKey:          getEnv("STRIPE_SECRET_KEY", ""),
 		StripePriceID:            getEnv("STRIPE_PRICE_ID", ""),
+		RateLimitDisabled:        getEnvBool("RATE_LIMIT_DISABLED", false),
 	}
 }
 
@@ -172,6 +174,18 @@ func getEnvInt(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
+		}
+	}
+	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	if v := os.Getenv(key); v != "" {
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "true", "1", "yes", "on":
+			return true
+		case "false", "0", "no", "off":
+			return false
 		}
 	}
 	return fallback

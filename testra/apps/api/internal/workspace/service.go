@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	apidb "github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
@@ -14,16 +15,18 @@ import (
 
 type Service struct {
 	repo Repository
+	db   apidb.BeginTxer
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, db apidb.BeginTxer) *Service {
+	return &Service{repo: repo, db: db}
 }
 
 type CreateInput struct {
 	OrganizationID uuid.UUID
 	Name           string
 	Slug           string
+	Description    string
 	OwnerID        uuid.UUID
 }
 
@@ -48,18 +51,46 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, er
 		return nil, sharederrors.ErrConflict
 	}
 
+	now := time.Now().UTC()
 	workspace := &Workspace{
 		ID:             uuid.New(),
 		OrganizationID: input.OrganizationID,
 		Name:           input.Name,
 		Slug:           slug,
-		CreatedAt:      time.Now().UTC(),
-		UpdatedAt:      time.Now().UTC(),
+		Description:    strings.TrimSpace(input.Description),
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
-	if err := s.repo.Create(ctx, workspace); err != nil {
+	member := &Member{
+		WorkspaceID: workspace.ID,
+		UserID:      input.OwnerID,
+		Role:        "owner",
+		CreatedAt:   now,
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
 		return nil, err
 	}
+	workCtx := apidb.WithTx(ctx, tx)
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if err := s.repo.Create(workCtx, workspace); err != nil {
+		return nil, err
+	}
+	if err := s.repo.AddMember(workCtx, member); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	tx = nil
 
 	eventbus.Default().Publish(ctx, eventbus.Event{
 		Type:     "workspace.created",
@@ -72,16 +103,6 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Workspace, er
 		},
 	})
 
-	member := &Member{
-		WorkspaceID: workspace.ID,
-		UserID:      input.OwnerID,
-		Role:        "owner",
-		CreatedAt:   time.Now().UTC(),
-	}
-	if err := s.repo.AddMember(ctx, member); err != nil {
-		return nil, err
-	}
-
 	return workspace, nil
 }
 
@@ -89,14 +110,6 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (*Workspace, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *Service) ListForOrganization(ctx context.Context, orgID uuid.UUID) ([]Workspace, error) {
-	return s.repo.ListForOrganization(ctx, orgID)
-}
-
 func (s *Service) ListForOrganizationPaginated(ctx context.Context, orgID uuid.UUID, cursor string, limit int) ([]Workspace, error) {
 	return s.repo.ListForOrganizationPaginated(ctx, orgID, cursor, limit)
-}
-
-func (s *Service) ListForUser(ctx context.Context, userID uuid.UUID) ([]Workspace, error) {
-	return s.repo.ListForUser(ctx, userID)
 }

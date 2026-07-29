@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -40,7 +41,7 @@ func (r *SQLRepository) RunInTx(ctx context.Context, fn func(Repository) error) 
 	}
 
 	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
-		_, _ = tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", tenantID.String())
+		_ = db.SetLocalTenantID(ctx, tx, tenantID)
 	}
 
 	txRepo := &SQLRepository{db: tx}
@@ -386,46 +387,31 @@ func (r *SQLRepository) ListCases(ctx context.Context, projectID uuid.UUID, suit
 }
 
 func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, query string, cursor string, limit int) ([]TestCase, string, error) {
-	tsQuery := toTSQuery(query)
-	if tsQuery == "" {
+	query = strings.TrimSpace(query)
+	if query == "" {
 		return nil, "", nil
 	}
-
-	var cursorRank float64
-	var cursorID string
-	hasCursor := false
-	if cursor != "" {
-		r, id, err := decodeSearchCursor(cursor)
-		if err != nil {
-			return nil, "", sharederrors.ErrInvalidInput
-		}
-		cursorRank = r
-		cursorID = id
-		hasCursor = true
-	}
+	pattern := "%" + query + "%"
 
 	var rows *sql.Rows
 	var err error
 
-	if hasCursor {
+	if cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at,
-			        ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) AS rank
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases
-			 WHERE workspace_id = $1 AND search_tsv @@ to_tsquery('pg_catalog.english', $2)
-			   AND (ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) < $3
-			        OR (ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) = $3 AND id < $4::uuid))
-			 ORDER BY rank DESC, id DESC LIMIT $5`,
-			workspaceID, tsQuery, cursorRank, cursorID, limit,
+			 WHERE workspace_id = $1 AND (title ILIKE $2 OR description ILIKE $2)
+			   AND id < $3::uuid
+			 ORDER BY updated_at DESC, id DESC LIMIT $4`,
+			workspaceID, pattern, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at,
-			        ts_rank(search_tsv, to_tsquery('pg_catalog.english', $2)) AS rank
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
 			 FROM test_cases
-			 WHERE workspace_id = $1 AND search_tsv @@ to_tsquery('pg_catalog.english', $2)
-			 ORDER BY rank DESC, id DESC LIMIT $3`,
-			workspaceID, tsQuery, limit,
+			 WHERE workspace_id = $1 AND (title ILIKE $2 OR description ILIKE $2)
+			 ORDER BY updated_at DESC, id DESC LIMIT $3`,
+			workspaceID, pattern, limit,
 		)
 	}
 	if err != nil {
@@ -433,18 +419,14 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 	}
 	defer rows.Close()
 
-	cases, lastRank, err := scanCasesWithRank(rows)
+	cases, err := scanCases(rows)
 	if err != nil {
 		return nil, "", err
 	}
 
 	var nextCursor string
 	if len(cases) == limit {
-		lastID := cases[len(cases)-1].ID.String()
-		nextCursor, err = encodeSearchCursor(lastRank, lastID)
-		if err != nil {
-			return nil, "", err
-		}
+		nextCursor = cases[len(cases)-1].ID.String()
 	}
 
 	return cases, nextCursor, nil
@@ -639,7 +621,7 @@ func toTSQuery(query string) string {
 		if i > 0 {
 			result += " & "
 		}
-		result += w
+		result += w + ":*"
 	}
 	return result
 }

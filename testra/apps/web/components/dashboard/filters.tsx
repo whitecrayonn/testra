@@ -37,8 +37,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
     <Card className="p-4 dark:bg-slate-900 dark:border-slate-700">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Release</label>
+          <label htmlFor="filter-release" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Release</label>
           <input
+            id="filter-release"
             className={inputClass}
             placeholder="e.g. v1.2.0"
             value={filter.release || ""}
@@ -46,8 +47,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Sprint</label>
+          <label htmlFor="filter-sprint" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Sprint</label>
           <input
+            id="filter-sprint"
             className={inputClass}
             placeholder="e.g. Sprint 3"
             value={filter.sprint || ""}
@@ -55,8 +57,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Environment</label>
+          <label htmlFor="filter-environment" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Environment</label>
           <input
+            id="filter-environment"
             className={inputClass}
             placeholder="e.g. staging"
             value={filter.environment || ""}
@@ -64,8 +67,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Source</label>
+          <label htmlFor="filter-source" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Source</label>
           <select
+            id="filter-source"
             className={inputClass}
             value={filter.source || ""}
             onChange={(e) => setFilter((f) => ({ ...f, source: e.target.value || undefined }))}
@@ -77,8 +81,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Start</label>
+          <label htmlFor="filter-start" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Start</label>
           <input
+            id="filter-start"
             type="date"
             className={inputClass}
             value={filter.start || ""}
@@ -86,8 +91,9 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">End</label>
+          <label htmlFor="filter-end" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">End</label>
           <input
+            id="filter-end"
             type="date"
             className={inputClass}
             value={filter.end || ""}

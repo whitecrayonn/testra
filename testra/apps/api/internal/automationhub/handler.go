@@ -218,10 +218,7 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type updateProjectRequest struct {
@@ -546,10 +543,7 @@ func (h *Handler) ListArtifacts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -650,10 +644,7 @@ func (h *Handler) ListLogs(w http.ResponseWriter, r *http.Request) {
 		resp[i] = mapLogResponse(&l)
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": pagination.Meta{HasMore: len(logs) == params.Limit},
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, pagination.Meta{HasMore: len(logs) == params.Limit})
 }
 
 // ----------------- response mapping -----------------
@@ -801,10 +792,7 @@ func writeExecutionList(w http.ResponseWriter, executions []AutomationExecution,
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func parseTime(s string) (time.Time, error) {

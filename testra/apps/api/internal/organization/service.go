@@ -11,6 +11,8 @@ import (
 	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
+var ownerRoleID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
 type Service struct {
 	repo Repository
 }
@@ -63,6 +65,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Organization,
 		CreatedAt:      time.Now().UTC(),
 	}
 	if err := s.repo.AddMember(ctx, member); err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.AssignRole(ctx, input.Owner, ownerRoleID, "organization", org.ID); err != nil {
 		return nil, err
 	}
 

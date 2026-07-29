@@ -803,6 +803,7 @@ func (r *SQLRepository) GetRecentActivity(ctx context.Context, filter MetricsFil
 		projectFilter = "AND project_id = $3"
 		args = append(args, *filter.ProjectID)
 	}
+	noProjectFilter := ""
 	q := fmt.Sprintf(`SELECT id::text, 'run', name, COALESCE(created_by::text, ''), created_at FROM test_runs WHERE workspace_id = $1 %s
 		UNION ALL
 		SELECT id::text, 'defect', title, COALESCE(created_by::text, ''), created_at FROM defects WHERE workspace_id = $1 %s
@@ -813,13 +814,13 @@ func (r *SQLRepository) GetRecentActivity(ctx context.Context, filter MetricsFil
 		UNION ALL
 		SELECT id::text, 'automation', name, COALESCE(created_by::text, ''), created_at FROM automation_executions WHERE workspace_id = $1 %s
 		ORDER BY created_at DESC
-		LIMIT $2`, projectFilter, projectFilter, projectFilter, projectFilter, projectFilter)
+		LIMIT $2`, projectFilter, projectFilter, projectFilter, noProjectFilter, projectFilter)
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var activity []Activity
+	var activity []Activity = []Activity{}
 	for rows.Next() {
 		var a Activity
 		if err := rows.Scan(&a.ID, &a.Type, &a.Title, &a.CreatedBy, &a.CreatedAt); err != nil {
@@ -966,7 +967,7 @@ func (r *SQLRepository) RunInTx(ctx context.Context, fn func(Repository) error) 
 		return err
 	}
 	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
-		_, _ = tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", tenantID.String())
+		_ = db.SetLocalTenantID(ctx, tx, tenantID)
 	}
 	txRepo := &SQLRepository{db: tx}
 	if err := fn(txRepo); err != nil {

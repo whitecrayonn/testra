@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   AutomationProject,
   AutomationExecution,
@@ -20,9 +20,8 @@ export async function listAutomationProjects(
   const searchParams = new URLSearchParams({ workspace_id: workspaceId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/automation/projects?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<AutomationProject>
-  >;
+  const result = await apiFetchWithMeta<AutomationProject>(`/api/v1/automation/projects?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function createAutomationProject(input: {
@@ -71,9 +70,8 @@ export async function listAutomationExecutions(
   const searchParams = new URLSearchParams({ project_id: projectId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/automation/executions?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<AutomationExecution>
-  >;
+  const result = await apiFetchWithMeta<AutomationExecution>(`/api/v1/automation/executions?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getAutomationExecution(id: string): Promise<AutomationExecution> {
@@ -114,9 +112,8 @@ export async function listAutomationArtifacts(
   const searchParams = new URLSearchParams();
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/automation/executions/${executionId}/artifacts?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<AutomationArtifact>
-  >;
+  const result = await apiFetchWithMeta<AutomationArtifact>(`/api/v1/automation/executions/${executionId}/artifacts?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function uploadAutomationArtifact(
@@ -150,9 +147,8 @@ export async function listAutomationLogs(
   const searchParams = new URLSearchParams();
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/automation/executions/${executionId}/logs?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<AutomationLog>
-  >;
+  const result = await apiFetchWithMeta<AutomationLog>(`/api/v1/automation/executions/${executionId}/logs?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function addAutomationLog(

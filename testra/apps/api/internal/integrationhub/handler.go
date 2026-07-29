@@ -25,6 +25,7 @@ func (h *Handler) CreateIntegration(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		WorkspaceID string            `json:"workspace_id"`
 		Type        string            `json:"type"`
+		Provider    string            `json:"provider"`
 		Name        string            `json:"name"`
 		Config      map[string]string `json:"config"`
 		Enabled     bool              `json:"enabled"`
@@ -38,10 +39,24 @@ func (h *Handler) CreateIntegration(w http.ResponseWriter, r *http.Request) {
 		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace_id")
 		return
 	}
+	integrationType := req.Type
+	if integrationType == "" {
+		integrationType = req.Provider
+	}
+	if integrationType == "email" {
+		integrationType = "smtp"
+	}
+	if req.Config != nil {
+		if _, ok := req.Config["url"]; !ok {
+			if webhookURL, ok := req.Config["webhook_url"]; ok {
+				req.Config["url"] = webhookURL
+			}
+		}
+	}
 	userID, _ := middleware.UserIDFromContext(r.Context())
 	i, err := h.service.CreateIntegration(r.Context(), CreateIntegrationInput{
 		WorkspaceID: wsID,
-		Type:        req.Type,
+		Type:        integrationType,
 		Name:        req.Name,
 		Config:      req.Config,
 		Enabled:     req.Enabled,

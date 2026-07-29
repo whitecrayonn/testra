@@ -19,6 +19,7 @@ type RateLimiter interface {
 type RateLimitConfig struct {
 	Limiter    RateLimiter
 	FailClosed bool
+	Disabled   bool
 }
 
 type RateLimitRule struct {
@@ -29,6 +30,11 @@ type RateLimitRule struct {
 func RateLimit(cfg RateLimitConfig, keyFn func(*http.Request) string, rule RateLimitRule) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if cfg.Disabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			key := keyFn(r)
 
 			limiter := cfg.Limiter

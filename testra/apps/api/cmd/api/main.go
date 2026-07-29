@@ -54,6 +54,7 @@ func main() {
 		MLServiceURL:        cfg.MLServiceURL,
 		StripeSecretKey:     cfg.StripeSecretKey,
 		StripePriceID:       cfg.StripePriceID,
+		RateLimitDisabled:   cfg.RateLimitDisabled,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

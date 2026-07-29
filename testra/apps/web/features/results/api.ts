@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   TestRun,
   TestRunItem,
@@ -23,9 +23,8 @@ export async function listTestRuns(
   const searchParams = new URLSearchParams({ project_id: projectId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/test-runs?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<TestRun>
-  >;
+  const result = await apiFetchWithMeta<TestRun>(`/api/v1/test-runs?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getTestRun(id: string): Promise<TestRun> {

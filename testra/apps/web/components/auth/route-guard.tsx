@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isAuthenticated } from "@/lib/api";
+import Loading from "@/app/loading";
 
 interface RouteGuardProps {
   children: ReactNode;
@@ -15,7 +16,7 @@ export function RouteGuard({
   children,
   requireAuth = true,
   redirectTo = "/login",
-  fallback = null,
+  fallback = <Loading />,
 }: RouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();

@@ -91,6 +91,7 @@ type planResponse struct {
 	Description   string                 `json:"description"`
 	Status        string                 `json:"status"`
 	Configuration map[string]interface{} `json:"configuration"`
+	TestCaseIDs   []string               `json:"test_case_ids"`
 	CreatedBy     string                 `json:"created_by"`
 	CreatedAt     time.Time              `json:"created_at"`
 	UpdatedAt     time.Time              `json:"updated_at"`
@@ -188,7 +189,7 @@ func mapHistoryResponse(h *RunItemHistory) historyResponse {
 	return resp
 }
 
-func mapPlanResponse(plan *TestPlan) planResponse {
+func mapPlanResponse(plan *TestPlan, testCaseIDs []string) planResponse {
 	resp := planResponse{
 		ID:            plan.ID.String(),
 		WorkspaceID:   plan.WorkspaceID.String(),
@@ -197,12 +198,16 @@ func mapPlanResponse(plan *TestPlan) planResponse {
 		Description:   plan.Description,
 		Status:        string(plan.Status),
 		Configuration: plan.Configuration,
+		TestCaseIDs:   testCaseIDs,
 		CreatedBy:     plan.CreatedBy.String(),
 		CreatedAt:     plan.CreatedAt,
 		UpdatedAt:     plan.UpdatedAt,
 	}
 	if plan.SuiteID != nil {
 		resp.SuiteID = strPtr(plan.SuiteID.String())
+	}
+	if resp.TestCaseIDs == nil {
+		resp.TestCaseIDs = []string{}
 	}
 	return resp
 }
@@ -274,6 +279,11 @@ func (h *Handler) CreateRun(w http.ResponseWriter, r *http.Request) {
 		tcIDs = append(tcIDs, id)
 	}
 
+	if len(tcIDs) == 0 {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "test_case_ids is required")
+		return
+	}
+
 	run, err := h.service.CreateRun(r.Context(), CreateRunInput{
 		WorkspaceID: wsID,
 		ProjectID:   projectID,
@@ -288,7 +298,7 @@ func (h *Handler) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusCreated, mapRunResponse(run))
 }
 
 func (h *Handler) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +314,7 @@ func (h *Handler) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusOK, mapRunResponse(run))
 }
 
 func (h *Handler) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -340,10 +350,7 @@ func (h *Handler) ListRuns(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 type updateRunStatusRequest struct {
@@ -369,7 +376,7 @@ func (h *Handler) UpdateRunStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusOK, mapRunResponse(run))
 }
 
 func (h *Handler) DeleteRun(w http.ResponseWriter, r *http.Request) {
@@ -413,7 +420,7 @@ func (h *Handler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapItemResponse(item)})
+	apihttp.JSON(w, http.StatusOK, mapItemResponse(item))
 }
 
 func (h *Handler) StreamRunProgress(w http.ResponseWriter, r *http.Request) {

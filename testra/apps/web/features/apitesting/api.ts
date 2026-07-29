@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   APICollection,
   APIFolder,
@@ -23,9 +23,8 @@ export async function listCollections(
   const searchParams = new URLSearchParams({ workspace_id: workspaceId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-collections?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APICollection>
-  >;
+  const result = await apiFetchWithMeta<APICollection>(`/api/v1/api-collections?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getCollection(id: string): Promise<APICollection> {
@@ -65,9 +64,8 @@ export async function listFolders(
   if (params?.parentId) searchParams.set("parent_id", params.parentId);
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-folders?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIFolder>
-  >;
+  const result = await apiFetchWithMeta<APIFolder>(`/api/v1/api-folders?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function createFolder(input: {
@@ -103,9 +101,8 @@ export async function listEnvironments(
   const searchParams = new URLSearchParams({ workspace_id: workspaceId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-environments?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIEnvironment>
-  >;
+  const result = await apiFetchWithMeta<APIEnvironment>(`/api/v1/api-environments?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function createEnvironment(input: {
@@ -141,9 +138,8 @@ export async function listRequests(
   if (params?.folderId) searchParams.set("folder_id", params.folderId);
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-requests?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIRequest>
-  >;
+  const result = await apiFetchWithMeta<APIRequest>(`/api/v1/api-requests?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function searchRequests(
@@ -154,9 +150,8 @@ export async function searchRequests(
   const searchParams = new URLSearchParams({ workspace_id: workspaceId, q: query });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-requests/search?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIRequest>
-  >;
+  const result = await apiFetchWithMeta<APIRequest>(`/api/v1/api-requests/search?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getRequest(id: string): Promise<APIRequest> {
@@ -245,9 +240,8 @@ export async function listRequestHistory(
   const searchParams = new URLSearchParams();
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-requests/${requestId}/history?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIRequestHistory>
-  >;
+  const result = await apiFetchWithMeta<APIRequestHistory>(`/api/v1/api-requests/${requestId}/history?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function listExecutionHistory(
@@ -258,7 +252,6 @@ export async function listExecutionHistory(
   if (params?.requestId) searchParams.set("request_id", params.requestId);
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/api-executions?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<APIRequestHistory>
-  >;
+  const result = await apiFetchWithMeta<APIRequestHistory>(`/api/v1/api-executions?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }

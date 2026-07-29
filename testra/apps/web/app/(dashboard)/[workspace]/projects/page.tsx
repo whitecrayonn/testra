@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { ProjectOnboarding } from "@/components/project-onboarding";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listProjects, createProject } from "@/features/platform/api";
@@ -161,12 +162,7 @@ export default function ProjectsPage() {
           <Skeleton className="h-20 w-full" count={3} />
         </div>
       ) : projects.length === 0 ? (
-        <EmptyState
-          icon={Folder}
-          title="No projects yet"
-          description="Create your first project to start organizing test cases and runs."
-          action={{ label: "Create project", onClick: () => setShowCreate(true) }}
-        />
+        <ProjectOnboarding onCreate={() => setShowCreate(true)} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => {

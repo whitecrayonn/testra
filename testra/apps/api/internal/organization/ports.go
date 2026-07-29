@@ -14,4 +14,5 @@ type Repository interface {
 	ListForUserPaginated(ctx context.Context, userID uuid.UUID, cursor string, limit int) ([]Organization, error)
 	AddMember(ctx context.Context, member *Member) error
 	GetMember(ctx context.Context, orgID, userID uuid.UUID) (*Member, error)
+	AssignRole(ctx context.Context, userID, roleID uuid.UUID, scopeType string, scopeID uuid.UUID) error
 }

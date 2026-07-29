@@ -372,7 +372,7 @@ func (r *SQLRepository) withTenantInTx(ctx context.Context, fn func(Repository) 
 	return r.RunInTx(ctx, func(txRepo Repository) error {
 		if tenantID, ok := db.TenantIDFromContext(ctx); ok {
 			if tx, ok := txRepo.(*SQLRepository); ok {
-				_, _ = tx.db.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", tenantID.String())
+				_ = db.SetLocalTenantID(ctx, tx.db, tenantID)
 			}
 		}
 		return fn(txRepo)

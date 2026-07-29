@@ -87,3 +87,41 @@ func (s *Service) ListForWorkspace(ctx context.Context, workspaceID uuid.UUID) (
 func (s *Service) ListForWorkspacePaginated(ctx context.Context, workspaceID uuid.UUID, cursor string, limit int) ([]Project, error) {
 	return s.repo.ListForWorkspacePaginated(ctx, workspaceID, cursor, limit)
 }
+
+type UpdateInput struct {
+	Name        *string
+	Key         *string
+	Description *string
+}
+
+func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*Project, error) {
+	project, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Name != nil {
+		project.Name = *input.Name
+	}
+	if input.Key != nil {
+		key := strings.ToUpper(strings.TrimSpace(*input.Key))
+		if !keyPattern.MatchString(key) {
+			return nil, sharederrors.ErrInvalidInput
+		}
+		project.Key = key
+	}
+	if input.Description != nil {
+		project.Description = *input.Description
+	}
+	project.UpdatedAt = time.Now().UTC()
+
+	if err := s.repo.Update(ctx, project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
+func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
+}

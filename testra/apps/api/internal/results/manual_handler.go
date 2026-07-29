@@ -49,7 +49,7 @@ func (h *Handler) ExecuteItem(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapItemResponse(item)})
+	apihttp.JSON(w, http.StatusOK, mapItemResponse(item))
 }
 
 func (h *Handler) ListItemHistory(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func (h *Handler) ListItemHistory(w http.ResponseWriter, r *http.Request) {
 	for i, h := range history {
 		resp[i] = mapHistoryResponse(&h)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 // ---------- Evidence ----------
@@ -107,7 +107,7 @@ func (h *Handler) AttachEvidence(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapEvidenceResponse(evidence)})
+	apihttp.JSON(w, http.StatusCreated, mapEvidenceResponse(evidence))
 }
 
 func (h *Handler) ListEvidence(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +127,7 @@ func (h *Handler) ListEvidence(w http.ResponseWriter, r *http.Request) {
 	for i, e := range evidence {
 		resp[i] = mapEvidenceResponse(&e)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) DeleteEvidence(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +193,7 @@ func (h *Handler) ListItemDefects(w http.ResponseWriter, r *http.Request) {
 	for i, id := range ids {
 		resp[i] = id.String()
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) UnlinkDefect(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +257,7 @@ func (h *Handler) BulkUpdateItems(w http.ResponseWriter, r *http.Request) {
 	for i, item := range items {
 		resp[i] = mapItemResponse(&item)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) CloneRun(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +273,7 @@ func (h *Handler) CloneRun(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusCreated, mapRunResponse(run))
 }
 
 func (h *Handler) RerunRun(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +289,7 @@ func (h *Handler) RerunRun(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusCreated, mapRunResponse(run))
 }
 
 // Override ListItems to support optional filtering and pagination.
@@ -323,10 +323,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 // ---------- Test plans ----------
@@ -394,7 +391,11 @@ func (h *Handler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapPlanResponse(plan)})
+	tcIDStrs := make([]string, 0, len(tcIDs))
+	for _, id := range tcIDs {
+		tcIDStrs = append(tcIDStrs, id.String())
+	}
+	apihttp.JSON(w, http.StatusCreated, mapPlanResponse(plan, tcIDStrs))
 }
 
 func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
@@ -419,7 +420,7 @@ func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
 
 	resp := make([]planResponse, len(plans))
 	for i, plan := range plans {
-		resp[i] = mapPlanResponse(&plan)
+		resp[i] = mapPlanResponse(&plan, nil)
 	}
 
 	meta := pagination.Meta{HasMore: len(plans) == params.Limit}
@@ -430,10 +431,7 @@ func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{
-		"data": resp,
-		"meta": meta,
-	})
+	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
 }
 
 func (h *Handler) GetPlan(w http.ResponseWriter, r *http.Request) {
@@ -449,7 +447,17 @@ func (h *Handler) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapPlanResponse(plan)})
+	items, err := h.service.GetPlanItems(r.Context(), id)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	tcIDStrs := make([]string, 0, len(items))
+	for _, item := range items {
+		tcIDStrs = append(tcIDStrs, item.TestCaseID.String())
+	}
+
+	apihttp.JSON(w, http.StatusOK, mapPlanResponse(plan, tcIDStrs))
 }
 
 type updatePlanRequest struct {
@@ -502,7 +510,18 @@ func (h *Handler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": mapPlanResponse(plan)})
+
+	items, err := h.service.GetPlanItems(r.Context(), id)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+	tcIDStrs := make([]string, 0, len(items))
+	for _, item := range items {
+		tcIDStrs = append(tcIDStrs, item.TestCaseID.String())
+	}
+
+	apihttp.JSON(w, http.StatusOK, mapPlanResponse(plan, tcIDStrs))
 }
 
 func (h *Handler) DeletePlan(w http.ResponseWriter, r *http.Request) {
@@ -536,7 +555,7 @@ func (h *Handler) ListPlanItems(w http.ResponseWriter, r *http.Request) {
 	for i, item := range items {
 		resp[i] = mapPlanItemResponse(&item)
 	}
-	apihttp.JSON(w, http.StatusOK, map[string]any{"data": resp})
+	apihttp.JSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) CreateRunFromPlan(w http.ResponseWriter, r *http.Request) {
@@ -552,5 +571,5 @@ func (h *Handler) CreateRunFromPlan(w http.ResponseWriter, r *http.Request) {
 		apihttp.MapError(w, err)
 		return
 	}
-	apihttp.JSON(w, http.StatusCreated, map[string]any{"data": mapRunResponse(run)})
+	apihttp.JSON(w, http.StatusCreated, mapRunResponse(run))
 }

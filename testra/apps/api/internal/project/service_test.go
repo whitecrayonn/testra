@@ -60,6 +60,22 @@ func (f *fakeRepository) ListForWorkspacePaginated(_ context.Context, workspaceI
 	return result, nil
 }
 
+func (f *fakeRepository) Update(_ context.Context, project *Project) error {
+	if _, ok := f.projects[project.ID]; !ok {
+		return sharederrors.ErrNotFound
+	}
+	f.projects[project.ID] = project
+	return nil
+}
+
+func (f *fakeRepository) Delete(_ context.Context, id uuid.UUID) error {
+	if _, ok := f.projects[id]; !ok {
+		return sharederrors.ErrNotFound
+	}
+	delete(f.projects, id)
+	return nil
+}
+
 func TestServiceCreate(t *testing.T) {
 	workspaceID := uuid.New()
 

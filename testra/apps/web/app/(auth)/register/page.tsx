@@ -42,7 +42,7 @@ export default function RegisterPage() {
           body: JSON.stringify(values),
         },
       );
-      router.push("/onboarding");
+      router.push("/create-workspace");
     } catch (err) {
       if (err instanceof ApiError) {
         setServerError(err.message);
@@ -92,7 +92,7 @@ export default function RegisterPage() {
       </CardContent>
       <CardFooter className="text-sm text-slate-600">
         Already have an account?{" "}
-        <Link href="/login" className="ml-1 text-brand-600 hover:underline">
+        <Link href="/login" className="ml-1 text-brand-600 underline hover:no-underline">
           Sign in
         </Link>
       </CardFooter>

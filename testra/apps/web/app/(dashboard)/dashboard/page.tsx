@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PlayCircle, TestTube, FolderKanban, Settings, Zap, ChevronRight, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ProjectOnboarding } from "@/components/project-onboarding";
 import { DashboardAnalytics } from "@/features/analytics/components/DashboardAnalytics";
 
 interface DashboardState {
@@ -18,6 +19,7 @@ interface DashboardState {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [state, setState] = useState<DashboardState | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -81,8 +83,8 @@ export default function DashboardPage() {
                 <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-600">Test Cases</p>
-                <p className="text-2xl font-bold text-slate-900">Manage cases</p>
+                <p className="text-sm font-medium text-slate-600">Testing</p>
+                <p className="text-2xl font-bold text-slate-900">View &amp; manage cases</p>
               </div>
             </CardContent>
           </Card>
@@ -178,13 +180,7 @@ export default function DashboardPage() {
       </div>
 
       {!state?.projectId && (
-        <EmptyState
-          icon={FolderKanban}
-          title="Get started by selecting a project"
-          description="Your workspace is ready. Choose or create a project, then add test cases and runs."
-          action={{ label: "Go to Projects", href: "/dashboard/projects" }}
-          secondaryAction={{ label: "Create test case", href: "/dashboard/test-cases/new" }}
-        />
+        <ProjectOnboarding onCreate={() => router.push("/dashboard/projects")} />
       )}
     </div>
   );

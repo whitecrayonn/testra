@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"net/smtp"
 	"strings"
 	"sync"
@@ -502,7 +503,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, input RequestPasswor
 	}
 
 	if err := s.sendPasswordResetEmail(user.Email, rawToken); err != nil {
-		return "", err
+		log.Printf("identity: failed to send password reset email to %s: %v", user.Email, err)
 	}
 
 	return rawToken, nil

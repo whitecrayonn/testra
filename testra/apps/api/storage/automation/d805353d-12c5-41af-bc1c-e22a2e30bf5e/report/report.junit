@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="ExampleSuite" tests="3" failures="1" errors="0" skipped="1" time="0.123">
+    <testcase name="should pass" classname="ExampleTest" time="0.010" />
+    <testcase name="should fail" classname="ExampleTest" time="0.020">
+      <failure message="Assertion failed">Expected true to equal false</failure>
+    </testcase>
+    <testcase name="should skip" classname="ExampleTest" time="0.005">
+      <skipped />
+    </testcase>
+  </testsuite>
+</testsuites>

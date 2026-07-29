@@ -206,7 +206,7 @@ export default function DefectsPage() {
           icon={Bug}
           title="No defects yet"
           description="Create your first defect to track a bug or failed test."
-          action={{ label: "New Defect", onClick: () => setShowCreate(true) }}
+          action={{ label: "Create first defect", onClick: () => setShowCreate(true) }}
         />
       ) : (
         <div className="space-y-3">

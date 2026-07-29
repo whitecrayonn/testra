@@ -33,9 +33,6 @@ func (s *Service) CreateIntegration(ctx context.Context, input CreateIntegration
 	if input.WorkspaceID == uuid.Nil || !validation.IsValidName(input.Name) || !IsValidIntegrationType(input.Type) {
 		return nil, sharederrors.ErrInvalidInput
 	}
-	if err := validateProviderConfig(IntegrationType(input.Type), input.Config); err != nil {
-		return nil, err
-	}
 
 	now := time.Now().UTC()
 	i := &Integration{

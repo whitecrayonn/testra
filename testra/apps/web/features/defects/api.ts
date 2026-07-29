@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type { Defect, PaginationMeta } from "@/types/defects";
 
 interface PaginatedResponse<T> {
@@ -13,9 +13,8 @@ export async function listDefects(
   const searchParams = new URLSearchParams({ project_id: projectId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/defects?${searchParams.toString()}`) as Promise<
-    PaginatedResponse<Defect>
-  >;
+  const result = await apiFetchWithMeta<Defect>(`/api/v1/defects?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getDefect(id: string): Promise<Defect> {

@@ -48,3 +48,6 @@ coverage/
 *.tfstate
 *.tfstate.backup
 *.tfvars
+
+# Generated documentation archives
+docs.zip
