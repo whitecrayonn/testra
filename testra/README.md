@@ -48,7 +48,7 @@ Testra uses a **Native Development Environment** — no Docker is required. See 
 | MinIO | latest | [binary](https://min.io/download) — S3-compatible local storage |
 | ClickHouse | 24+ | **Optional** — not needed until Phase 3 |
 
-Docker is **not used**. All services run natively on the local machine or as systemd services on a single Ubuntu VPS.
+Docker is **not used**. All services run as native processes on the local machine; production will run the same binaries on a single rented VM (OS not yet decided — see `docs/deployment/DEPLOYMENT_GUIDE.md`).
 
 ### One-command setup
 
@@ -142,7 +142,7 @@ cp .env.example .env
 - **Backend**: Go 1.24, PostgreSQL 16, Redis 7, ClickHouse 24
 - **Frontend**: Next.js 15, React 18, TypeScript 5, TailwindCSS 3
 - **ML**: Python 3.12, FastAPI, scikit-learn, XGBoost
-- **Infrastructure**: Native local development; production target is a single Ubuntu VPS with systemd, nginx, PostgreSQL, Redis, and Let's Encrypt. Cloud-managed services and container orchestration are not planned for MVP.
+- **Infrastructure**: Native local development today; production target is a single rented VM running the same binaries (OS not yet decided). Cloud-managed services and container orchestration are not planned for MVP.
 
 ## Architecture Principles
 

@@ -197,7 +197,7 @@ Testra is a unified quality engineering platform for teams that want to manage t
 | CI/CD | GitHub Actions | Lint, test, build, integration tests | [Implemented] |
 | Local development | Native services (PostgreSQL, Redis, Mailpit, MinIO) | Local workflow per ADR-009 | [Implemented] |
 | Containerization | Not used | Docker/Kubernetes are not part of the local or MVP deployment model | [Rejected] |
-| Infrastructure as Code | systemd unit files and nginx site configurations | Single-Ubuntu-VPS deployment runbooks | [Planned] |
+| Infrastructure as Code | Process-supervision config and reverse-proxy site config | Single-VM deployment runbooks (OS not yet decided) | [Planned] |
 | Observability | OpenTelemetry, Prometheus, Grafana, Loki | Metrics, logs, traces | [Planned] |
 
 ---
@@ -257,8 +257,9 @@ flowchart LR
 
 ### Deployment shape
 
-- **Local and MVP production** use native services behind Nginx on an Ubuntu VM (ADR-003, ADR-009).
-- **Future scale** moves to single Ubuntu VPS or a future managed option with single-Ubuntu-VPS systemd services and Let's Encrypt / optional CDN for CDN/WAF.
+- **Local** runs native services on the developer machine (ADR-009).
+- **MVP production** runs the same native services behind a reverse proxy on a single rented VM. The VM's OS is not yet decided (ADR-003 amendment, August 2026).
+- **Future scale** moves to a larger VM, a small VM fleet, or a managed platform only once measured need justifies it, with a CDN/WAF added if warranted.
 - The logical request flow is the same in all environments.
 
 ---
@@ -349,7 +350,7 @@ flowchart TD
     end
 
     subgraph Infrastructure
-        Infra[systemd / nginx on single Ubuntu VPS]
+        Infra[Native services on a single rented VM]
         Docs[docs/]
     end
 
@@ -840,19 +841,19 @@ Per ADR-009, the official local workflow uses native services:
 - `pnpm dev` checks services, applies migrations, and starts API, web, worker, and ML services.
 - All services must be installed and running locally; no Docker is used.
 
-### MVP production [Approved]
+### MVP production [Approved, OS deferred]
 
-- Ubuntu VM with systemd and Nginx reverse proxy.
-- PostgreSQL, Redis, and S3-compatible object store.
-- Go API and Next.js web as systemd services.
-- TLS terminated by Nginx with a Let's Encrypt certificate (certbot).
-- Migrations applied via `testra/apps/api/cmd/migrator/main.go` in CI/CD, never manually in production.
+- Single rented VM running the same native binaries as local dev, behind a reverse proxy. The VM's operating system is not yet decided — it will be chosen when the machine is rented; see ADR-003's August 2026 amendment and `docs/deployment/DEPLOYMENT_GUIDE.md`.
+- PostgreSQL, Redis, and S3-compatible object store on the same VM.
+- Go API, Go worker, and Next.js web as supervised processes (`systemd`, Windows Services, or the equivalent for whatever OS is chosen).
+- TLS terminated by the reverse proxy with an ACME-issued certificate.
+- Migrations applied via `testra/apps/api/cmd/migrator/main.go`, never manually in production.
 
 ### Future [Planned]
 
-- Future scale may move to a managed platform, but the default is still a single Ubuntu VPS.
-- Separate worker and ML processes can run on the same VPS or be split later.
-- systemd unit files and shell scripts for repeatable deployment.
+- Future scale may move to a larger VM, a small VM fleet, or a managed platform, but only once measured need justifies it.
+- Separate worker and ML processes can run on the same VM or be split later.
+- Process-supervision config and shell scripts for repeatable deployment.
 - Multi-region deployment is not planned for MVP.
 
 ---
@@ -999,7 +1000,7 @@ flowchart LR
 | 3.5 — Product UX Completion | Completed | Settings pages, placeholders, responsive UI, accessibility, build/lint/typecheck passes. |
 | 4 — API Testing & Defects | Planned | API test definitions and execution, defects, Jira sync, notification channels. |
 | 5 — Dashboard, Analytics & Launch | Planned | ClickHouse analytics, SDK generation, staging/production deployment. |
-| 6 — V2 Intelligence | Planned | Flaky detection, failure classification, risk scores, Meilisearch, Stripe, WorkOS SSO, single-Ubuntu-VPS systemd services. |
+| 6 — V2 Intelligence | Planned | Flaky detection, failure classification, risk scores, Meilisearch, Stripe, WorkOS SSO, production deployment to a rented VM. |
 
 ---
 
@@ -1015,7 +1016,7 @@ flowchart LR
 | ClickHouse for analytics | Planned | Cost-effective high-ingest analytical queries once result volume justifies it. |
 | Asynq workers over Redis | Planned | Async ingestion, ML pipelines, and scheduled jobs without a separate queue system. |
 | Generated TypeScript SDK | Planned | Created from OpenAPI once contracts stabilize. |
-| single-Ubuntu-VPS systemd services + single-Ubuntu-VPS systemd services production | Planned | Scale, observability, and multi-region data residency. |
+| Managed platform / multi-region deployment | Planned | Scale, observability, and multi-region data residency, only once measured need justifies it. |
 | Meilisearch for search | Deferred | PostgreSQL full-text search is sufficient for MVP; Meilisearch adds operational cost. |
 | Stripe billing | Deferred | Billing is not part of MVP launch scope. |
 | WorkOS SSO | Deferred | Conditional on enterprise deals; self-hosted path remains default. |

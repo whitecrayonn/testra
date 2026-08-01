@@ -76,9 +76,8 @@
 ## Deployment & infrastructure
 
 - Local development uses native services; no Docker is used (ADR-009).
-- MVP production is an Ubuntu VM with systemd and Nginx reverse proxy (ADR-003, DEPLOYMENT_GUIDE).
-- TLS is terminated at Nginx with Let's Encrypt on the single Ubuntu VPS (MVP).
-- Migrations are applied through CI/CD via `apps/api/cmd/migrator`; never manually in production (BIBLICAL, DEPLOYMENT_GUIDE).
+- MVP production is a single rented VM running native processes behind a reverse proxy. The VM's OS is not yet decided — it will be chosen when the machine is rented (ADR-003 amendment, August 2026; DEPLOYMENT_GUIDE).
+- Migrations are applied via `apps/api/cmd/migrator`; never manually in production (BIBLICAL, DEPLOYMENT_GUIDE).
 - Cloud-managed services and container orchestration may be considered for future scale, but they are not planned for MVP (ADR-003, DEPLOYMENT_GUIDE).
 
 ## Observability & operations

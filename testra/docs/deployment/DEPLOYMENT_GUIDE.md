@@ -1,97 +1,143 @@
 # Testra Deployment Guide
 
-**Purpose:** Describe the production deployment model, promotion sequence, configuration, rollback, and operational runbooks for a single Ubuntu VPS.
-**Owner:** Platform / SRE Lead
-**Scope:** Local development, MVP production on a single Ubuntu VPS, and future migration options.
-**Source of Truth:** `DEPLOYMENT_GUIDE.md`; canonical architecture decisions are in `docs/architecture/adrs/ADR-003-production-deployment-strategy.md` and `docs/architecture/adrs/ADR-009-native-development-environment.md`.
-**Last Updated:** July 2026
-**Related documents:**
-- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
-- [`ADR-003-production-deployment-strategy.md`](../architecture/adrs/ADR-003-production-deployment-strategy.md)
-- [`ADR-009-native-development-environment.md`](../architecture/adrs/ADR-009-native-development-environment.md)
-- [`DISASTER_RECOVERY_GUIDE.md`](../operations/DISASTER_RECOVERY_GUIDE.md)
-- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md)
+**Purpose:** How to run Testra locally today, and how to deploy it to a single rented VM when the time comes.
+**Scope:** Local development (current focus) and a single-VM MVP deployment (not yet built).
+**Source of Truth:** This guide; architecture decisions live in [`ADR-003`](../architecture/adrs/ADR-003-production-deployment-strategy.md) and [`ADR-009`](../architecture/adrs/ADR-009-native-development-environment.md).
+**Last Updated:** August 2026
 
 ## Deployment Model
 
-Testra's production target is a **single Ubuntu VPS** managed with `systemd` and `nginx`. Local development runs the same binaries natively on a developer machine. Container orchestration, Kubernetes, Terraform, Docker, and cloud-managed services are **not used** for MVP.
+Testra runs as **plain native processes** — a Go API binary, a Go worker binary, a Next.js server, and (optionally) a Python ML service. There is no container runtime anywhere in the stack.
 
-| Stage | Compute | Database | Cache | Storage | Analytics | Reverse Proxy / TLS |
-|---|---|---|---|---|---|---|
-| Local | Native binaries (Go, Node.js, Python) | Local PostgreSQL | None (local in-memory rate limiter) | Local filesystem | In-PostgreSQL aggregations | HTTP on localhost |
-| MVP | Single Ubuntu VPS + systemd | PostgreSQL on the same VPS | None (local in-memory rate limiter) | Local filesystem | In-PostgreSQL aggregations | Nginx + Let's Encrypt |
-| Beta | Single VPS or small VPS fleet | PostgreSQL with backups | Optional Redis only if justified | Filesystem backups | Optional ClickHouse only if justified | Let's Encrypt + optional CDN/WAF |
-| Enterprise | Single VPS fleet or managed platform only if justified | Managed PostgreSQL only after measured need | Managed Redis only after measured need | Object-store backups with immutability | Optional ClickHouse Cloud only if justified | Let's Encrypt + optional CDN/WAF |
+**Docker, Kubernetes, Terraform, and cloud-managed services are not used.** This is a deliberate decision (ADR-003), not an outstanding gap. Local development and production run the same binaries; only the machine differs.
 
-MVP runs the Go API, Go worker, Next.js web app, and Python ML service as `systemd` services. Nginx terminates TLS and reverse-proxies to the application services. Migrations run from CI/CD via `apps/api/cmd/migrator` and are never applied manually in production.
+| Stage | Compute | Database | Cache | Storage | TLS |
+|---|---|---|---|---|---|
+| **Local** (current) | Native processes via `pnpm dev` | Local PostgreSQL | Local Redis (optional — auto-started) | Local filesystem | None (HTTP on localhost) |
+| **MVP** (planned) | Single rented VM | PostgreSQL on the same VM | Redis on the same VM (optional) | Local filesystem | Reverse proxy with an ACME certificate |
 
-## MVP Service Architecture
+> **Target OS for the VM is deliberately undecided.** Nothing in the application depends on it: Go cross-compiles to any target with `GOOS`/`GOARCH`, and Next.js and PostgreSQL run everywhere. Pick the OS when you rent the machine, then write the process-supervision config for whatever it runs (`systemd`, Windows Services, or similar).
 
-| Service | Process Manager | Port | Notes |
-|---|---|---|---|
-| Go API | `systemd` unit | 8080 | Compiled `linux/amd64` Go binary |
-| Go Worker | `systemd` unit | — | Background job processor (`apps/api/cmd/worker`) |
-| Next.js Web | `systemd` unit | 3000 | Standalone `next` build |
-| Python ML | `systemd` unit | 8000 | `uvicorn` behind `systemd` |
-| Nginx | `systemd` | 80 / 443 | TLS termination, reverse proxy, static file serving |
-| PostgreSQL | `systemd` | 5432 | Application database |
-
-## Promotion Sequence
-
-1. Merge only reviewed, passing changes to `main`.
-2. Build immutable artifacts (compiled binaries, web standalone build) and record the commit SHA.
-3. Validate OpenAPI, tests, security scans, and the migration plan.
-4. Deploy the same artifacts to a staging VPS.
-5. Apply migrations through `apps/api/cmd/migrator` in the deployment pipeline.
-6. Run smoke tests for health, authentication, tenancy, and core API paths.
-7. Observe staging metrics/logs for the agreed soak period.
-8. Obtain release approval and promote the same artifacts to the production VPS.
-9. Verify deployment, migrations, background workers, queues, and critical user journeys.
-10. Record outcome and rollback / forward-fix decision.
-
-## Configuration and Secrets
-
-MVP configuration is injected through environment files on the Ubuntu VPS. Secrets (`JWT_SECRET`, `DATABASE_URL`, SMTP credentials, S3 keys, integration credentials) are never committed. Local development uses ignored `.env` files and non-production credentials.
-
-- TLS is terminated by Nginx with a Let's Encrypt certificate.
-- All services communicate over localhost or Unix sockets; no public exposure except Nginx ports 80/443.
-- Backups and log rotation are handled by standard Linux tools (`cron`, `logrotate`, `pg_dump`, `restic`, etc.).
-
-## Rollback
-
-Application rollback is safe only when schema compatibility is preserved. Prefer backward-compatible expand/contract migrations. If a migration is destructive or irreversible, rollback must be a forward fix or a restore plan approved before release.
-
-## Deployment Gates
-
-Use `PRODUCTION_READINESS_CHECKLIST.md`, `RELEASE_CHECKLIST.md`, and `SECURITY_CHECKLIST.md`. No production deployment is approved when tenant isolation, backup verification, observability, migration recovery, or critical security controls are unverified.
+---
 
 ## Local Development
 
-Local development uses a native environment. See `README.md` and `ADR-009` for prerequisites. `pnpm dev` checks services, runs migrations, and starts the API, web, worker, and ML services via `turbo`.
+This is the supported, verified path.
 
-## Current Infrastructure Status
+```bash
+pnpm install
+pnpm dev
+```
 
-- **No systemd service unit files** for API, web, worker, or ML.
-- **No nginx site configuration** or TLS automation (certbot).
-- **No VPS provisioning or deployment runbooks** exist yet.
-- **No CD pipeline**; GitHub Actions only builds/tests code.
-- `scripts/dev/` contains local development helpers only.
+`pnpm dev` will:
 
-## Findings & Recommendations
+1. Verify PostgreSQL is reachable on `localhost:5432`
+2. Apply database migrations via `apps/api/cmd/migrator`
+3. Start Redis automatically (via `@testra/redis-dev`), then launch the API, web, and worker through Turborepo
 
-1. **No production systemd unit files or nginx config.** Create `docs/deployment/systemd/` with service units and an nginx site template.
-2. **No deployment runbook.** Document server setup, package installation, firewall (`ufw`), PostgreSQL/Redis/MinIO install, artifact delivery, and migration steps.
-3. **No CD pipeline.** Add a GitHub Actions workflow that builds binaries, uploads artifacts, and triggers a deployment script on the VPS.
-4. **No observability stack.** Add OpenTelemetry, Prometheus, Grafana, or Loki; start with structured logs and basic `systemd` status checks.
-5. **No dependency/security scanning.** Add `dependabot`, `trivy`, `gosec`, or GitHub Advanced Security scans.
-6. **Environment variable drift.** Align `apps/api/.env.example` with the code: rename `JWT_EXPIRY_HOURS` to `JWT_EXPIRY_MINUTES` and remove unused variables.
-7. **No staging/production secrets management.** Document how secrets are injected via environment files or a local secrets store.
-8. **No web environment example.** Add `apps/web/.env.example` with `NEXT_PUBLIC_API_URL` and any public runtime config.
-9. **CI does not test the web build with a running API.** Add integration tests that spin up the API and exercise critical frontend flows.
-10. **Worker is a stub.** Decide whether `apps/worker` is needed; if so, implement it and add a `systemd` unit.
+### Prerequisites
+
+| Tool | Required? | Notes |
+|---|---|---|
+| Go 1.24+ | **Yes** | Runs the API, worker, and migrations. `pnpm dev` fails fast if missing |
+| Node.js 20+ / pnpm 9+ | **Yes** | Web app and tooling |
+| PostgreSQL 16+ | **Yes** | Must be running with a `testra` database and user before `pnpm dev` |
+| Redis | No | Auto-started when installed. Without it the API falls back to an in-memory rate limiter |
+| Python 3.12+ | No | Only for the ML service (`pnpm dev:all`) |
+| MinIO / Mailpit | No | Only for S3 and email flows |
+
+### Service Ports
+
+| Service | Port |
+|---|---|
+| Go API | 8080 |
+| Next.js Web | 3000 |
+| PostgreSQL | 5432 |
+| Redis | 6379 |
+| ML service | 8000 |
+
+See [`README.md`](../../README.md) for per-platform installation instructions.
+
+---
+
+## Deploying to a VM
+
+> **Not yet implemented.** No provisioning scripts, service definitions, or reverse-proxy config exist. This section describes the intended shape so the work is unambiguous when you start it.
+
+### One-time server setup
+
+1. Rent the VM and enable a firewall allowing only SSH/RDP and 80/443.
+2. Install PostgreSQL 16+; create the `testra` database and a dedicated user with a strong password.
+3. Install a reverse proxy (nginx, Caddy, or IIS) and obtain a TLS certificate.
+4. Create a non-privileged user to own and run the application processes.
+5. Create the environment file with production values — see *Configuration* below.
+
+### Each deployment
+
+1. Build the artifacts on your machine, targeting the VM's OS/architecture:
+   ```bash
+   GOOS=linux GOARCH=amd64 go build -o dist/api ./apps/api/cmd/api
+   GOOS=linux GOARCH=amd64 go build -o dist/worker ./apps/api/cmd/worker
+   GOOS=linux GOARCH=amd64 go build -o dist/migrator ./apps/api/cmd/migrator
+   pnpm --filter @testra/web build
+   ```
+   (Adjust `GOOS`/`GOARCH` to match the VM; drop them entirely if it matches your machine.)
+2. Copy the artifacts to the VM.
+3. **Back up the database** before applying migrations.
+4. Run migrations with the `migrator` binary. Never apply schema changes by hand.
+5. Restart the API, worker, and web processes.
+6. Verify: `curl https://your-domain/health` should return `{"data":{"status":"ok"}}`, then check that the worker is processing jobs and log in through the UI.
+
+### Rollback
+
+Rollback is only safe when the schema is still compatible with the older binary. Prefer backward-compatible (expand/contract) migrations so the previous version keeps working. For a destructive migration, the recovery path is a forward fix or a restore from the pre-deployment backup — decide which **before** deploying, not during an incident.
+
+---
+
+## Configuration
+
+All configuration is environment variables; see [`.env.example`](../../.env.example) and [`apps/api/.env.example`](../../apps/api/.env.example) for the full list.
+
+**Never commit real secrets.** `JWT_PRIVATE_KEY`, `DATABASE_URL`, SMTP credentials, S3 keys, and integration tokens belong in the VM's environment file (readable only by the app user) or a secrets store.
+
+The API refuses to start in production when configuration is unsafe — it rejects example credentials, `sslmode=disable`, and a missing `DATABASE_URL`. See `apps/api/internal/shared/config/config.go`.
+
+---
+
+## Before Going Live
+
+Work through these when you actually deploy — they are the parts that are genuinely hard to retrofit:
+
+- [ ] Automated PostgreSQL backups, **with a restore actually tested at least once**
+- [ ] TLS certificate auto-renewal verified
+- [ ] Secrets outside the repo, file permissions locked down
+- [ ] Tenant isolation (RLS) verified against the production database
+- [ ] Log rotation configured so the disk cannot fill
+- [ ] A known-good rollback path for the current release
+
+[`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md) has the exhaustive version. The list above is the subset that matters for a first launch.
+
+---
+
+## Appendix: Scaling Beyond One VM
+
+Deliberately deferred. Revisit only when a measured limit is hit, not preemptively:
+
+| Trigger | Consideration |
+|---|---|
+| Single VM saturated | Split web/API onto separate VMs, or scale the VM up first (usually cheaper and simpler) |
+| Database is the bottleneck | Add read replicas, or move to managed PostgreSQL |
+| Analytics queries slow down the primary | Introduce ClickHouse behind the existing repository port (ADR-010) |
+| Team grows past solo | Add a staging environment and a formal promotion process |
+| Compliance requirements | Revisit managed services, audit tooling, and immutable backups |
+
+Adding any of this before there is a measured need buys operational burden with no product value.
+
+---
 
 ## See Also
 
-- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — canonical engineering handbook
+- [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md) — engineering handbook
+- [`ADR-003`](../architecture/adrs/ADR-003-production-deployment-strategy.md) — why no Docker/Kubernetes
+- [`ADR-009`](../architecture/adrs/ADR-009-native-development-environment.md) — native development environment
 - [`DISASTER_RECOVERY_GUIDE.md`](../operations/DISASTER_RECOVERY_GUIDE.md) — backup and recovery
-- [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md) — go-live gates

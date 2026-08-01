@@ -1,7 +1,12 @@
 # ADR-009: Native Development Environment
 
-**Status:** Accepted
+**Status:** Accepted (target OS deferred, August 2026 — see ADR-003 amendment)
 **Date:** July 2026
+
+> **Amendment (August 2026):** the "single Ubuntu VPS" language below reflects
+> the July 2026 plan. The OS of the MVP machine is now an open decision, made
+> when the machine is rented — see ADR-003's amendment. Native development
+> without Docker, described here, is unaffected.
 
 ## Context
 
