@@ -67,6 +67,21 @@ func SetLookupKeyHash(ctx context.Context, exec DBTX, hash string) error {
 	return err
 }
 
+// SetLocalWorkerMode sets app.queue_worker for the current transaction so that
+// the queue RLS policy allows the background worker to see and process jobs
+// across tenants. It must be called explicitly by worker-only paths; unset or
+// false keeps the queue fail-closed like any other tenant-scoped table.
+//
+// SET LOCAL (not SET) is required: a plain SET survives COMMIT and stays on the
+// pooled connection after it is returned, which would silently hand the
+// RLS bypass to every later caller that reuses that connection. SET LOCAL is
+// scoped to the transaction and is discarded on COMMIT or ROLLBACK, so callers
+// must run inside a transaction for this to take effect.
+func SetLocalWorkerMode(ctx context.Context, exec DBTX) error {
+	_, err := exec.ExecContext(ctx, "SET LOCAL app.queue_worker = 'true'")
+	return err
+}
+
 func Wrap(db *sql.DB) *DB {
 	return &DB{db: db}
 }
@@ -121,7 +136,10 @@ func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) 
 	}
 
 	if tenantID, ok := TenantIDFromContext(ctx); ok {
-		_ = SetLocalTenantID(ctx, tx, tenantID)
+		if err := SetLocalTenantID(ctx, tx, tenantID); err != nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("set tenant context: %w", err)
+		}
 	}
 	return tx, nil
 }

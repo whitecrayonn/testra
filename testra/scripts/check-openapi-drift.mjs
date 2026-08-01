@@ -67,24 +67,54 @@ function readOpenApiPaths() {
 const generated = generateRoutes();
 const manual = readOpenApiPaths();
 
-const missing = [];
+const implemented = new Set();
 const wellKnown = new Set(["GET /.well-known/jwks.json", "GET /health"]);
 
 for (const route of generated) {
   const relative = stripApiV1(route.path);
   const key = `${route.method} ${relative}`;
   if (wellKnown.has(key)) continue;
+  implemented.add(key);
+}
+
+const missing = [];
+for (const key of implemented) {
   if (!manual.has(key)) {
     missing.push(key);
   }
 }
 
+const surplus = [];
+for (const key of manual) {
+  if (!implemented.has(key)) {
+    surplus.push(key);
+  }
+}
+
+missing.sort();
+surplus.sort();
+
+let hasDrift = false;
+
 if (missing.length > 0) {
-  console.error("OpenAPI drift detected: the following routes are implemented but not documented:");
+  hasDrift = true;
+  console.error("Implemented but not documented:");
   for (const key of missing) {
     console.error(`  ${key}`);
   }
+}
+
+if (surplus.length > 0) {
+  hasDrift = true;
+  if (missing.length > 0) console.error("");
+  console.error("Documented but not implemented:");
+  for (const key of surplus) {
+    console.error(`  ${key}`);
+  }
+}
+
+if (hasDrift) {
   process.exit(1);
 }
 
-console.log(`OpenAPI is synchronized with the chi router (${generated.length} routes checked).`);
+console.log(`OpenAPI is synchronized with the chi router (${implemented.size} routes checked).`);

@@ -51,3 +51,17 @@ coverage/
 
 # Generated documentation archives
 docs.zip
+
+# Runtime file storage (automation artifacts created by the API at run time)
+apps/api/storage/
+
+# Local service logs
+*.log
+
+# Audit / debugging scratch output (captured tool runs, not source)
+*_output.txt
+apps/api/errcheck_*.txt
+implemented_routes.txt
+openapi_drift.txt
+rls_policies.json
+tests/webkit_failures.json

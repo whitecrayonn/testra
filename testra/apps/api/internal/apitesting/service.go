@@ -3,7 +3,9 @@ package apitesting
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -14,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	"github.com/testra/testra/apps/api/internal/shared/eventbus"
+	"github.com/testra/testra/apps/api/internal/shared/security"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
 )
 
@@ -646,6 +649,10 @@ func (s *Service) runHTTPRequest(ctx context.Context, req Request, vars map[stri
 		return nil, sharederrors.ErrInvalidInput
 	}
 
+	if err := security.ValidateURL(ctx, u.String()); err != nil {
+		return nil, fmt.Errorf("%w: %s", sharederrors.ErrInvalidInput, err)
+	}
+
 	q := u.Query()
 	for _, p := range req.QueryParams {
 		if !p.Enabled {
@@ -731,7 +738,11 @@ func (s *Service) runHTTPRequest(ctx context.Context, req Request, vars map[stri
 		result.Error = err.Error()
 		return result, nil
 	}
-	defer httpResp.Body.Close()
+	defer func() {
+		if cerr := httpResp.Body.Close(); cerr != nil {
+			log.Printf("apitesting: failed to close response body for %s: %v", u.String(), cerr)
+		}
+	}()
 
 	result.Status = httpResp.StatusCode
 	result.StatusText = httpResp.Status

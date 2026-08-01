@@ -174,6 +174,7 @@ func TestCreateNotification(t *testing.T) {
 		UserID:         userID,
 		Type:           "system",
 		Title:          "Test",
+		Body:           "Test body",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -205,6 +206,7 @@ func TestMarkReadAndDelete(t *testing.T) {
 		UserID:         userID,
 		Type:           "system",
 		Title:          "Mark me",
+		Body:           "Mark me body",
 	})
 
 	if err := svc.MarkRead(context.Background(), n.ID, userID, true); err != nil {
@@ -335,6 +337,7 @@ func TestListNotifications(t *testing.T) {
 			UserID:         userID,
 			Type:           "system",
 			Title:          "n",
+			Body:           "body",
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
