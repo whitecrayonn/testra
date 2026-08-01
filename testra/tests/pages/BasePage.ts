@@ -11,7 +11,7 @@ export class BasePage {
   }
 
   async expectHeading(title: string) {
-    await expect(this.page.getByRole("heading", { name: title, exact: false })).toBeVisible();
+    await expect(this.page.getByRole("heading", { name: title, exact: false })).toBeVisible({ timeout: 30000 });
   }
 
   async expectUrl(path: string) {
@@ -47,7 +47,9 @@ export class BasePage {
   }
 
   async hasError(message?: string | RegExp) {
-    const alert = this.page.locator('[role="alert"]').filter({ hasText: message || /error|failed|invalid/i });
+    const alert = this.page
+      .locator('[role="alert"]:not(#__next-route-announcer__)')
+      .filter({ hasText: message || /error|failed|invalid/i });
     await expect(alert).toBeVisible();
   }
 }

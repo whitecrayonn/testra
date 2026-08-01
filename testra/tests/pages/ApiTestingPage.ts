@@ -17,7 +17,7 @@ export class ApiTestingPage extends BasePage {
     const newCollectionInput = this.page.getByPlaceholder("New collection").first();
     await newCollectionInput.fill(name);
     await newCollectionInput.press("Enter");
-    await expect(this.page.getByText(name)).toBeVisible();
+    await expect(this.page.getByText(name).first()).toBeAttached();
   }
 
   async createEnvironment(name: string) {

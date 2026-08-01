@@ -9,10 +9,11 @@ export interface WorkspaceContext {
 }
 
 export async function setWorkspaceContext(page: Page, ctx: WorkspaceContext): Promise<void> {
-  if (page.url() === "about:blank") {
-    await page.goto("/create-workspace", { waitUntil: "domcontentloaded" });
-  }
-  await page.evaluate((c: WorkspaceContext) => {
+  // Seed the workspace context via an init script so it is already present in
+  // localStorage before the app bootstraps. This removes the race where the
+  // WorkspaceProvider loads, finds no workspace, and redirects to
+  // /create-workspace before the test can set localStorage.
+  await page.addInitScript((c: WorkspaceContext) => {
     localStorage.setItem("testra_workspace_id", c.workspaceId);
     localStorage.setItem("testra_workspace_name", c.workspaceName);
     localStorage.setItem("testra_organization_id", c.organizationId);
@@ -21,6 +22,15 @@ export async function setWorkspaceContext(page: Page, ctx: WorkspaceContext): Pr
       if (c.projectName) localStorage.setItem("testra_project_name", c.projectName);
     }
   }, ctx);
+
+  if (page.url() === "about:blank") {
+    await page.goto("/create-workspace", { waitUntil: "networkidle" });
+    return;
+  }
+
+  // If the page is already on a real origin, reload so the init script runs
+  // and the app picks up the new workspace.
+  await page.reload({ waitUntil: "networkidle" });
 }
 
 export async function clearWorkspaceContext(page: Page): Promise<void> {
