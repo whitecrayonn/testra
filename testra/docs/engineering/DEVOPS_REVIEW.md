@@ -31,7 +31,7 @@ Testra uses a native development environment (ADR-009). No Docker is used.
 
 | Concern | Status | Notes |
 |---|---|---|
-| Single Ubuntu VPS strategy | ✅ Approved | Documented in ADR-003, DEPLOYMENT_GUIDE |
+| Single-VM strategy (target OS not yet decided) | ✅ Approved | Documented in ADR-003, DEPLOYMENT_GUIDE |
 | systemd unit files | ❌ Not present | Needed for api, web, worker, ml, nginx, postgres, redis, minio |
 | nginx site config + TLS | ❌ Not present | Let's Encrypt (certbot) automation not written |
 | CD pipeline | ❌ Not present | GitHub Actions only builds/tests |

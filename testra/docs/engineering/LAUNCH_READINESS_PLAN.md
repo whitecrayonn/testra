@@ -21,7 +21,7 @@ It is **not yet a production-ready commercial SaaS**. The remaining blockers are
 
 1. **Frontend token storage** (`localStorage`) — XSS exposure.
 2. **OpenAPI / SDK contract drift** — 91 wired routes vs ~63 documented operations, no generated client.
-3. **Production infrastructure** — systemd service unit files and nginx site configurations and single-Ubuntu-VPS systemd overlays are scaffolding only.
+3. **Production infrastructure** — no VM provisioning scripts, service-supervisor units, or reverse-proxy config exist yet (see `docs/deployment/DEPLOYMENT_GUIDE.md`).
 4. **Observability** — no distributed tracing, SLO dashboards, or production alerting.
 
 | Metric | Value |
@@ -129,7 +129,7 @@ Each finding is marked: ✅ Already completed, 🟡 Partially completed, ❌ Sti
 | SR-06 | Rate limiter fail-open on Redis failure | 🟡 Open |
 | SR-07 | PII in logs (`RemoteAddr`, bodies, query params) | 🟡 Open |
 | SR-08 | Frontend tokens in `localStorage` | ❌ Open (P0) |
-| SR-09 | single-Ubuntu-VPS systemd host firewall rules / egress restrictions | ❌ Open |
+| SR-09 | VM host firewall rules / egress restrictions | ❌ Open |
 | SR-10 | compiled binary SBOM / scanning | ❌ Open |
 
 ### 2.6 Database Review (`docs/engineering/DATABASE_REVIEW.md`)
@@ -187,7 +187,7 @@ These items were previously listed as P0/P1 blockers but are now implemented and
 | Milestone | Objective | Business Value | Engineering Value | Dependencies | Est. Effort | Production Impact |
 |-----------|-----------|----------------|-------------------|--------------|-------------|-------------------|
 | **M1 — Production Security & Trust** | Harden auth, secrets, audit, network, and error handling so the platform is safe for production traffic and SOC 2 readiness. | Unblocks enterprise sales and security reviews; protects customer data. | Removes XSS/session-theft vectors; establishes audit and secrets discipline. | — | 4–5 sprints | **Critical** — blocks GA |
-| **M2 — Production Infrastructure & Deploy** | Build single-Ubuntu-VPS systemd deployment, CI/CD artifact delivery, secrets management, TLS, backups, and DR. | Enables reliable public hosting, scaling, and disaster recovery. | Gives automated, repeatable, auditable deployments. | M1 (cookie/session auth and hardening) | 4–6 sprints | **Critical** — blocks launch |
+| **M2 — Production Infrastructure & Deploy** | Build the single-VM deployment (provisioning, process supervision, reverse proxy), CI/CD artifact delivery, secrets management, TLS, backups, and DR. | Enables reliable public hosting, scaling, and disaster recovery. | Gives automated, repeatable, auditable deployments. | M1 (cookie/session auth and hardening) | 4–6 sprints | **Critical** — blocks launch |
 | **M3 — Observability & Reliability** | Implement distributed tracing, metrics, SLO dashboards, alerting, and runbooks. | Reduces MTTR and meets SLA commitments. | Provides visibility into production behavior and error budgets. | M2 infrastructure | 2–3 sprints | **High** |
 | **M4 — Commercial SaaS Core** | Ship billing, entitlements, public SDK, admin/member management, and audit UI. | Enables revenue collection, self-service, and enterprise contracts. | Locks API contracts and monetization guardrails. | M1, M2, M3 | 4–5 sprints | **Critical for revenue** |
 | **M5 — Data & Performance at Scale** | Add missing indexes, retention, optimized aggregates, SSR/caching, and load testing. | Supports larger tenants and lowers infra cost. | Improves UX and reduces DB pressure. | M2 DB, M3 | 2–3 sprints | **Medium-High** |
@@ -216,7 +216,7 @@ These items were previously listed as P0/P1 blockers but are now implemented and
 |------------------------|-------------------|---------------|
 | httpOnly / Secure / SameSite cookie session auth | Billing/entitlements not enforced | First design partners onboarded successfully |
 | OpenAPI spec generated and SDK consumed by frontend | SSO/SAML not available | API contract validated in CI; no manual DTO drift |
-| Deployed to real single-Ubuntu-VPS systemd staging cluster with TLS and secrets manager | DR runbooks not tested | Staging environment passes chaos/tenant-isolation tests |
+| Deployed to a real single-VM staging environment with TLS and a secrets manager | DR runbooks not tested | Staging environment passes chaos/tenant-isolation tests |
 | Distributed tracing + metrics dashboards + alerting | Advanced analytics missing | SLOs defined and baselined for 1 week |
 | Pagination + missing DB indexes applied | Public SDK not published | p95 < 500 ms on critical paths |
 
@@ -225,12 +225,12 @@ These items were previously listed as P0/P1 blockers but are now implemented and
 
 | Mandatory Requirements | Remaining Blockers | Exit Criteria |
 |------------------------|-------------------|---------------|
-| Production single-Ubuntu-VPS systemd services with managed DB, cache, object storage, backups | Enterprise SSO/SCIM | Public launch executed and paying customers activated |
+| Production single-VM deployment with self-hosted DB/cache (per ADR-003) and tested backups | Enterprise SSO/SCIM | Public launch executed and paying customers activated |
 | Billing and entitlements enforcing plan limits | Advanced reporting | Revenue collection validated |
 | Security audit / pen test / SBOM / secret scanning | Partner marketplace | SOC 2 Type II readiness evidence collected |
 | Load testing passed (target: 1000 concurrent users, 10 ingest/sec) | Multi-region | Runbook-tested DR and rollback procedures |
 | 24/7 on-call rotation + incident response plan | — | No critical open incidents for 2 weeks pre-launch |
-| Single-Ubuntu-VPS deployment runbooks tested | — | Staging and production systemd units and nginx config exercised end-to-end |
+| Single-VM deployment runbooks tested | — | Staging and production process-supervisor units and reverse-proxy config exercised end-to-end |
 
 ### Enterprise Ready
 **Goal:** First $50K+ ACV contracts.
@@ -252,7 +252,7 @@ Full register: `docs/engineering/RISK_REGISTER.md`.
 | **Technical** | OpenAPI/SDK drift causes frontend/backend contract breakage | High | High | High | Generate spec from router + CI validation; generate TS SDK | Backend Lead |
 | **Technical** | In-memory metrics lost on restart / no aggregated dashboards | High | Medium | Medium | Adopt Prometheus client + OTLP + Grafana | Platform Lead |
 | **Security** | Tokens in `localStorage` exposed to XSS | Critical | High | Critical | Move to httpOnly cookies / BFF session; add CSRF | Security Lead |
-| **Security** | No single-Ubuntu-VPS systemd host firewall rules allows lateral movement after pod compromise | High | Medium | High | Add namespace-scoped host firewall rules manifests | DevOps Lead |
+| **Security** | No VM host firewall rules allows lateral movement after a process compromise | High | Medium | High | Add default-deny host firewall rules with allow-listed ports | DevOps Lead |
 | **Product** | Billing/entitlements missing blocks revenue collection | High | High | Critical | Stripe integration + plan engine before GA | Product/Engineering Lead |
 | **Product** | Analytics/Defects/Intelligence UIs are placeholders | Medium | High | Medium | Close M4/M6 feature gaps post-Beta | Product Lead |
 | **Operational** | No tested backup/restore or DR runbook | High | Medium | Critical | Implement PITR scripts, run quarterly DR drills | SRE Lead |
@@ -269,9 +269,9 @@ Full register: `docs/engineering/RISK_REGISTER.md`.
 1. **Move auth tokens from `localStorage` to httpOnly cookies** — fixes the #1 security blocker; unblocks Beta and enterprise trust.
 2. **Generate and validate OpenAPI + TypeScript SDK** — eliminates contract drift, accelerates frontend and partner integrations.
 3. **Implement billing/entitlements** — required for revenue; highest business-value dependency.
-4. **Add production single-Ubuntu-VPS systemd services** — everything else needs a place to run.
+4. **Add the production VM deployment** — everything else needs a place to run.
 5. **Add OpenTelemetry + SLO dashboards** — unlocks safe production operations and fast incident response.
-6. **Add single-Ubuntu-VPS systemd host firewall rules + secrets manager integration** — closes major security/operational gaps.
+6. **Add VM host firewall rules + secrets manager integration** — closes major security/operational gaps.
 7. **Add missing DB indexes + optimize `results` recalc** — cheap performance win that prevents tenant-scoped scale issues.
 8. **Implement member invitation + role UI** — unblocks team adoption, a core SaaS workflow.
 9. **Implement audit log UI/export** — required for SOC 2 and enterprise sales.
@@ -285,7 +285,7 @@ Full register: `docs/engineering/RISK_REGISTER.md`.
 4. **OpenAPI/SDK drift** — frontend/backend break silently.
 5. **Fail-open rate limiter** — Redis outage allows auth abuse.
 6. **In-memory metrics registry** — multi-replica inconsistency and data loss.
-7. **Missing single-Ubuntu-VPS systemd host firewall rules** — lateral movement risk.
+7. **Missing VM host firewall rules** — lateral movement risk.
 8. **`results` O(n) aggregate recalc** — will degrade with large runs.
 9. **No tested backup/restore runbook** — data-loss risk.
 10. **PII in logs** — compliance and privacy exposure.
@@ -305,11 +305,11 @@ Full register: `docs/engineering/RISK_REGISTER.md`.
 
 ### Top 10 Infrastructure Priorities
 
-1. systemd service units for API, worker, web, ML, nginx, PostgreSQL, Redis, MinIO.
-2. nginx site config + Let's Encrypt (certbot) TLS.
-3. GitHub Actions CD that builds binaries and deploys artifacts to the VPS.
+1. Process-supervisor units (e.g., systemd, once the VM's OS is chosen) for API, worker, web, ML, plus the reverse proxy, PostgreSQL, Redis, MinIO.
+2. Reverse-proxy site config + Let's Encrypt (certbot) TLS.
+3. GitHub Actions CD that builds binaries and deploys artifacts to the VM.
 4. Local secrets store or environment-file scheme for staging/production.
-5. Host firewall (`ufw`) and egress restrictions.
+5. Host firewall and egress restrictions (tool chosen once the VM's OS is decided).
 6. Backup/restore runbooks + scripts (`pg_dump`, `restic`, `logrotate`).
 7. OpenTelemetry collector + Grafana/Loki or structured logging.
 8. Terraform/cloud-IaC moved to a future scale track; MVP uses shell scripts and systemd.
@@ -347,7 +347,7 @@ The next 20–30 implementation tasks are listed in full in `docs/engineering/SP
 | SBL-008 | Fix refresh-token revocation ordering | P1 |
 | SBL-009 | Add rate-limiter fail-closed fallback for auth endpoints | P1 |
 | SBL-010 | Add PII redaction in request/audit logs | P1 |
-| SBL-011 | Add single-Ubuntu-VPS systemd host firewall rules manifests | P1 |
+| SBL-011 | Add production VM host firewall rules | P1 |
 | SBL-012 | Implement secrets-manager provider abstraction | P1 |
 | SBL-013 | Generate OpenAPI from chi router and validate in CI | P0 |
 | SBL-014 | Generate TypeScript SDK from OpenAPI | P0 |
@@ -381,7 +381,7 @@ The next 20–30 implementation tasks are listed in full in `docs/engineering/SP
 | Documentation / Contracts | 5 | 0.05 | 0.25 |
 | **Total** | — | **1.00** | **5.75 / 10 = 57.5** |
 
-After applying the engineering manager override for recent wins (API-key auth for ingestion, pagination, idempotency expansion, worker improvements, single-Ubuntu-VPS systemd JWT/CORS alignment), the **rounded production-readiness score is 63 / 100**.
+After applying the engineering manager override for recent wins (API-key auth for ingestion, pagination, idempotency expansion, worker improvements, JWT/CORS alignment), the **rounded production-readiness score is 63 / 100**.
 
 ---
 
@@ -413,7 +413,6 @@ pnpm test
 - API key auth: `apps/api/internal/shared/middleware/apikey.go`
 - Frontend fetcher: `apps/web/lib/api.ts`
 - Migrations: `apps/api/migrations/`
-- single-Ubuntu-VPS systemd base: `single VPS deployment runbooks/base/`
-- single-Ubuntu-VPS systemd overlays: `single VPS deployment runbooks/overlays/`
-- single-Ubuntu-VPS systemd services: `single VPS deployment runbooks/`
+- Deployment guide (no deployment scripts exist yet): `docs/deployment/DEPLOYMENT_GUIDE.md`
+- Deployment strategy ADR: `docs/architecture/adrs/ADR-003-production-deployment-strategy.md`
 - CI/CD: `.github/workflows/ci.yml`

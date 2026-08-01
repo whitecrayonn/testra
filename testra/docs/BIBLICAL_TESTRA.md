@@ -143,9 +143,7 @@ c:/Private/project/
 | `testra/packages/ui` | Shared React / shadcn/ui components. | Adding or modifying reusable UI. | Do not import app-specific code. |
 | `testra/packages/config` | Shared ESLint, TypeScript, and tooling configs. | Changing repo-wide tooling. | Do not put runtime code here. |
 | `testra/packages/sdk` | Generated TypeScript SDK. | After OpenAPI contracts stabilize. | Do not hand-write API wrappers that duplicate the SDK. |
-| `testra/native services` | Optional native services and images. | Changing local container alternatives. | Docker is not the default local workflow (ADR-009). |
-| `testra/single VPS deployment runbooks` | Future systemd service unit files and nginx site configurations. | Planning production scale. | Do not deploy unless approved. |
-| `testra/single VPS deployment runbooks` | Future cloud provisioning. | Infrastructure rollout. | Do not commit state or secrets. |
+| *(none yet)* | No infrastructure directory exists. Deployment is native processes only (ADR-003) — no Docker, Kubernetes, or Terraform. Provisioning scripts, process-supervision config, and reverse-proxy config for the target VM are not yet written; see `docs/deployment/DEPLOYMENT_GUIDE.md`. | Building the first production deployment. | Do not add Docker/Kubernetes/Terraform tooling — that decision is closed (ADR-003). |
 | `testra/docs` | Canonical documentation. | Updating architecture, API, runbooks, or this handbook. | Do not duplicate content. Update BIBLICAL instead of creating parallel docs. |
 | `testra/scripts` | Automation and helper scripts. | Adding dev/prod automation. | Do not put one-off hacks here. |
 | `.github/workflows` | CI/CD pipelines. | Changing build, test, lint, or deploy gates. | Do not disable checks to bypass failures. |
@@ -376,7 +374,7 @@ flowchart TD
 - **API depends on Shared, Database, Redis, S3, and optionally ML.** The Go API owns the business logic and all persistence.
 - **ML is a separate runtime.** The Python service is called by the API for inference and may read from object storage. It does not own transactional state.
 - **Workers are planned.** The Go worker will consume Redis/Asynq jobs and write analytical facts to ClickHouse. It does not own core transactional state.
-- **Infrastructure is a deployment concern.** `native services`, `single VPS deployment runbooks`, and `single VPS deployment runbooks` describe where and how the application runs; they do not contain business logic.
+- **Infrastructure is a deployment concern.** Provisioning scripts and process-supervision/reverse-proxy config (not yet written; see `docs/deployment/DEPLOYMENT_GUIDE.md`) describe where and how the application runs; they do not contain business logic.
 - **Documentation is a peer dependency.** Docs guide implementation; they do not change runtime behavior.
 
 ---
