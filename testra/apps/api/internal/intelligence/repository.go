@@ -147,7 +147,10 @@ func (r *SQLRepository) RunInTx(ctx context.Context, fn func(Repository) error) 
 		return err
 	}
 	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
-		_ = db.SetLocalTenantID(ctx, tx, tenantID)
+		if err := db.SetLocalTenantID(ctx, tx, tenantID); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("set tenant context: %w", err)
+		}
 	}
 	txRepo := &SQLRepository{db: tx}
 	if err := fn(txRepo); err != nil {

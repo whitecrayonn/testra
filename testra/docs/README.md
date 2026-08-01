@@ -65,7 +65,7 @@
 | [`engineering/DATABASE_REVIEW.md`](engineering/DATABASE_REVIEW.md) | Database schema, RLS, indexing, and security findings |
 | [`engineering/API_REVIEW.md`](engineering/API_REVIEW.md) | Endpoint inventory, status codes, pagination, idempotency, OpenAPI drift |
 | [`engineering/FRONTEND_REVIEW.md`](engineering/FRONTEND_REVIEW.md) | Frontend architecture, auth storage, rendering, and security posture |
-| [`engineering/DEVOPS_REVIEW.md`](engineering/DEVOPS_REVIEW.md) | Single-Ubuntu-VPS systemd deployment, CI/CD readiness, and local development workflow |
+| [`engineering/DEVOPS_REVIEW.md`](engineering/DEVOPS_REVIEW.md) | Single-VM deployment (target OS deferred), CI/CD readiness, and local development workflow |
 | [`engineering/PERFORMANCE_REVIEW.md`](engineering/PERFORMANCE_REVIEW.md) | Performance hotspots, scalability boundaries, and optimization plan |
 | [`engineering/CLEANUP_REPORT.md`](engineering/CLEANUP_REPORT.md) | Backend quality cleanup findings and panics/TODOs/dead code |
 | [`security/SECURITY_REVIEW_v2.md`](security/SECURITY_REVIEW_v2.md) | Security audit of authentication, authorization, secrets, and posture |

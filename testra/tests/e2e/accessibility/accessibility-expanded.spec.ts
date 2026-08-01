@@ -75,7 +75,7 @@ test.describe("Accessibility - Expanded @a11y @accessibility", () => {
     await page.getByLabel("Email").fill("invalid@example.com");
     await page.getByLabel("Password").fill("wrongpassword");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('p[role="alert"]')).toBeVisible({ timeout: 10000 });
   });
 
   test("login page is keyboard navigable", async ({ page }) => {

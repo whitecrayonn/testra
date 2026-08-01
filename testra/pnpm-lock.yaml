@@ -22,6 +22,8 @@ importers:
 
   apps/ml: {}
 
+  apps/redis-dev: {}
+
   apps/web:
     dependencies:
       '@hookform/resolvers':

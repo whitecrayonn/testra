@@ -113,7 +113,7 @@
 - **Backend functional, frontend missing:** API Keys, Test Folders, Test Suites, Automation Ingestion, Audit.
 - **Frontend functional, backend partial:** Dashboard, Settings shell.
 - **Not started:** API Testing, Billing, Analytics, Intelligence, Integration Hub, SSO, Marketplace, Public SDK. **Defects and notifications are implemented.**
-- **Blockers for production:** rate limiting, API-key auth, SSE auth, route guards, secrets management, single-Ubuntu-VPS systemd/single-Ubuntu-VPS systemd services completion, and deployment pipeline.
+- **Blockers for production:** rate limiting, API-key auth, SSE auth, route guards, secrets management, VM provisioning and deployment-script completion (see `docs/deployment/DEPLOYMENT_GUIDE.md`), and a deployment pipeline.
 
 
 ## See Also

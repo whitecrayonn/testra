@@ -106,7 +106,7 @@ The MVP is defined as the set of capabilities needed for the first commercial la
 | Platform backend | ✅ Functional | Identity, organization, workspace, project, RBAC, audit |
 | Testing backend | ✅ Functional | Test management, results, automation ingestion |
 | Web frontend | 🔄 Partial | Auth, onboarding, dashboard skeleton, test cases, test runs |
-| Infrastructure | 📝 Scaffolding | Native local services; single-Ubuntu-VPS systemd + nginx deployment runbooks are scaffolded; not production-ready |
+| Infrastructure | 📝 Not started | Native local services work today; single-VM deployment (target OS not yet decided) has no provisioning scripts or process/reverse-proxy config yet — see `docs/deployment/DEPLOYMENT_GUIDE.md` |
 
 ## Repository status
 
@@ -160,7 +160,7 @@ These estimates are directional and based on functional coverage and production 
 | **Authentication** | JWT access tokens + opaque refresh-token families + TOTP MFA | Supports session security and enterprise MFA requirements |
 | **API style** | RESTful JSON, URL versioning `/api/v1`, OpenAPI 3.1 spec | Familiar to QA engineers and enterprise integrators |
 | **Real-time** | Server-Sent Events (SSE) for test-run progress | Simpler horizontal scaling than WebSockets for one-way progress streams |
-| **Deployment target** | Single Ubuntu VPS with systemd + nginx for production; native local dev first | Low operational cost; no container/cloud infrastructure for MVP |
+| **Deployment target** | Single rented VM (target OS not yet decided) with a process supervisor + reverse proxy for production; native local dev first | Low operational cost; no container/cloud infrastructure for MVP |
 
 ## Major ADR / architecture summary
 
@@ -224,8 +224,8 @@ These have scaffolding or partial implementation but are not shippable.
 | **OpenAPI** | Core routes documented | Defects, analytics, billing, integrations, webhooks still missing; notifications documented |
 | **Test Suites / Folders UI** | Backend list endpoints and API wrappers | No user interface to create/manage suites or folders |
 | **CI/CD** | GitHub Actions lint/build | No binary artifact upload, no deployment, no integration tests |
-| **Systemd / nginx deployment** | Not started | No service units, nginx site config, or deployment runbooks yet |
-| **Cloud-managed services** | Not applicable | Not used; MVP runs on a single Ubuntu VPS |
+| **VM deployment** | Not started | No service-supervisor units, reverse-proxy config, or provisioning scripts yet |
+| **Cloud-managed services** | Not applicable | Not used; MVP runs on a single rented VM (target OS not yet decided) |
 
 ---
 

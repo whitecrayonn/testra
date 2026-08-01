@@ -477,7 +477,7 @@
 | # | Deliverable | Why | Success criteria | Owner |
 |---|-------------|-----|------------------|-------|
 | 24 | ClickHouse schema and analytics runbook | Analytics and dashboards require ClickHouse. | Schema, ingestion pipeline, query patterns, and operational guide documented before launch. | Data / Analytics |
-| 25 | Single-Ubuntu-VPS systemd + nginx deployment runbooks | Production deployment needs concrete service units and nginx configs. | Step-by-step runbooks for systemd services, Nginx, PostgreSQL, Redis, MinIO on Ubuntu. | Infra / SRE |
+| 25 | Single-VM deployment runbooks (target OS not yet decided) | Production deployment needs concrete provisioning scripts and process/reverse-proxy config. | Step-by-step runbooks for service supervision, reverse proxy, PostgreSQL, Redis, MinIO on the chosen VM. | Infra / SRE |
 | 26 | Generated TypeScript SDK + README | Public API and partner integrations depend on SDK. | `packages/sdk/` is generated from OpenAPI and has usage examples. | API / Platform |
 | 27 | Security and compliance runbooks | SOC 2 readiness requires documented evidence. | Penetration test, vulnerability management, access review, and audit export runbooks. | Security |
 | 28 | Enterprise features docs | SSO/SAML, SCIM, data residency require dedicated guides. | Create an `enterprise/` documentation directory with setup and configuration guides. | Enterprise |
@@ -609,7 +609,7 @@ For the exact implementation order, see this `ROADMAP.md` file.
 | Milestone | Target | Definition of Done | Status |
 |-----------|--------|--------------------|--------|
 | **M1 — Production Security & Trust** | 2026-09 | Cookie/session auth, CSRF, hardened password policy, audit read, PII redaction, host firewall rules, secrets store | Not started |
-| **M2 — Production Infrastructure & Deploy** | 2026-10 | Ubuntu VPS provisioning runbook, systemd service units, nginx TLS, PostgreSQL/Redis/MinIO setup, GitHub Actions artifact delivery, secrets store | Not started |
+| **M2 — Production Infrastructure & Deploy** | 2026-10 | VM provisioning runbook (target OS not yet decided), process-supervisor service units, reverse-proxy TLS, PostgreSQL/Redis/MinIO setup, GitHub Actions artifact delivery, secrets store | Not started |
 | **M3 — Observability & Reliability** | 2026-10 | OpenTelemetry, Grafana/Tempo/Loki, SLO dashboards, alerting, incident runbooks | Not started |
 | **M4 — Commercial SaaS Core** | 2026-11 | Stripe billing, entitlements, OpenAPI-generated SDK, member/role UI, audit UI, admin console | Not started |
 | **M5 — Data & Performance at Scale** | 2026-12 | Missing DB indexes, pagination remaining lists, retention jobs, SSR/caching, load tests | Not started |
@@ -618,8 +618,8 @@ For the exact implementation order, see this `ROADMAP.md` file.
 ### Launch Gates
 
 - **Alpha Ready:** Build/test gates pass; core auth, test management, runs, ingestion work end-to-end on a local developer machine.
-- **Beta Ready:** Cookie auth, real single-Ubuntu-VPS staging with TLS, OpenAPI/SDK, observability, pagination/indexes in place; first design partners onboarded.
-- **GA Ready:** Production single-Ubuntu-VPS deployment, DB backups, billing/entitlements, security audit, SLO monitoring, load tests passed.
+- **Beta Ready:** Cookie auth, a real single-VM staging environment with TLS, OpenAPI/SDK, observability, pagination/indexes in place; first design partners onboarded.
+- **GA Ready:** Production single-VM deployment, DB backups, billing/entitlements, security audit, SLO monitoring, load tests passed.
 - **Enterprise Ready:** SSO/SAML/SCIM, custom roles, audit export, data residency, SLA reporting.
 
 ### Phase Status Update

@@ -72,7 +72,7 @@ Docker and Docker Compose are not used. All services run natively on the local m
 | `staging` | Auto-deploy from `main` | Sanitized/synthetic |
 | `production` | Manual promotion | Real, backed up, monitored |
 
-Config via env vars (12-factor). `.env.example` is committed; local values use ignored files; MVP production values use environment files or a local secrets store on the Ubuntu VPS. Cloud-managed secrets managers may be adopted later if scale justifies it.
+Config via env vars (12-factor). `.env.example` is committed; local values use ignored files; MVP production values use environment files or a local secrets store on the production VM (target OS not yet decided). Cloud-managed secrets managers may be adopted later if scale justifies it.
 
 ---
 

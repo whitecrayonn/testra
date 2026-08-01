@@ -27,7 +27,7 @@
 | T-01 | OpenAPI spec and implementation drift; frontend silently breaks as backend evolves. | High | Likely | High | CI diff, manual code review | Generate spec from `chi` router; validate in CI; generate TypeScript SDK and consume it in `apps/web` | Backend Lead | SBL-060, SBL-061 |
 | T-02 | In-memory metrics registry is per-pod, loses data on restart and cannot aggregate across replicas. | High | Almost Certain | Medium | Missing centralized metrics; observability gaps | Replace with Prometheus Go client and OTLP export; deploy collector + Grafana | SRE Lead | SBL-049, SBL-046 |
 | T-03 | `results.Service.recalcRunCounts` loads all run items into memory — O(n) and scales poorly. | High | Likely | High | Load tests; slow queries on large runs | Incremental counters + materialized aggregates; benchmark before/after | Backend Lead | SBL-081 |
-| T-04 | `localStorage` token storage exposes refresh token to XSS and `document.cookie` read for clientside scripts. | Critical | Likely | Critical | Security audit; pen test | Move to httpOnly/Secure/SameSite cookies + BFF/session; add CSRF | Security Lead | SBL-001, SBL-002, SBL-003 |
+| T-04 | ~~`localStorage` token storage exposes refresh token to XSS.~~ **Resolved.** Tokens are issued as httpOnly cookies (`apps/api/internal/shared/middleware/cookies.go`); `localStorage` now holds only non-secret workspace/org/project selection. See `docs/audits/P0_VERIFICATION_REPORT.md` §6. | ~~Critical~~ Closed | — | — | — | — | — | SBL-001, SBL-002, SBL-003 |
 | T-05 | API key scope strings are accepted without validation, allowing arbitrary/invalid scopes. | Medium | Possible | Medium | Code review; misuse in UI | Implement allowed-scope registry in `apikeys.Service` | Backend Lead | SBL-006 |
 | T-06 | Rate limiter falls back to in-memory store and fails open if Redis disappears. | High | Possible | High | Redis outage simulation | Fail-closed on Redis auth endpoints; keep local in-memory fallback for non-auth routes | SRE Lead | SBL-009 |
 | T-07 | Client-side rendering of authenticated pages causes hydration flicker and "Flash of Unauthenticated Content". | Medium | Likely | Medium | Lighthouse, UX review | Convert layouts to Server Components; move auth check to middleware/server | Frontend Lead | SBL-089 |
@@ -43,12 +43,12 @@
 | S-02 | Refresh tokens are revoked *after* a new token is issued, allowing replay race. | High | Unlikely | High | Token-replay tests | Revoke old refresh token before issuing new; test concurrent refresh | Backend Lead | SBL-008 |
 | S-03 | Password reset token is passed raw through handler and email, increasing leak surface. | Medium | Possible | Medium | Code review; email inspection | Switch to HTTPS magic-link with short-lived signed token | Security Lead | SBL-015 |
 | S-04 | PII (emails, IPs, query params) may be written to logs or audit metadata. | High | Possible | High | Log review; compliance audit | Redact `RemoteAddr`, body, and query params in audit and log output | Security Lead | SBL-010 |
-| S-05 | No host firewall rules on the VPS allow unrestricted ingress/egress. | High | Possible | High | Infrastructure audit; pen test | Add default-deny `ufw`/`nftables` rules with allow-listed ports and egress | DevOps Lead | SBL-011 |
+| S-05 | No host firewall rules on the production VM allow unrestricted ingress/egress. | High | Possible | High | Infrastructure audit; pen test | Add default-deny firewall rules (`ufw`/`nftables`/OS equivalent, chosen once the VM's OS is decided) with allow-listed ports and egress | DevOps Lead | SBL-011 |
 | S-06 | No compiled binary scanning or SBOM generation; vulnerable dependencies can ship. | Medium | Possible | High | CI audit | Add Trivy/Grype to CI; fail builds on critical CVEs | DevOps Lead | SBL-016 |
 | S-07 | Secrets are sourced only from env vars / plain text files; no secret rotation or audit. | High | Likely | High | Security audit | Adopt a local secrets store or secrets manager; implement rotation policy | Security Lead | SBL-012, SBL-035 |
 | S-08 | No GDPR/data-erasure workflow for tenant/user deletion. | Medium | Possible | High | Compliance review | Implement tenant/user deletion API and purge jobs | Compliance Lead | SBL-082, SBL-109 |
 | S-09 | Weak password policy (min 12 only) permits common/weak passwords. | Medium | Likely | Medium | Credential-stuffing test | Add complexity + breached-password check | Security Lead | SBL-005 |
-| S-10 | No Web Application Firewall or DDoS protection at ingress. | Medium | Possible | High | Load test; pen test | Add Let's Encrypt TLS, nginx hardening, and optional CDN/WAF rules on the single Ubuntu VPS | DevOps Lead | SBL-038 |
+| S-10 | No Web Application Firewall or DDoS protection at ingress. | Medium | Possible | High | Load test; pen test | Add Let's Encrypt TLS, reverse-proxy hardening, and optional CDN/WAF rules on the single production VM | DevOps Lead | SBL-038 |
 
 ## 4. Product & Commercial Risks
 
@@ -65,16 +65,16 @@
 
 | ID | Risk | Severity | Likelihood | Impact | Detection | Mitigation | Owner Rec. | Target Resolution |
 |----|------|----------|------------|--------|-----------|------------|------------|-------------------|
-| O-01 | No production-ready single-Ubuntu-VPS systemd services/single-Ubuntu-VPS systemd; deployment is manual and non-repeatable. | Critical | High | Critical | Infra audit | Implement full modules + overlays + CI/CD | DevOps Lead | SBL-025–SBL-034 |
+| O-01 | No VM provisioning scripts or process-supervisor/reverse-proxy config exist; deployment is manual and non-repeatable (see `docs/deployment/DEPLOYMENT_GUIDE.md`, "Not yet implemented"). | Critical | High | Critical | Infra audit | Write provisioning scripts, service-supervisor units, and reverse-proxy config for the chosen VM; wire into CI/CD | DevOps Lead | SBL-025–SBL-034 |
 | O-02 | No distributed tracing or production dashboards; incident response is blind. | Critical | High | Critical | On-call drills | OpenTelemetry + Grafana + alerting | SRE Lead | SBL-044–SBL-048 |
 | O-03 | No tested backup/restore or DR runbook; data loss possible. | Critical | Possible | Critical | DR tabletop | PITR backups, restore scripts, quarterly drills | SRE Lead | SBL-036, SBL-110 |
 | O-04 | CI does not run integration tests against real Postgres/Redis; regressions slip through. | High | Likely | High | Test failures in staging | Add services job in GitHub Actions | QA Lead | SBL-039 |
-| O-05 | No binary artifact upload / deployment pipeline; releases are ad-hoc. | High | High | High | Release process audit | Build CD workflow to ECR and staging single-Ubuntu-VPS systemd | DevOps Lead | SBL-032 |
-| O-06 | No autoscaling / PDB; single-node failures take service down. | Medium | Possible | High | single-Ubuntu-VPS systemd review | Add HPA, PDB, topology spread | DevOps Lead | SBL-030, SBL-043 |
-| O-07 | `apps/worker` is not defined as a single-Ubuntu-VPS systemd deployment; background jobs do not run in cluster. | High | High | High | Missing worker manifests | Add `worker-deployment.yaml` and CI build | DevOps Lead | SBL-042 |
-| O-08 | Remote single-Ubuntu-VPS systemd services state lacks DynamoDB locking; state corruption risk. | Medium | Possible | Medium | single-Ubuntu-VPS systemd services init review | Configure S3 backend with DynamoDB lock | DevOps Lead | SBL-028 |
+| O-05 | No binary artifact upload / deployment pipeline; releases are ad-hoc (manual build-and-copy per `DEPLOYMENT_GUIDE.md`). | High | High | High | Release process audit | Build a CD workflow that builds cross-compiled binaries and ships them to the target VM | DevOps Lead | SBL-032 |
+| O-06 | Single-VM deployment (ADR-003) means a VM outage takes the whole service down; no redundancy. | Medium | Possible | High | Deployment review | Accepted tradeoff for MVP cost; document a scale-up/scale-out trigger (see `DEPLOYMENT_GUIDE.md` "Scaling Beyond One VM") for when to revisit | DevOps Lead | SBL-030, SBL-043 |
+| O-07 | The active worker (`apps/api/cmd/worker`) has no supervised-process definition for the target VM yet; it only runs via `pnpm dev` locally. | High | High | High | Missing deployment config | Add a service-supervisor unit (e.g., systemd) for the worker binary alongside the API's | DevOps Lead | SBL-042 |
+| O-08 | No deployment configuration is version-controlled; manual VM changes can drift from what's documented. | Medium | Possible | Medium | Deployment review | Commit provisioning scripts and service-supervisor/reverse-proxy config to the repo once written, so the VM state is reproducible from source | DevOps Lead | SBL-028 |
 | O-09 | No on-call rotation or incident response plan; outages extend MTTR. | Medium | Possible | High | Ops review | Define rotation, runbooks, paging | SRE Lead | SBL-055, SBL-059 |
-| O-10 | No synthetic/health probes from outside the cluster; issues detected by users. | Medium | Likely | Medium | Monitoring gaps | Add external synthetic checks | SRE Lead | SBL-053 |
+| O-10 | No synthetic/health probes from outside the VM; issues detected by users. | Medium | Likely | Medium | Monitoring gaps | Add external synthetic checks | SRE Lead | SBL-053 |
 
 ## 6. Scalability & Performance Risks
 
@@ -92,13 +92,12 @@
 
 | Risk | Severity × Likelihood | Phase / Sprint Backlog |
 |------|----------------------|------------------------|
-| T-04 Token storage in `localStorage` | **Critical × Likely** | SBL-001–SBL-003 |
 | P-01 Missing billing/entitlements | **Critical × High** | SBL-063–SBL-064 |
-| O-01 No production IaC | **Critical × High** | SBL-025–SBL-034 |
+| O-01 No VM provisioning/deployment config | **Critical × High** | SBL-025–SBL-034 |
 | O-02 No observability | **Critical × High** | SBL-044–SBL-048 |
 | T-03 O(n) run aggregate recalc | **High × Likely** | SBL-081 |
 | T-01 OpenAPI/SDK drift | **High × Likely** | SBL-060–SBL-061 |
-| S-05 No single-Ubuntu-VPS systemd host firewall rules | **High × Possible** | SBL-011 |
+| S-05 No VM host firewall rules | **High × Possible** | SBL-011 |
 | S-01 No token `jti`/deny-list | **High × Likely** | SBL-004 |
 | O-03 No tested DR | **Critical × Possible** | SBL-036, SBL-110 |
 | SP-01 Missing DB indexes | **High × Likely** | SBL-079 |

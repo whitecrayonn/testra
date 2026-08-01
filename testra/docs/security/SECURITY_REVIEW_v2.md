@@ -1,7 +1,7 @@
 # Security Review v2 — Testra Platform
 
 **Date:** 2026-07-19  
-**Scope:** Backend API (`apps/api`), web frontend (`apps/web`), systemd service unit files and nginx site configurations (`single VPS deployment runbooks`), and runtime configuration.  
+**Scope:** Backend API (`apps/api`), web frontend (`apps/web`), deployment configuration (no service unit files or reverse-proxy config exist yet — see `docs/deployment/DEPLOYMENT_GUIDE.md`), and runtime configuration.  
 **Goal:** Identify security gaps that affect authentication, authorization, session handling, injection/SSRF, secrets management, and deployment posture, then remediate the critical/high items that can be fixed safely in this pass.
 
 ## Executive Summary
@@ -19,12 +19,12 @@ This review found the platform has a solid baseline (bcrypt password hashing, pa
 | SEC-005 | `integrationhub` adapters and `notification.dispatchHTTP` made outbound HTTP calls to user-controlled URLs without SSRF protection. | **High** | New `apps/api/internal/shared/security/ssrf.go` validates URLs, blocking `localhost`, private IP ranges, link-local/multicast addresses, and internal host suffixes. Integrated into all integration adapters and notification dispatch. |
 | SEC-006 | CORS middleware did not set `Vary: Origin` and did not allow the `Idempotency-Key`, `X-API-Key`, or `X-CSRF-Token` headers for preflight. | **Medium** | `apps/api/internal/shared/server/server.go` `corsMiddleware` now sets `Vary: Origin`, `Access-Control-Max-Age`, and the additional allowed headers. |
 
-### Previously fixed (CORS in single-Ubuntu-VPS systemd services)
+### Previously fixed (CORS configuration)
 
 The P0-5 finding from the code-review pass was resolved in the prior session:
 
-- `CORS_ALLOWED_ORIGINS`, `ML_SERVICE_URL`, and `NEXT_PUBLIC_API_URL` are no longer hardcoded in `single VPS deployment runbooks/base/configmap.yaml` or `single VPS deployment runbooks/base/web.yaml`.
-- Production and staging overlays (`single VPS deployment runbooks/overlays/production/`, `single VPS deployment runbooks/overlays/staging/`) provide environment-specific values.
+- `CORS_ALLOWED_ORIGINS`, `ML_SERVICE_URL`, and `NEXT_PUBLIC_API_URL` are no longer hardcoded anywhere in the codebase; they are read from environment variables (`apps/api/internal/shared/config/config.go`), with `http://localhost:3000` as the local-dev default only.
+- Production and staging values are set per environment via each deployment's environment file — see `docs/deployment/DEPLOYMENT_GUIDE.md`. (The original finding referenced Kubernetes ConfigMap overlays; that infrastructure directory has since been deleted along with the Docker/Kubernetes/Terraform tooling per ADR-003.)
 
 ## Methodology
 
@@ -107,7 +107,7 @@ The guard is called in `integrationhub/adapters.go` (`jiraAdapter`, `githubAdapt
 **Residual Risk:** DNS rebinding can bypass hostname-based checks if the attacker controls both DNS and a TTL. For high-assurance environments, use an egress proxy or dedicated outbound network namespace and a separate URL allowlist.
 
 #### 5.2 ML Service URL (Not User-Controlled)
-`intelligence/mlclient.go` uses `ML_SERVICE_URL` from environment. This is not user-controlled, so the SSRF guard was not applied there. Ensure `ML_SERVICE_URL` is restricted to an internal service endpoint on the VPS in single-Ubuntu-VPS systemd services.
+`intelligence/mlclient.go` uses `ML_SERVICE_URL` from environment. This is not user-controlled, so the SSRF guard was not applied there. Ensure `ML_SERVICE_URL` is restricted to an internal service endpoint (e.g., `localhost` or a private network address) on the production VM, not a publicly reachable address.
 
 ### 6. CORS and Web Security
 
@@ -118,20 +118,11 @@ The guard is called in `integrationhub/adapters.go` (`jiraAdapter`, `githubAdapt
 - Allows `Authorization`, `Content-Type`, `Idempotency-Key`, `X-API-Key`, and `X-CSRF-Token` headers.
 - Sets `Access-Control-Allow-Credentials: true` and `Access-Control-Max-Age: 600`.
 
-#### 6.2 Production Origin Configuration (Fixed in single-Ubuntu-VPS systemd)
-`CORS_ALLOWED_ORIGINS` is set per overlay:
-- `single VPS deployment runbooks/overlays/production/api-config-patch.yaml`
-- `single VPS deployment runbooks/overlays/staging/api-config-patch.yaml`
+#### 6.2 Production Origin Configuration (Fixed)
+`CORS_ALLOWED_ORIGINS` is read from the environment (`apps/api/internal/shared/config/config.go`), with no hardcoded default beyond `http://localhost:3000` for local dev. Each deployment target (staging, production) sets its own value via its environment file. (The overlay-based Kubernetes ConfigMap approach originally described here no longer applies — that infrastructure was removed per ADR-003.)
 
-The base `configmap.yaml` no longer contains `CORS_ALLOWED_ORIGINS` or `ML_SERVICE_URL` defaults.
-
-#### 6.3 Frontend Token Storage (High — Open)
-`apps/web/lib/api.ts` stores the access token and refresh token in `localStorage` (`testra_token`, `testra_refresh_token`). This makes the tokens vulnerable to XSS extraction and any malicious browser extension.
-
-**Recommendation:**
-- Move authentication to `httpOnly`, `Secure`, `SameSite=Strict` cookies.
-- Add a CSRF synchronizer token or `SameSite` cookie for mutating cross-origin requests.
-- Keep the Authorization header only as a fallback for non-browser API consumers.
+#### 6.3 Frontend Token Storage (Fixed since this review)
+This finding is stale. As of the 2026-07-31 P0 verification pass (`docs/audits/P0_VERIFICATION_REPORT.md` §6), tokens are issued as `httpOnly` cookies (`apps/api/internal/shared/middleware/cookies.go`), and `apps/web/lib/api.ts` sends `credentials: "include"` rather than reading tokens from `localStorage`. `localStorage` is used only for non-secret UI state (workspace/organization/project selection).
 
 ### 7. Secrets Management
 
@@ -141,8 +132,8 @@ Both `integrationhub` and `notification` handlers now strip values for keys cont
 #### 7.2 SMTP Secret Provider (Good)
 `identity/service.go` and `notification/service.go` support a `secrets.Provider` for the SMTP password, defaulting to an environment-variable provider. `config.go` `SecretProvider()` is a thin wrapper that can be swapped for a Vault or cloud-secret-manager implementation.
 
-#### 7.3 single-Ubuntu-VPS systemd services Secret Management (Open)
-The overlay patches still hardcode plaintext `CORS_ALLOWED_ORIGINS` and `ML_SERVICE_URL` values in `ConfigMap` data. These are not secrets, but they are environment-specific. If sensitive values are added to ConfigMaps in the future, migrate them to `environment files or a local secrets store`, a local secrets store, or a local secrets store.
+#### 7.3 Deployment Secret Management (Open)
+No deployment scripts or environment-file templates exist yet (see `docs/deployment/DEPLOYMENT_GUIDE.md`). `CORS_ALLOWED_ORIGINS` and `ML_SERVICE_URL` are not secrets, but when the production environment file is created it must be readable only by the app user. If genuinely sensitive values need externalizing beyond a plain environment file, migrate them to a secrets store (e.g., Vault) via the existing `secrets.Provider` abstraction (ADR-016).
 
 ### 8. Audit and Logging
 

@@ -35,7 +35,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-	defer database.Close()
+	defer func() {
+		if err := database.Close(); err != nil {
+			log.Printf("worker: failed to close database: %v", err)
+		}
+	}()
 
 	smtpCfg := notification.SMTPConfig{
 		Host:           cfg.SMTPHost,
@@ -241,7 +245,9 @@ func (r *Runner) processOne(ctx context.Context) (bool, error) {
 	}
 	defer func() {
 		if tx != nil {
-			_ = tx.Rollback()
+			if rerr := tx.Rollback(); rerr != nil {
+				log.Printf("worker: rollback error for job %s: %v", job.ID, rerr)
+			}
 		}
 	}()
 
@@ -297,10 +303,19 @@ func (r *Runner) processJob(ctx context.Context, job *queue.Job) error {
 		if err := job.ParsePayload(&payload); err != nil {
 			return err
 		}
-		orgID, _ := uuid.Parse(payload.OrganizationID)
-		wsID, _ := uuid.Parse(payload.WorkspaceID)
-		userID, _ := uuid.Parse(payload.UserID)
-		_, err := r.notification.Service.Send(ctx, notification.SendInput{
+		orgID, err := uuid.Parse(payload.OrganizationID)
+		if err != nil {
+			return fmt.Errorf("parse notification organization_id: %w", err)
+		}
+		wsID, err := uuid.Parse(payload.WorkspaceID)
+		if err != nil {
+			return fmt.Errorf("parse notification workspace_id: %w", err)
+		}
+		userID, err := uuid.Parse(payload.UserID)
+		if err != nil {
+			return fmt.Errorf("parse notification user_id: %w", err)
+		}
+		_, err = r.notification.Service.Send(ctx, notification.SendInput{
 			OrganizationID: orgID,
 			WorkspaceID:    wsID,
 			UserID:         userID,

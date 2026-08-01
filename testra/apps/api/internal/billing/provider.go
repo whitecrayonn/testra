@@ -73,7 +73,7 @@ func (p *stripeProvider) ListInvoices(ctx context.Context, providerSubscriptionI
 	return parseStripeInvoices(respBody)
 }
 
-func (p *stripeProvider) request(ctx context.Context, method, urlStr string, body io.Reader) ([]byte, error) {
+func (p *stripeProvider) request(ctx context.Context, method, urlStr string, body io.Reader) (respBody []byte, err error) {
 	req, err := http.NewRequestWithContext(ctx, method, urlStr, body)
 	if err != nil {
 		return nil, err
@@ -86,9 +86,16 @@ func (p *stripeProvider) request(ctx context.Context, method, urlStr string, bod
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cErr := resp.Body.Close(); cErr != nil && err == nil {
+			err = cErr
+		}
+	}()
 
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read stripe response: %w", err)
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("stripe returned %d: %s", resp.StatusCode, string(respBody))
 	}

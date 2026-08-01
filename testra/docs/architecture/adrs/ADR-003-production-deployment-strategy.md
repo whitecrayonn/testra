@@ -1,7 +1,19 @@
 # ADR-003: Production Deployment Strategy
 
-**Status:** Accepted (Amended by ADR-009)
+**Status:** Accepted (Amended by ADR-009; target OS deferred, August 2026)
 **Date:** July 2026
+
+> **Amendment (August 2026) — target OS is deferred.** The decision to run on
+> plain native processes with **no Docker, Kubernetes, or Terraform** stands and
+> is unchanged. What is no longer fixed is the *operating system* of the MVP
+> machine: this ADR names "a single Ubuntu VPS", but the choice is now open and
+> will be made when the machine is actually rented.
+>
+> Nothing in the application depends on it — Go cross-compiles via `GOOS`/`GOARCH`,
+> and Next.js and PostgreSQL run on every candidate platform. Only the
+> process-supervision layer (`systemd`, Windows Services, or similar) and the
+> reverse proxy are OS-specific, and neither is built yet. Read every "Ubuntu VPS"
+> below as "a single VM". See `docs/deployment/DEPLOYMENT_GUIDE.md`.
 
 ## Context
 

@@ -2,6 +2,7 @@ package apitesting
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -341,7 +342,7 @@ func TestServiceUpdateRequest(t *testing.T) {
 }
 
 func TestServiceExecuteRequest(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users" && r.Method == "GET" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -349,12 +350,11 @@ func TestServiceExecuteRequest(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
+	})
 
 	repo := newFakeRepository()
 	svc := NewService(repo)
-	svc.SetHTTPClient(server.Client())
+	svc.SetHTTPClient(&http.Client{Transport: &handlerRoundTripper{handler: handler}})
 
 	wsID := uuid.New()
 	userID := uuid.New()
@@ -364,7 +364,7 @@ func TestServiceExecuteRequest(t *testing.T) {
 		Request: &InlineRequest{
 			Name:   "Get users",
 			Method: MethodGET,
-			URL:    server.URL + "/users",
+			URL:    "http://8.8.8.8/users",
 			Headers: []KeyValuePair{
 				{Key: "Accept", Value: "application/json", Enabled: true},
 			},
@@ -406,19 +406,18 @@ func TestServiceVariableSubstitution(t *testing.T) {
 }
 
 func TestServiceExecuteWithEnvironment(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users" && r.Header.Get("Authorization") == "Bearer token123" {
 			w.WriteHeader(http.StatusOK)
 			_, _ = fmt.Fprint(w, `{"ok":true}`)
 			return
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
+	})
 
 	repo := newFakeRepository()
 	svc := NewService(repo)
-	svc.SetHTTPClient(server.Client())
+	svc.SetHTTPClient(&http.Client{Transport: &handlerRoundTripper{handler: handler}})
 
 	wsID := uuid.New()
 	userID := uuid.New()
@@ -429,7 +428,7 @@ func TestServiceExecuteWithEnvironment(t *testing.T) {
 		Name:        "Prod",
 		Variables: []KeyValuePair{
 			{Key: "token", Value: "token123", Enabled: true},
-			{Key: "baseUrl", Value: server.URL, Enabled: true},
+			{Key: "baseUrl", Value: "http://8.8.8.8", Enabled: true},
 		},
 	}
 
@@ -453,5 +452,53 @@ func TestServiceExecuteWithEnvironment(t *testing.T) {
 	}
 	if result.Status != http.StatusOK {
 		t.Errorf("expected status 200, got %d: %s", result.Status, result.Error)
+	}
+}
+
+// handlerRoundTripper is an http.RoundTripper that serves the given handler
+// without making an actual network call. It lets tests use a public-looking URL
+// that passes SSRF validation while keeping traffic local.
+type handlerRoundTripper struct {
+	handler http.Handler
+}
+
+func (h *handlerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	rec := httptest.NewRecorder()
+	h.handler.ServeHTTP(rec, req)
+	return rec.Result(), nil
+}
+
+// failIfUsed is an http.RoundTripper that fails the test if the HTTP client is
+// invoked. It is used to prove that SSRF-protected URLs are rejected before any
+// network call is attempted.
+type failIfUsed struct{ t *testing.T }
+
+func (f *failIfUsed) RoundTrip(*http.Request) (*http.Response, error) {
+	f.t.Fatalf("HTTP client should not have been invoked for a blocked URL")
+	return nil, nil
+}
+
+func TestServiceExecuteRequestRejectsSSRF(t *testing.T) {
+	svc := NewService(newFakeRepository())
+	svc.SetHTTPClient(&http.Client{Transport: &failIfUsed{t: t}})
+
+	wsID := uuid.New()
+	userID := uuid.New()
+
+	_, _, err := svc.Execute(context.Background(), ExecuteInput{
+		WorkspaceID: wsID,
+		Request: &InlineRequest{
+			Name:   "SSRF metadata probe",
+			Method: MethodGET,
+			URL:    "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+		},
+		Save:      true,
+		CreatedBy: userID,
+	})
+	if err == nil {
+		t.Fatal("expected error for SSRF target, got nil")
+	}
+	if !errors.Is(err, sharederrors.ErrInvalidInput) {
+		t.Fatalf("expected ErrInvalidInput, got %v", err)
 	}
 }

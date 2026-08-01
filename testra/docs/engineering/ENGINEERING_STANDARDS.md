@@ -165,7 +165,7 @@ Each domain module in `internal/<domain>/` contains:
 - **SQL injection prevention** — parameterized queries only, no string concat
 - **Rate limiting:** Redis token buckets; login 10/IP/15 minutes and 5/account/15 minutes, registration 5/IP/hour, password reset 5/account/hour, API keys 120 requests/minute by default.
 - **CORS** — restrict origins per environment
-- **TLS:** Let's Encrypt (certbot) on Nginx for the single Ubuntu VPS; a CDN/WAF may be added later if justified.
+- **TLS:** Let's Encrypt (certbot) on the reverse proxy for the single rented VM (target OS not yet decided); a CDN/WAF may be added later if justified.
 
 ---
 
@@ -174,7 +174,7 @@ Each domain module in `internal/<domain>/` contains:
 ### 6.1 Deployment Roadmap
 
 - **Local:** Native development with locally installed PostgreSQL, Redis, Mailpit, and MinIO (no Docker, see ADR-009).
-- **MVP:** Single Ubuntu VPS with systemd + Nginx, running Go API, Go worker, Next.js, and Python ML as systemd services. PostgreSQL and Redis on the same VPS; MinIO optional. Cloud-managed services are a future evolution path only after measured scale (see ADR-003, ADR-009).
+- **MVP:** Single rented VM (target OS not yet decided) with a process supervisor + reverse proxy, running Go API, Go worker, Next.js, and Python ML as supervised processes. PostgreSQL and Redis on the same VM; MinIO optional. Cloud-managed services are a future evolution path only after measured scale (see ADR-003, ADR-009).
 - **Beta:** Single VPS or small VPS fleet, with backups, replication, and monitoring.
 - **Enterprise:** Managed platform or dedicated capacity only after measured need.
 

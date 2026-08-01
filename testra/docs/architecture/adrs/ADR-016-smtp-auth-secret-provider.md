@@ -12,7 +12,7 @@ The notification and identity services sent email through `smtp.SendMail` with a
 
 1. Introduce a minimal `secrets.Provider` interface in `apps/api/internal/shared/secrets`.
    - The first implementation is `EnvProvider`, which reads values from environment variables.
-   - The interface can be replaced with a Vault, environment files or a local secrets store, or single-Ubuntu-VPS systemd services secrets backend without touching service code.
+   - The interface can be replaced with a Vault, environment files, or a local secrets store without touching service code.
 2. Extend `SMTPConfig` with:
    - `Username` — the SMTP account name.
    - `SecretProvider` — a `secrets.Provider` used to resolve the password.
@@ -26,7 +26,7 @@ The notification and identity services sent email through `smtp.SendMail` with a
 
 ## Consequences
 
-- SMTP credentials can now be rotated externally (e.g., via a secret manager or single-Ubuntu-VPS systemd services secret mounted as an env var) without code changes.
+- SMTP credentials can now be rotated externally (e.g., via a secret manager or an environment file supplied by the process supervisor) without code changes.
 - `smtp.SendMail` is invoked with an authenticated `PlainAuth` when configured, preventing open-relay misconfigurations.
 - The API, worker, and identity services share a single `SecretProvider` abstraction for future credential management.
 - Passwords are no longer required to live in the config struct when `SecretProvider` is used.

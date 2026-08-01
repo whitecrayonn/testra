@@ -22,7 +22,7 @@ Observe availability, latency, correctness, tenant isolation, queue health, stor
 - **Traces:** HTTP-to-use-case-to-database/queue/external dependency spans with secret-free attributes.
 - **Dashboards:** API health, dependency health, ingestion, authentication/security, and business availability.
 
-The required observability stack is OpenTelemetry, Prometheus, Grafana, Loki, and structured Go logging. MVP runs self-hosted services on the single Ubuntu VPS (or the simplest low-operations equivalent) where practical; Beta and Enterprise add centralized retention and redundancy controls.
+The required observability stack is OpenTelemetry, Prometheus, Grafana, Loki, and structured Go logging. MVP runs self-hosted services on the same rented VM (target OS not yet decided; or the simplest low-operations equivalent) where practical; Beta and Enterprise add centralized retention and redundancy controls.
 
 ## Logging Rules
 

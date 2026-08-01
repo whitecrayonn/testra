@@ -13,6 +13,25 @@ jobs:
   go:
     name: Go (api)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: testra
+          POSTGRES_PASSWORD: testra
+          POSTGRES_DB: testra
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testra"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Consumed by the migrator and by database-backed tests. Without this the
+      # queue/db integration tests silently skip (see internal/queue/queue_test.go).
+      DATABASE_URL: postgres://testra:testra@localhost:5432/testra?sslmode=disable
+      TEST_DATABASE_URL: postgres://testra:testra@localhost:5432/testra?sslmode=disable
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +46,10 @@ jobs:
 
       - name: Vet
         run: go vet ./apps/api/...
+        working-directory: .
+
+      - name: Migrate
+        run: go run ./apps/api/cmd/migrator
         working-directory: .
 
       - name: Test
