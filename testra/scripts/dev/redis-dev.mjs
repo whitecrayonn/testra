@@ -190,10 +190,14 @@ async function main() {
   const serverPath = findRedisServer();
   const cliPath = findRedisCli();
   if (!serverPath) {
-    console.error(
-      "[redis-dev] redis-server not found. Install Redis or set REDIS_SERVER_PATH.",
-    );
-    process.exit(1);
+    // Redis is optional for local development: the API falls back to an
+    // in-memory rate limiter. Exiting non-zero here would take down the whole
+    // `pnpm dev` session over a dependency that is not required to run Testra.
+    console.warn("[redis-dev] redis-server not found — continuing without Redis.");
+    console.warn("[redis-dev] The API will use its in-memory rate limiter instead.");
+    console.warn("[redis-dev] To enable Redis, install it or set REDIS_SERVER_PATH.");
+    await new Promise(() => {});
+    return;
   }
 
   const portFree = await ensurePortFree(cliPath);
