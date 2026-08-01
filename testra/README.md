@@ -59,22 +59,23 @@ pnpm dev          # starts everything
 
 That's it. `pnpm dev` will:
 
-1. Check that local services (PostgreSQL, Redis) are reachable
+1. Check that PostgreSQL is reachable
 2. Run database migrations automatically
-3. Launch all four applications simultaneously via Turborepo:
+3. Launch all applications and Redis simultaneously via Turborepo:
+   - **Redis** — started automatically by `@testra/redis-dev`
    - **Go API** — `go run ./cmd/api` (or `air` for hot reload if installed)
    - **Next.js Web** — `next dev`
    - **Go Worker** — `go run ./cmd/worker` (or `air` for hot reload if installed)
    - **Python ML** — `uvicorn api.main:app --reload`
 
-Database services (PostgreSQL, Redis, Mailpit, MinIO) must be installed and running locally before starting development. See the installation guides below.
+PostgreSQL, Mailpit, and MinIO must be installed and running locally before starting development. Redis must be installed, but `pnpm dev` now starts and stops the `redis-server` automatically, so no separate terminal is needed. See the installation guides below.
 
 ### Installing Local Services
 
 #### Windows
 
 - **PostgreSQL:** Download from [postgresql.org](https://www.postgresql.org/download/windows/) or use `choco install postgresql16`
-- **Redis:** Use [Memurai](https://www.memurai.com/) or WSL2 Redis
+- **Redis:** Install `redis-server.exe` and `redis-cli.exe` on your PATH or in `C:\Program Files\Redis`. `pnpm dev` starts and stops the dev Redis automatically.
 - **Mailpit:** Download binary from [mailpit releases](https://github.com/axllent/mailpit/releases)
 - **MinIO:** Download binary from [min.io/download](https://min.io/download)
 
