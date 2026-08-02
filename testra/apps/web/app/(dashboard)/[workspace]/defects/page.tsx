@@ -2,30 +2,31 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Bug, Plus, ChevronRight, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Bug, Plus, ChevronRight, FolderKanban } from "lucide-react";
+import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
 import { listDefects, createDefect } from "@/features/defects/api";
 import type { Defect, PaginationMeta } from "@/types/defects";
 
-const statusVariants: Record<string, "neutral" | "info" | "success" | "danger" | "warning"> = {
+const STATUS_TONE: Record<string, StatusTone> = {
   open: "info",
-  in_progress: "warning",
-  resolved: "success",
+  in_progress: "warn",
+  resolved: "pass",
   closed: "neutral",
-  rejected: "danger",
+  rejected: "fail",
 };
 
-const severityVariants: Record<string, "default" | "info" | "warning" | "danger"> = {
-  low: "default",
+const SEVERITY_TONE: Record<string, StatusTone> = {
+  low: "neutral",
   medium: "info",
-  high: "warning",
-  critical: "danger",
+  high: "warn",
+  critical: "fail",
+};
+
+const SEVERITY_ACCENT: Record<string, string> = {
+  low: "bg-hair-hi",
+  medium: "bg-info",
+  high: "bg-warn",
+  critical: "bg-fail",
 };
 
 export default function DefectsPage() {
@@ -42,9 +43,7 @@ export default function DefectsPage() {
   const [priority, setPriority] = useState<Defect["priority"]>("medium");
 
   const projectId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("testra_project_id") || ""
-      : "";
+    typeof window !== "undefined" ? localStorage.getItem("testra_project_id") || "" : "";
 
   const fetchDefects = useCallback(
     async (reset?: boolean) => {
@@ -116,137 +115,231 @@ export default function DefectsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Defects"
-        description="Track bugs and link failures to test runs."
-        actions={
-          <Button onClick={() => setShowCreate((s) => !s)}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            {showCreate ? "Cancel" : "New Defect"}
-          </Button>
-        }
-      />
+    <div className="flex flex-col gap-3.5">
+      <div className="flex animate-rise-sm items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[27px] font-bold tracking-tight text-fg">Defects</h1>
+          <p className="mt-1.5 text-[13px] text-fg2">Track bugs and link failures to test runs.</p>
+        </div>
+        <button
+          onClick={() => setShowCreate((s) => !s)}
+          className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          {showCreate ? "Cancel" : "New Defect"}
+        </button>
+      </div>
 
       {error && (
-        <div role="alert">
-          <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </Card>
+        <div role="alert" className="rounded-[16px] border border-fail-soft bg-fail-soft p-4 text-[13px] text-fail">
+          {error}
         </div>
       )}
 
       {showCreate && (
-        <Card className="p-6">
-          <form onSubmit={handleCreate} className="space-y-4">
-            <Input
-              label="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Login button unresponsive"
-              required
-            />
-            <Input
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Steps to reproduce..."
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Severity</span>
-                <select
-                  value={severity}
-                  onChange={(e) => setSeverity(e.target.value as Defect["severity"])}
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Priority</span>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as Defect["priority"])}
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" loading={creating}>
-                Create defect
-              </Button>
-              <Button variant="secondary" onClick={() => setShowCreate(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <form
+          onSubmit={handleCreate}
+          className="flex animate-pop flex-col gap-4 rounded-[20px] border border-hair bg-panel p-5 shadow-glass"
+        >
+          <TextField label="Title" value={title} onChange={setTitle} placeholder="e.g. Login button unresponsive" required />
+          <TextField label="Description" value={description} onChange={setDescription} placeholder="Steps to reproduce..." />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField label="Severity" value={severity} onChange={(v) => setSeverity(v as Defect["severity"])}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </SelectField>
+            <SelectField label="Priority" value={priority} onChange={(v) => setPriority(v as Defect["priority"])}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </SelectField>
+          </div>
+          <div className="flex gap-2.5">
+            <button
+              type="submit"
+              disabled={creating}
+              className="flex h-9 items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[12.5px] font-bold text-white disabled:pointer-events-none disabled:opacity-60"
+            >
+              {creating ? "Creating…" : "Create defect"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreate(false)}
+              className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       )}
 
-      {!projectId ? (
-        <EmptyState
-          icon={Filter}
-          title="No project selected"
-          description="Select a project from the Projects page to view and create defects."
-          action={{ label: "Go to Projects", href: "/dashboard/projects" }}
-        />
-      ) : loading && defects.length === 0 ? (
-        <CardSkeleton count={3} />
-      ) : defects.length === 0 ? (
-        <EmptyState
-          icon={Bug}
-          title="No defects yet"
-          description="Create your first defect to track a bug or failed test."
-          action={{ label: "Create first defect", onClick: () => setShowCreate(true) }}
-        />
-      ) : (
-        <div className="space-y-3">
-          {defects.map((defect) => (
-            <Link key={defect.id} href={`/dashboard/defects/${defect.id}`} className="group block">
-              <Card className="p-4 transition-shadow group-hover:shadow-md">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="font-medium text-slate-900">{defect.title}</h3>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <Badge variant={statusVariants[defect.status] || "neutral"}>
-                        {defect.status.replace("_", " ")}
-                      </Badge>
-                      <Badge variant={severityVariants[defect.severity] || "default"}>
-                        {defect.severity}
-                      </Badge>
-                      <Badge variant="neutral">{defect.priority}</Badge>
-                    </div>
+      <div className="flex flex-col gap-2">
+        {!projectId ? (
+          <EmptyPanel
+            icon={FolderKanban}
+            title="No project selected"
+            description="Select a project from the Projects page to view and create defects."
+            actionLabel="Go to Projects"
+            actionHref="/dashboard/projects"
+          />
+        ) : loading && defects.length === 0 ? (
+          <ListSkeleton count={3} />
+        ) : defects.length === 0 ? (
+          <EmptyPanel
+            icon={Bug}
+            title="No defects yet"
+            description="Create your first defect to track a bug or failed test."
+            actionLabel="Create first defect"
+            onAction={() => setShowCreate(true)}
+          />
+        ) : (
+          <>
+            {defects.map((defect, i) => (
+              <Link
+                key={defect.id}
+                href={`/dashboard/defects/${defect.id}`}
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="group relative flex animate-rise-sm items-center gap-3.5 overflow-hidden rounded-[17px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi"
+              >
+                <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r-[3px] ${SEVERITY_ACCENT[defect.severity] ?? "bg-hair-hi"}`} />
+                <div className="min-w-0 flex-1 pl-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[14px] font-semibold text-fg">{defect.title}</span>
+                    <StatusPill tone={STATUS_TONE[defect.status] ?? "neutral"}>{defect.status.replace("_", " ")}</StatusPill>
+                    <StatusPill tone={SEVERITY_TONE[defect.severity] ?? "neutral"}>{defect.severity}</StatusPill>
+                    <StatusPill tone="neutral">{defect.priority}</StatusPill>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500">
-                      {new Date(defect.updated_at).toLocaleString()}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                  <div className="mt-1.5 font-mono text-[11px] text-fg3">
+                    {new Date(defect.updated_at).toLocaleString()}
                   </div>
                 </div>
-              </Card>
-            </Link>
-          ))}
+                <ChevronRight className="h-4 w-4 flex-none text-fg3" aria-hidden="true" />
+              </Link>
+            ))}
+            {meta?.has_more && (
+              <div className="pt-3.5 text-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg2 transition-colors hover:bg-panel-hi disabled:opacity-50"
+                >
+                  {loading ? "Loading…" : "Load More"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          {meta?.has_more && (
-            <div className="flex justify-center pt-4">
-              <Button variant="secondary" onClick={loadMore} loading={loading}>
-                Load More
-              </Button>
-            </div>
-          )}
-        </div>
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const id = label.toLowerCase().replace(/\s+/g, "-");
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12.5px] font-medium text-fg2">
+        {label}
+      </label>
+      <input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg placeholder-fg3 outline-none transition-colors focus:border-hair-hi"
+      />
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[12.5px] font-medium text-fg2">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg outline-none transition-colors focus:border-hair-hi"
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function EmptyPanel({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  actionHref,
+  onAction,
+}: {
+  icon: typeof Bug;
+  title: string;
+  description: string;
+  actionLabel: string;
+  actionHref?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+      <div className="mb-1.5 flex h-[62px] w-[62px] animate-float-y items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+        <Icon className="h-6 w-6" aria-hidden="true" />
+      </div>
+      <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">{title}</h3>
+      <p className="m-0 max-w-sm text-[13px] text-fg2">{description}</p>
+      {actionHref ? (
+        <Link
+          href={actionHref}
+          className="mt-3.5 flex h-[38px] items-center rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+        >
+          {actionLabel}
+        </Link>
+      ) : (
+        <button
+          onClick={onAction}
+          className="mt-3.5 flex h-[38px] items-center rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+        >
+          {actionLabel}
+        </button>
       )}
     </div>
   );
 }
 
+function ListSkeleton({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-[86px] animate-pulse rounded-[17px] border border-hair bg-panel" />
+      ))}
+    </div>
+  );
+}

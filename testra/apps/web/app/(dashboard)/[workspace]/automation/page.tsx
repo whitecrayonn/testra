@@ -4,12 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Plus, ChevronRight, Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
+import { StatusPill } from "@/components/ui/status-pill";
 import { listAutomationProjects, createAutomationProject } from "@/features/automationhub/api";
 import { listProjects } from "@/features/platform/api";
 import type { AutomationProject, PaginationMeta } from "@/types/automationhub";
@@ -21,8 +16,7 @@ export default function AutomationProjectsPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const id =
-      (params.workspace as string) || localStorage.getItem("testra_workspace_id") || "";
+    const id = (params.workspace as string) || localStorage.getItem("testra_workspace_id") || "";
     if (id) {
       setWorkspaceId(id);
       localStorage.setItem("testra_workspace_id", id);
@@ -119,126 +113,165 @@ export default function AutomationProjectsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Automation Hub"
-        description="Manage automated test projects and report imports."
-        actions={
-          <Button onClick={() => setShowForm((v) => !v)}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            {showForm ? "Cancel" : "New Project"}
-          </Button>
-        }
-      />
-
-      {showForm && (
-        <Card className="p-4">
-          <h3 className="mb-4 text-sm font-medium text-slate-900">Create automation project</h3>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <Input
-              placeholder="Project name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <select
-              className="w-full rounded-md border border-slate-300 p-2 text-sm"
-              value={framework}
-              onChange={(e) => setFramework(e.target.value)}
-            >
-              <option value="junit">JUnit XML</option>
-              <option value="pytest-junit">Pytest JUnit XML</option>
-              <option value="playwright">Playwright</option>
-              <option value="cypress">Cypress</option>
-              <option value="newman">Newman</option>
-              <option value="robot">Robot Framework</option>
-            </select>
-            <select
-              className="w-full rounded-md border border-slate-300 p-2 text-sm"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-            >
-              <option value="">Link to project (optional)</option>
-              {platformProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <Input placeholder="Repository URL" value={repo} onChange={(e) => setRepo(e.target.value)} />
-            <Input placeholder="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
-            <Input
-              placeholder="Command (e.g. npx playwright test)"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={creating}>
-                Create
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
+    <div className="flex flex-col gap-3.5">
+      <div className="flex animate-rise-sm items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[27px] font-bold tracking-tight text-fg">Automation Hub</h1>
+          <p className="mt-1.5 text-[13px] text-fg2">Manage automated test projects and report imports.</p>
+        </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          {showForm ? "Cancel" : "New Project"}
+        </button>
+      </div>
 
       {error && (
-        <div role="alert">
-          <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</Card>
+        <div role="alert" className="rounded-[16px] border border-fail-soft bg-fail-soft p-4 text-[13px] text-fail">
+          {error}
         </div>
       )}
 
-      {!workspaceId ? (
-        <EmptyState
-          icon={Bot}
-          title="No workspace selected"
-          description="Select a workspace to manage automation projects."
-        />
-      ) : loading && projects.length === 0 ? (
-        <CardSkeleton count={3} />
-      ) : projects.length === 0 ? (
-        <EmptyState
-          icon={Bot}
-          title="No automation projects yet"
-          description="Create a project to start importing test reports."
-        />
-      ) : (
-        <div className="space-y-3">
-          {projects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/dashboard/automation/${project.id}`}
-              className="group block"
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="flex animate-pop flex-col gap-4 rounded-[20px] border border-hair bg-panel p-5 shadow-glass"
+        >
+          <h3 className="m-0 text-[13px] font-semibold text-fg">Create automation project</h3>
+          <input
+            placeholder="Project name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg placeholder-fg3 outline-none transition-colors focus:border-hair-hi"
+          />
+          <select
+            value={framework}
+            onChange={(e) => setFramework(e.target.value)}
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg outline-none transition-colors focus:border-hair-hi"
+          >
+            <option value="junit">JUnit XML</option>
+            <option value="pytest-junit">Pytest JUnit XML</option>
+            <option value="playwright">Playwright</option>
+            <option value="cypress">Cypress</option>
+            <option value="newman">Newman</option>
+            <option value="robot">Robot Framework</option>
+          </select>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg outline-none transition-colors focus:border-hair-hi"
+          >
+            <option value="">Link to project (optional)</option>
+            {platformProjects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="Repository URL"
+            value={repo}
+            onChange={(e) => setRepo(e.target.value)}
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg placeholder-fg3 outline-none transition-colors focus:border-hair-hi"
+          />
+          <input
+            placeholder="Branch"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg placeholder-fg3 outline-none transition-colors focus:border-hair-hi"
+          />
+          <input
+            placeholder="Command (e.g. npx playwright test)"
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            className="h-10 rounded-xl border border-hair bg-panel-hi px-3 text-[13px] text-fg placeholder-fg3 outline-none transition-colors focus:border-hair-hi"
+          />
+          <div className="flex justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg transition-colors hover:bg-panel-hi"
             >
-              <Card className="p-4 transition-shadow group-hover:shadow-md">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="font-medium text-slate-900">{project.name}</h3>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <span className="rounded bg-slate-100 px-2 py-0.5">{project.framework}</span>
-                      {project.repository_url && (
-                        <span className="truncate max-w-xs">{project.repository_url}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-          {meta?.has_more && (
-            <div className="flex justify-center pt-4">
-              <Button variant="secondary" onClick={loadMore} loading={loading}>
-                Load More
-              </Button>
-            </div>
-          )}
-        </div>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={creating}
+              className="flex h-9 items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[12.5px] font-bold text-white disabled:pointer-events-none disabled:opacity-60"
+            >
+              {creating ? "Creating…" : "Create"}
+            </button>
+          </div>
+        </form>
       )}
+
+      <div className="flex flex-col gap-2">
+        {!workspaceId ? (
+          <EmptyPanel icon={Bot} title="No workspace selected" description="Select a workspace to manage automation projects." />
+        ) : loading && projects.length === 0 ? (
+          <ListSkeleton count={3} />
+        ) : projects.length === 0 ? (
+          <EmptyPanel icon={Bot} title="No automation projects yet" description="Create a project to start importing test reports." />
+        ) : (
+          <>
+            {projects.map((project, i) => (
+              <Link
+                key={project.id}
+                href={`/dashboard/automation/${project.id}`}
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="group relative flex animate-rise-sm items-center gap-3.5 overflow-hidden rounded-[17px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[14px] font-semibold text-fg">{project.name}</span>
+                    <StatusPill tone="info">{project.framework}</StatusPill>
+                  </div>
+                  {project.repository_url && (
+                    <p className="mt-1 truncate font-mono text-[11px] text-fg3">{project.repository_url}</p>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 flex-none text-fg3" aria-hidden="true" />
+              </Link>
+            ))}
+            {meta?.has_more && (
+              <div className="pt-3.5 text-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg2 transition-colors hover:bg-panel-hi disabled:opacity-50"
+                >
+                  {loading ? "Loading…" : "Load More"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyPanel({ icon: Icon, title, description }: { icon: typeof Bot; title: string; description: string }) {
+  return (
+    <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+      <div className="mb-1.5 flex h-[62px] w-[62px] animate-float-y items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+        <Icon className="h-6 w-6" aria-hidden="true" />
+      </div>
+      <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">{title}</h3>
+      <p className="m-0 max-w-sm text-[13px] text-fg2">{description}</p>
+    </div>
+  );
+}
+
+function ListSkeleton({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-[86px] animate-pulse rounded-[17px] border border-hair bg-panel" />
+      ))}
     </div>
   );
 }
