@@ -212,7 +212,7 @@ export function DashboardAnalytics({
                   <span className="text-[11px] capitalize text-fg3">{a.type}</span>
                 </div>
               ))}
-              {(activity ?? []).length === 0 && <p className="text-sm text-slate-500">No recent activity.</p>}
+              {(activity ?? []).length === 0 && <p className="text-[12.5px] text-fg3">No recent activity.</p>}
             </div>
           </div>
         </ChartCard>
