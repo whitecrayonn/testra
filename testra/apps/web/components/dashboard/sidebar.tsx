@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { getUnreadCount } from "@/features/notifications/api";
+import { useWorkspace } from "@/lib/hooks/use-workspace";
+import { useUnreadCount } from "@/features/notifications/hooks/use-unread-count";
 import { logout } from "@/lib/api";
 import {
   LayoutDashboard,
+  Activity,
   FolderKanban,
   TestTube,
   PlayCircle,
@@ -20,25 +20,72 @@ import {
   LogOut,
   Globe,
   Bot,
+  Moon,
+  Sun,
+  ChevronsUpDown,
 } from "lucide-react";
+import { useTheme } from "@/components/providers/theme-provider";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
-  { href: "/dashboard/test-cases", label: "Test Cases", icon: TestTube },
-  { href: "/dashboard/test-runs", label: "Runs", icon: PlayCircle },
-  { href: "/dashboard/defects", label: "Defects", icon: Bug },
-  { href: "/dashboard/api-tests", label: "API Tests", icon: Globe },
-  { href: "/dashboard/automation", label: "Automation", icon: Bot },
-  { href: "/dashboard/flaky-tests", label: "Flaky tests", icon: Brain },
-  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+type NavEntry =
+  | { kind: "label"; key: string; label: string }
+  | { kind: "item"; key: string; href: string; label: string; icon: typeof LayoutDashboard; badgeCount?: number };
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { workspace, user } = useWorkspace();
+  const { theme, setTheme } = useTheme();
+  const unreadCount = useUnreadCount();
+
+  const nav: NavEntry[] = [
+    { kind: "label", key: "l-workspace", label: "WORKSPACE" },
+    { kind: "item", key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { kind: "item", key: "analytics", href: "/dashboard/executive", label: "Analytics", icon: Activity },
+    { kind: "item", key: "projects", href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
+    { kind: "label", key: "l-quality", label: "QUALITY" },
+    { kind: "item", key: "test-cases", href: "/dashboard/test-cases", label: "Test Cases", icon: TestTube },
+    { kind: "item", key: "test-runs", href: "/dashboard/test-runs", label: "Runs", icon: PlayCircle },
+    { kind: "item", key: "defects", href: "/dashboard/defects", label: "Defects", icon: Bug },
+    { kind: "item", key: "api-tests", href: "/dashboard/api-tests", label: "API Tests", icon: Globe },
+    { kind: "item", key: "automation", href: "/dashboard/automation", label: "Automation", icon: Bot },
+    { kind: "item", key: "flaky-tests", href: "/dashboard/flaky-tests", label: "Flaky tests", icon: Brain },
+    { kind: "label", key: "l-system", label: "SYSTEM" },
+    {
+      kind: "item",
+      key: "notifications",
+      href: "/dashboard/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badgeCount: unreadCount,
+    },
+    { kind: "item", key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
+  ];
+
+  function isActive(href: string) {
+    return (
+      pathname === href ||
+      pathname.startsWith(href + "/") ||
+      (href === "/dashboard/settings" && pathname.startsWith("/dashboard/settings"))
+    );
+  }
+
+  const itemRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
+  const navRef = useRef<HTMLElement>(null);
+  const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const activeEntry = nav.find((n) => n.kind === "item" && isActive(n.href)) as
+      | Extract<NavEntry, { kind: "item" }>
+      | undefined;
+    if (!activeEntry || !navRef.current) {
+      setIndicator(null);
+      return;
+    }
+    const el = itemRefs.current.get(activeEntry.key);
+    if (!el) return;
+    setIndicator({ top: el.offsetTop, height: el.offsetHeight });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   async function signOut() {
     try {
@@ -49,66 +96,124 @@ export function Sidebar() {
     router.replace("/login");
   }
 
-  useEffect(() => {
-    async function poll() {
-      try {
-        const { unread_count } = await getUnreadCount();
-        setUnreadCount(unread_count);
-      } catch {
-        setUnreadCount(0);
-      }
-    }
-    poll();
-    const id = setInterval(poll, 30000);
-    return () => clearInterval(id);
-  }, []);
-
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-slate-200 bg-white">
-      <div className="flex h-14 items-center border-b border-slate-200 px-4">
-        <Link href="/dashboard" className="text-lg font-bold text-brand-600">
-          Testra
-        </Link>
+    <aside className="flex w-[252px] flex-shrink-0 animate-rise flex-col rounded-[22px] border border-hair bg-glass p-3.5 pt-4.5 shadow-glass backdrop-blur-[26px] backdrop-saturate-150">
+      <div className="mb-4 flex items-center gap-2.5 px-1.5">
+        <div className="flex h-[34px] w-[34px] flex-none items-end justify-center gap-[3px] rounded-[11px] bg-gradient-to-br from-acc to-acc2 pb-2 shadow-[0_6px_18px_-6px_var(--ring)]">
+          <span className="h-2 w-[3px] rounded-sm bg-white/95" />
+          <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
+          <span className="h-[11px] w-[3px] rounded-sm bg-white/95" />
+        </div>
+        <div className="flex flex-col gap-px">
+          <span className="text-[15px] font-bold tracking-[0.14em] text-fg">TESTRA</span>
+          <span className="font-mono text-[9px] tracking-[0.1em] text-fg3">EVERY TEST · v1.4</span>
+        </div>
       </div>
-      <nav className="flex-1 space-y-1 px-2 py-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active =
-            pathname === item.href ||
-            pathname.startsWith(item.href + "/") ||
-            (item.href === "/dashboard/settings" && pathname.startsWith("/dashboard/settings"));
+
+      <button className="mb-4 flex w-full items-center gap-2.5 rounded-[13px] border border-hair bg-panel px-2.5 py-2 text-left transition-colors hover:border-hair-hi hover:bg-panel-hi">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-acc-soft text-[11px] font-bold text-acc">
+          {(workspace?.name ?? "TC").slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12.5px] font-semibold leading-tight text-fg">
+            {workspace?.name ?? "Select workspace"}
+          </div>
+          <div className="truncate text-[10.5px] leading-tight text-fg3">Workspace</div>
+        </div>
+        <ChevronsUpDown className="h-3.5 w-3.5 flex-none text-fg3" aria-hidden="true" />
+      </button>
+
+      <nav ref={navRef} className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        {indicator && (
+          <>
+            <div
+              className="pointer-events-none absolute left-0 right-0 h-[38px] rounded-xl border border-hair-hi bg-acc-soft transition-transform duration-[420ms] ease-[cubic-bezier(.34,1.32,.36,1)]"
+              style={{ transform: `translateY(${indicator.top}px)` }}
+            />
+            <div
+              className="pointer-events-none absolute left-0 h-4 w-[3px] rounded-[3px] bg-acc shadow-[0_0_12px_var(--acc)] transition-transform duration-[420ms] ease-[cubic-bezier(.34,1.32,.36,1)]"
+              style={{ transform: `translateY(${indicator.top + (indicator.height - 16) / 2}px)` }}
+            />
+          </>
+        )}
+
+        {nav.map((entry) => {
+          if (entry.kind === "label") {
+            return (
+              <div
+                key={entry.key}
+                className="px-2.5 pb-1.5 pt-3.5 font-mono text-[9px] tracking-[0.16em] text-fg3"
+              >
+                {entry.label}
+              </div>
+            );
+          }
+          const Icon = entry.icon;
+          const active = isActive(entry.href);
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-              )}
+              key={entry.key}
+              href={entry.href}
+              ref={(el) => {
+                if (el) itemRefs.current.set(entry.key, el);
+                else itemRefs.current.delete(entry.key);
+              }}
               aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative mb-1 flex h-[38px] items-center gap-2.5 rounded-xl px-2.5 text-[13px] font-medium transition-colors hover:bg-panel",
+                active ? "text-fg" : "text-fg2",
+              )}
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {item.label}
-              {item.href === "/dashboard/notifications" && unreadCount > 0 && (
-                <Badge variant="danger" className="ml-auto px-1.5 py-0.5 text-[10px]">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </Badge>
+              <Icon className="h-[15px] w-[15px] flex-none" aria-hidden="true" />
+              <span className="flex-1">{entry.label}</span>
+              {!!entry.badgeCount && entry.badgeCount > 0 && (
+                <span className="rounded-full bg-fail-soft px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-fail">
+                  {entry.badgeCount > 99 ? "99+" : entry.badgeCount}
+                </span>
               )}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-slate-200 p-2">
-        <Button
-          variant="ghost"
-          onClick={signOut}
-          className="flex w-full items-center justify-start gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+
+      <div className="mt-3 flex gap-1 rounded-[13px] border border-hair bg-panel p-1">
+        <button
+          onClick={() => setTheme("dark")}
+          className={cn(
+            "flex h-[30px] flex-1 items-center justify-center gap-1.5 rounded-[10px] text-[11.5px] font-semibold transition-colors",
+            theme === "dark" ? "bg-acc text-white" : "text-fg2",
+          )}
         >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Button>
+          <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+          Dark
+        </button>
+        <button
+          onClick={() => setTheme("light")}
+          className={cn(
+            "flex h-[30px] flex-1 items-center justify-center gap-1.5 rounded-[10px] text-[11.5px] font-semibold transition-colors",
+            theme === "light" ? "bg-acc text-white" : "text-fg2",
+          )}
+        >
+          <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+          Light
+        </button>
+      </div>
+
+      <div className="mt-2.5 flex items-center gap-2.5 border-t border-hair pt-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-gradient-to-br from-acc2 to-acc text-[11px] font-bold text-[#08111a]">
+          {(user?.name ?? user?.email ?? "U").slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold text-fg">{user?.name ?? "Account"}</div>
+          <div className="truncate text-[10px] text-fg3">{user?.email ?? "Signed in"}</div>
+        </div>
+        <button
+          onClick={signOut}
+          title="Sign out"
+          className="flex h-7 w-7 items-center justify-center rounded-[9px] text-fg3 transition-colors hover:bg-panel-hi hover:text-fail"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
       </div>
     </aside>
   );
