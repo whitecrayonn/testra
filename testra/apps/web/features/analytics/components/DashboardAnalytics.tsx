@@ -233,18 +233,18 @@ function MetricCard({
   variant?: "success" | "danger" | "warning" | "info";
 }) {
   const colorMap: Record<string, string> = {
-    success: "text-green-600",
-    danger: "text-red-600",
-    warning: "text-orange-600",
-    info: "text-brand-600",
-    default: "text-slate-900",
+    success: "text-pass",
+    danger: "text-fail",
+    warning: "text-warn",
+    info: "text-info",
+    default: "text-fg",
   };
   const color = colorMap[variant || "default"];
   return (
-    <Card className="p-4 dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`text-xl font-bold ${color} dark:text-opacity-90`}>{value}</p>
-    </Card>
+    <div className="rounded-2xl border border-hair bg-panel p-4 shadow-glass transition-transform hover:-translate-y-0.5">
+      <p className="text-[11px] text-fg3">{label}</p>
+      <p className={`mt-1 font-mono text-xl font-bold ${color}`}>{value}</p>
+    </div>
   );
 }
 
