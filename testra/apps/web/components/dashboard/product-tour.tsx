@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 interface TourStep {
@@ -46,21 +46,34 @@ export function ProductTour() {
   const [stepIndex, setStepIndex] = useState<number | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
 
+  const cancelMeasureRef = useRef<(() => void) | null>(null);
+
   const measureCurrent = useCallback((index: number) => {
+    // Only the latest retry chain may ever call setRect — cancel whatever
+    // was still in flight for a previous step before starting a new one.
+    cancelMeasureRef.current?.();
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     // Retry briefly in case the target hasn't painted yet (e.g. just navigated).
-    let attempts = 0;
-    function tryMeasure() {
+    function tryMeasure(attempts: number) {
+      if (cancelled) return;
       const r = measure(STEPS[index].selector);
       if (r) {
         setRect(r);
       } else if (attempts < 10) {
-        attempts += 1;
-        setTimeout(tryMeasure, 100);
+        timeoutId = setTimeout(() => tryMeasure(attempts + 1), 100);
       } else {
         setRect(null);
       }
     }
-    tryMeasure();
+    tryMeasure(0);
+
+    cancelMeasureRef.current = () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
@@ -72,8 +85,16 @@ export function ProductTour() {
   }, []);
 
   useEffect(() => {
-    if (stepIndex === null) return;
+    if (stepIndex === null) {
+      cancelMeasureRef.current?.();
+      cancelMeasureRef.current = null;
+      return;
+    }
     measureCurrent(stepIndex);
+    return () => {
+      cancelMeasureRef.current?.();
+      cancelMeasureRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex, pathname]);
 
