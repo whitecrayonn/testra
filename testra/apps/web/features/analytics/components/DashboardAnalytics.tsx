@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, Activity as ActivityIcon, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
 import { DashboardFilters } from "@/components/dashboard/filters";
 import {
   BarChartComponent,
@@ -111,7 +109,7 @@ export function DashboardAnalytics({
 
   if (loading && !metrics) {
     return (
-      <div className="flex h-96 items-center justify-center text-slate-500">
+      <div className="flex h-96 items-center justify-center text-fg3">
         <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
         Loading analytics...
       </div>
@@ -127,25 +125,25 @@ export function DashboardAnalytics({
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={title}
-        description={description}
-        actions={
-          <a
-            href={getMetricsCSVUrl(filter)}
-            download
-            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-          >
-            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-            Export CSV
-          </a>
-        }
-      />
+    <div className="flex flex-col gap-3.5">
+      <div className="flex animate-rise-sm items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[21px] font-bold tracking-tight text-fg">{title}</h1>
+          <p className="mt-1 text-[13px] text-fg2">{description}</p>
+        </div>
+        <a
+          href={getMetricsCSVUrl(filter)}
+          download
+          className="flex h-9 items-center gap-2 rounded-[13px] border border-hair-hi bg-panel px-3.5 text-[12.5px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+        >
+          <Download className="h-3.5 w-3.5" aria-hidden="true" />
+          Export CSV
+        </a>
+      </div>
 
       <DashboardFilters value={filter} onChange={setFilter} />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Total Test Cases" value={metrics.total_test_cases} />
         <MetricCard label="Total Test Plans" value={metrics.total_test_plans} />
         <MetricCard label="Total Test Runs" value={metrics.total_test_runs} />
@@ -164,7 +162,7 @@ export function DashboardAnalytics({
         <MetricCard label="Bug Reopen Rate" value={`${metrics.bug_reopen_rate.toFixed(1)}%`} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3.5 lg:grid-cols-2">
         <ChartCard title="Execution Timeline" data={trendData.length ? trendData : placeholderTrend()}>
           <LineChartComponent data={trendData.length ? trendData : placeholderTrend()} xKey="date" yKey="total_runs" className="h-64" />
         </ChartCard>
@@ -174,7 +172,7 @@ export function DashboardAnalytics({
             data={stackTrend(metrics.weekly_trend)}
             xKey="date"
             keys={["passed", "failed", "skipped", "blocked"]}
-            colors={["#22c55e", "#ef4444", "#eab308", "#f97316"]}
+            colors={["var(--pass)", "var(--fail)", "var(--warn)", "var(--info)"]}
             className="h-64"
           />
         </ChartCard>
@@ -184,7 +182,7 @@ export function DashboardAnalytics({
             data={releaseData}
             xKey="release"
             keys={["passed", "failed", "skipped", "blocked"]}
-            colors={["#22c55e", "#ef4444", "#eab308", "#f97316"]}
+            colors={["var(--pass)", "var(--fail)", "var(--warn)", "var(--info)"]}
             className="h-64"
           />
         </ChartCard>
@@ -209,12 +207,12 @@ export function DashboardAnalytics({
           <div className="h-64 overflow-y-auto pr-2">
             <div className="space-y-2">
               {(activity ?? []).slice(0, 20).map((a) => (
-                <div key={a.id + a.type} className="flex items-center justify-between rounded-lg border border-slate-100 p-2 text-sm dark:border-slate-700">
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{a.title}</span>
-                  <span className="text-xs capitalize text-slate-500 dark:text-slate-400">{a.type}</span>
+                <div key={a.id + a.type} className="flex items-center justify-between rounded-[13px] border border-hair bg-panel p-2.5 text-[12.5px]">
+                  <span className="font-medium text-fg">{a.title}</span>
+                  <span className="text-[11px] capitalize text-fg3">{a.type}</span>
                 </div>
               ))}
-              {(activity ?? []).length === 0 && <p className="text-sm text-slate-500">No recent activity.</p>}
+              {(activity ?? []).length === 0 && <p className="text-[12.5px] text-fg3">No recent activity.</p>}
             </div>
           </div>
         </ChartCard>
@@ -233,18 +231,18 @@ function MetricCard({
   variant?: "success" | "danger" | "warning" | "info";
 }) {
   const colorMap: Record<string, string> = {
-    success: "text-green-600",
-    danger: "text-red-600",
-    warning: "text-orange-600",
-    info: "text-brand-600",
-    default: "text-slate-900",
+    success: "text-pass",
+    danger: "text-fail",
+    warning: "text-warn",
+    info: "text-info",
+    default: "text-fg",
   };
   const color = colorMap[variant || "default"];
   return (
-    <Card className="p-4 dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`text-xl font-bold ${color} dark:text-opacity-90`}>{value}</p>
-    </Card>
+    <div className="rounded-2xl border border-hair bg-panel p-4 shadow-glass transition-transform hover:-translate-y-0.5">
+      <p className="text-[11px] text-fg3">{label}</p>
+      <p className={`mt-1 font-mono text-xl font-bold ${color}`}>{value}</p>
+    </div>
   );
 }
 
@@ -259,18 +257,14 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="dark:border-slate-700 dark:bg-slate-900">
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {data.length === 0 ? (
-          <div className="flex h-64 items-center justify-center text-sm text-slate-500">No data available.</div>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
+    <div className="animate-pop rounded-[20px] border border-hair bg-panel p-4 shadow-glass">
+      <h3 className="m-0 mb-3 text-sm font-semibold text-fg">{title}</h3>
+      {data.length === 0 ? (
+        <div className="flex h-64 items-center justify-center text-[13px] text-fg3">No data available.</div>
+      ) : (
+        children
+      )}
+    </div>
   );
 }
 

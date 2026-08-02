@@ -2,30 +2,29 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, ChevronRight, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { LinkButton } from "@/components/ui/link-button";
+import { Plus, ChevronRight, Play, CheckCircle2, XCircle, Clock, SkipForward, Ban, Eye, ArrowUpRight } from "lucide-react";
+import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
+import { SegmentedBar } from "@/components/ui/segmented-bar";
+import { SlideOver, SlideOverHeader, SlideOverBody, SlideOverFooter } from "@/components/ui/slide-over";
 import { listTestRuns } from "@/features/results/api";
 import type { TestRun, PaginationMeta } from "@/types/results";
 
-const statusVariants: Record<string, "neutral" | "info" | "success" | "danger" | "warning"> = {
+const STATUS_TONE: Record<TestRun["status"], StatusTone> = {
   pending: "neutral",
   running: "info",
-  passed: "success",
-  failed: "danger",
-  skipped: "warning",
+  passed: "pass",
+  failed: "fail",
+  skipped: "warn",
   cancelled: "neutral",
 };
 
-const sourceVariants: Record<string, "default" | "info" | "neutral"> = {
-  manual: "default",
-  ci: "info",
-  api: "neutral",
+const STATUS_ICON: Record<TestRun["status"], typeof Play> = {
+  pending: Clock,
+  running: Play,
+  passed: CheckCircle2,
+  failed: XCircle,
+  skipped: SkipForward,
+  cancelled: Ban,
 };
 
 export default function TestRunsPage() {
@@ -34,6 +33,7 @@ export default function TestRunsPage() {
   const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [peekRun, setPeekRun] = useState<TestRun | null>(null);
 
   const projectId =
     typeof window !== "undefined"
@@ -80,79 +80,190 @@ export default function TestRunsPage() {
   }, [cursor, fetchRuns]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Test Runs"
-        description="View and manage test execution runs."
-        actions={
-          <LinkButton href="/dashboard/test-runs/new">
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            New Run
-          </LinkButton>
-        }
-      />
+    <div className="flex flex-col gap-3.5">
+      <div className="flex animate-rise-sm items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[27px] font-bold tracking-tight text-fg">Test Runs</h1>
+          <p className="mt-1.5 text-[13px] text-fg2">View and manage test execution runs.</p>
+        </div>
+        <Link
+          href="/dashboard/test-runs/new"
+          className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          New Run
+        </Link>
+      </div>
 
       {error && (
-        <div role="alert">
-          <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </Card>
+        <div role="alert" className="rounded-[16px] border border-fail-soft bg-fail-soft p-4 text-[13px] text-fail">
+          {error}
         </div>
       )}
 
       {!projectId ? (
-        <EmptyState
-          icon={Play}
-          title="No project selected"
-          description="Select a project from the Projects page to view and create test runs."
-          action={{ label: "Go to Projects", href: "/dashboard/projects" }}
-        />
+        <NoProject />
       ) : loading && runs.length === 0 ? (
-        <CardSkeleton count={3} />
+        <ListSkeleton count={3} />
       ) : runs.length === 0 ? (
-        <EmptyState
-          icon={Play}
-          title="No test runs yet"
-          description="Create your first test run to track execution progress."
-          action={{ label: "New Run", href: "/dashboard/test-runs/new" }}
-          secondaryAction={{ label: "Go to Projects", href: "/dashboard/projects" }}
-        />
+        <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+          <div className="mb-1.5 flex h-[62px] w-[62px] animate-float-y items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+            <Play className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">No test runs yet</h3>
+          <p className="m-0 max-w-sm text-[13px] text-fg2">Create your first test run to track execution progress.</p>
+          <div className="mt-3.5 flex gap-2.5">
+            <Link
+              href="/dashboard/test-runs/new"
+              className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              New Run
+            </Link>
+            <Link
+              href="/dashboard/projects"
+              className="flex h-[38px] items-center rounded-[13px] border border-hair-hi bg-panel px-4 text-[13px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+            >
+              Go to Projects
+            </Link>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {runs.map((run) => (
-            <Link key={run.id} href={`/dashboard/test-runs/${run.id}`} className="group block">
-              <Card className="p-4 transition-shadow group-hover:shadow-md">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="font-medium text-slate-900">{run.name}</h3>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <Badge variant={statusVariants[run.status] || "neutral"}>{run.status}</Badge>
-                      <Badge variant={sourceVariants[run.source] || "neutral"}>{run.source}</Badge>
-                      <span className="text-xs text-slate-500">
-                        {run.passed} passed · {run.failed} failed · {run.skipped} skipped · {run.total} total
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500">
-                      {new Date(run.created_at).toLocaleString()}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
+        <div className="flex flex-col gap-2.5">
+          {runs.map((run, i) => {
+            const Icon = STATUS_ICON[run.status];
+            const tone = STATUS_TONE[run.status];
+            return (
+              <div
+                key={run.id}
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="relative flex animate-rise-sm items-center gap-4 rounded-[18px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi sm:gap-5"
+              >
+                <Link href={`/dashboard/test-runs/${run.id}`} className="absolute inset-0" aria-label={`Open ${run.name}`} />
+                <span className="pointer-events-none flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[13px] bg-acc-soft text-acc">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="pointer-events-none min-w-0 flex-1">
+                  <h3 className="m-0 text-[14.5px] font-semibold text-fg">{run.name}</h3>
+                  <div className="mt-1 font-mono text-[11px] text-fg3">
+                    {run.source} · {run.passed}P · {run.failed}F · {run.skipped}S · {run.total} total
                   </div>
                 </div>
-              </Card>
-            </Link>
-          ))}
+                <div className="pointer-events-none hidden w-[190px] flex-none flex-col gap-1.5 sm:flex">
+                  <SegmentedBar passed={run.passed} failed={run.failed} skipped={run.skipped} blocked={run.blocked} total={run.total} />
+                </div>
+                <span className="pointer-events-none">
+                  <StatusPill tone={tone}>{run.status}</StatusPill>
+                </span>
+                <span className="pointer-events-none hidden w-[58px] flex-none text-right font-mono text-[11px] text-fg3 md:inline">
+                  {new Date(run.created_at).toLocaleDateString()}
+                </span>
+                <button
+                  onClick={() => setPeekRun(run)}
+                  title="Quick peek"
+                  aria-label={`Quick peek at ${run.name}`}
+                  className="relative z-10 flex h-8 w-8 flex-none items-center justify-center rounded-[10px] text-fg3 transition-colors hover:bg-panel-hi hover:text-fg"
+                >
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <ChevronRight className="pointer-events-none h-4 w-4 flex-none text-fg3" aria-hidden="true" />
+              </div>
+            );
+          })}
 
           {meta?.has_more && (
-            <div className="flex justify-center pt-4">
-              <Button variant="secondary" onClick={loadMore} loading={loading}>
-                Load More
-              </Button>
+            <div className="flex justify-center pt-3.5">
+              <button
+                onClick={loadMore}
+                disabled={loading}
+                className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg2 transition-colors hover:bg-panel-hi disabled:opacity-50"
+              >
+                {loading ? "Loading…" : "Load More"}
+              </button>
             </div>
           )}
         </div>
       )}
+
+      {peekRun && (
+        <SlideOver open={!!peekRun} onClose={() => setPeekRun(null)} ariaLabel={`${peekRun.name} summary`}>
+          <SlideOverHeader
+            icon={STATUS_ICON[peekRun.status]}
+            kicker={peekRun.source.toUpperCase()}
+            title={peekRun.name}
+            meta={`Created ${new Date(peekRun.created_at).toLocaleString()}`}
+            onClose={() => setPeekRun(null)}
+          />
+          <SlideOverBody>
+            <div className="grid grid-cols-4 gap-2.5">
+              <PeekStat label="PASSED" value={peekRun.passed} color="text-pass" />
+              <PeekStat label="FAILED" value={peekRun.failed} color="text-fail" />
+              <PeekStat label="SKIPPED" value={peekRun.skipped} color="text-warn" />
+              <PeekStat label="TOTAL" value={peekRun.total} color="text-fg" />
+            </div>
+            <div className="mt-4">
+              <SegmentedBar
+                passed={peekRun.passed}
+                failed={peekRun.failed}
+                skipped={peekRun.skipped}
+                blocked={peekRun.blocked}
+                total={peekRun.total}
+                className="h-2"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between text-[12.5px]">
+              <span className="text-fg3">Status</span>
+              <StatusPill tone={STATUS_TONE[peekRun.status]}>{peekRun.status}</StatusPill>
+            </div>
+          </SlideOverBody>
+          <SlideOverFooter>
+            <Link
+              href={`/dashboard/test-runs/${peekRun.id}`}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 text-[13px] font-bold text-white"
+            >
+              Open full run
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </SlideOverFooter>
+        </SlideOver>
+      )}
+    </div>
+  );
+}
+
+function PeekStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-[13px] border border-hair bg-panel p-2.5">
+      <div className={`font-mono text-[16px] font-bold ${color}`}>{value}</div>
+      <div className="mt-0.5 text-[9px] tracking-wide text-fg3">{label}</div>
+    </div>
+  );
+}
+
+function NoProject() {
+  return (
+    <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+      <div className="mb-1.5 flex h-[62px] w-[62px] items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+        <Play className="h-6 w-6" aria-hidden="true" />
+      </div>
+      <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">No project selected</h3>
+      <p className="m-0 max-w-sm text-[13px] text-fg2">Select a project from the Projects page to view and create test runs.</p>
+      <Link
+        href="/dashboard/projects"
+        className="mt-3.5 flex h-[38px] items-center rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+      >
+        Go to Projects
+      </Link>
+    </div>
+  );
+}
+
+function ListSkeleton({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-2.5">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-[70px] animate-pulse rounded-[18px] border border-hair bg-panel" />
+      ))}
     </div>
   );
 }

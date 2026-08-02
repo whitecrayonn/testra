@@ -123,28 +123,33 @@ export function GlobalSearch() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/50 p-4 pt-24" role="dialog" aria-modal="true" aria-label="Global search">
-      <div className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-900">
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-          <Search className="h-5 w-5 text-slate-400" aria-hidden="true" />
+    <div
+      className="fixed inset-0 z-[70] flex animate-fade-in items-start justify-center bg-[rgba(5,6,14,0.55)] p-4 pt-[12vh] backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Global search"
+    >
+      <div className="w-full max-w-3xl animate-pop overflow-hidden rounded-[22px] border border-hair-hi bg-glass shadow-glass backdrop-blur-[30px] backdrop-saturate-150">
+        <div className="flex items-center gap-3 border-b border-hair px-[18px] py-[15px]">
+          <Search className="h-[17px] w-[17px] text-acc" aria-hidden="true" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search projects, test cases, defects, collections, plans, users..."
-            className="flex-1 bg-transparent text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+            className="flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg3"
             aria-label="Global search input"
           />
-          {loading && <Loader2 className="h-5 w-5 animate-spin text-slate-400" />}
-          <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close">
-            <X className="h-5 w-5" />
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-fg3" />}
+          <button onClick={() => setOpen(false)} className="text-fg3 transition-colors hover:text-fg" aria-label="Close">
+            <X className="h-4 w-4" />
           </button>
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-2">
-          {error && <p className="p-4 text-sm text-red-600">{error}</p>}
-          {!query.trim() && <p className="p-4 text-center text-sm text-slate-500">Type to search across Testra.</p>}
+          {error && <p className="p-4 text-[13px] text-fail">{error}</p>}
+          {!query.trim() && <p className="p-[30px] text-center text-[13px] text-fg3">Type to search across Testra.</p>}
           {flatItems.length === 0 && query.trim() && !loading && !error && (
-            <p className="p-4 text-center text-sm text-slate-500">No results found.</p>
+            <p className="p-[30px] text-center text-[13px] text-fg3">No results found.</p>
           )}
           {flatItems.length > 0 && (
             <ul role="listbox">
@@ -156,14 +161,16 @@ export function GlobalSearch() {
                     onClick={() => navigate(item)}
                     onMouseEnter={() => setSelected(idx)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left",
-                      idx === selected ? "bg-brand-50 text-brand-900 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800",
+                      "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition-colors",
+                      idx === selected ? "bg-acc-soft" : "hover:bg-panel",
                     )}
                   >
-                    <span aria-hidden="true">{sectionIcons[section]}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
-                      <p className="text-xs text-slate-500">{sectionLabels[section]} · {item.subtitle}</p>
+                    <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-panel text-[13px]" aria-hidden="true">
+                      {sectionIcons[section]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13.5px] font-medium text-fg">{item.title}</p>
+                      <p className="truncate text-[11.5px] text-fg3">{sectionLabels[section]} · {item.subtitle}</p>
                     </div>
                   </button>
                 </li>
@@ -171,7 +178,7 @@ export function GlobalSearch() {
             </ul>
           )}
         </div>
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2 text-xs text-slate-500 dark:border-slate-800">
+        <div className="flex items-center gap-4 border-t border-hair px-[18px] py-2.5 font-mono text-[10px] text-fg3">
           <span>↑↓ navigate</span>
           <span>↵ select</span>
           <span>&quot;/&quot; to search</span>

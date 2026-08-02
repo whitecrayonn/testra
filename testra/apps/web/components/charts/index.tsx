@@ -20,12 +20,20 @@ import {
 } from "recharts";
 
 const axisProps = {
-  tick: { fill: "currentColor", fontSize: 12 },
-  axisLine: { stroke: "currentColor" },
-  tickLine: { stroke: "currentColor" },
+  tick: { fill: "var(--fg3)", fontSize: 12 },
+  axisLine: { stroke: "var(--hair-hi)" },
+  tickLine: { stroke: "var(--hair-hi)" },
 };
 
-const gridProps = { stroke: "rgba(148, 163, 184, 0.2)" };
+const gridProps = { stroke: "var(--hair)" };
+
+const tooltipStyle = {
+  backgroundColor: "var(--panel-hi)",
+  color: "var(--fg)",
+  border: "1px solid var(--hair-hi)",
+  borderRadius: 12,
+  fontSize: 12.5,
+};
 
 interface ChartProps {
   data: unknown[];
@@ -43,9 +51,9 @@ export function LineChartComponent({ data, xKey, yKey, children, className }: Ch
           <CartesianGrid {...gridProps} />
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
-          <Tooltip contentStyle={{ backgroundColor: "var(--background)", color: "var(--foreground)", border: "1px solid #e2e8f0" }} />
+          <Tooltip contentStyle={tooltipStyle} />
           <Legend />
-          {children ?? (yKey ? <Line type="monotone" dataKey={yKey} stroke="#4f46e5" strokeWidth={2} dot={false} /> : null)}
+          {children ?? (yKey ? <Line type="monotone" dataKey={yKey} stroke="var(--acc)" strokeWidth={2} dot={false} /> : null)}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -60,9 +68,9 @@ export function BarChartComponent({ data, xKey, yKey, children, className }: Cha
           <CartesianGrid {...gridProps} />
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
-          <Tooltip contentStyle={{ backgroundColor: "var(--background)", color: "var(--foreground)", border: "1px solid #e2e8f0" }} />
+          <Tooltip contentStyle={tooltipStyle} />
           <Legend />
-          {children ?? (yKey ? <Bar dataKey={yKey} fill="#4f46e5" radius={[4, 4, 0, 0]} /> : null)}
+          {children ?? (yKey ? <Bar dataKey={yKey} fill="var(--acc)" radius={[4, 4, 0, 0]} /> : null)}
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -77,7 +85,7 @@ export function StackedBarChart({ data, xKey, keys, colors, className }: ChartPr
           <CartesianGrid {...gridProps} />
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
-          <Tooltip contentStyle={{ backgroundColor: "var(--background)", color: "var(--foreground)", border: "1px solid #e2e8f0" }} />
+          <Tooltip contentStyle={tooltipStyle} />
           <Legend />
           {keys.map((k, i) => (
             <Bar key={k} dataKey={k} stackId="a" fill={colors[i % colors.length]} radius={[0, 0, 0, 0]} />
@@ -98,7 +106,7 @@ export function PieChartComponent({ data, nameKey, dataKey, colors, className, i
               <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
             ))}
           </Pie>
-          <Tooltip contentStyle={{ backgroundColor: "var(--background)", color: "var(--foreground)", border: "1px solid #e2e8f0" }} />
+          <Tooltip contentStyle={tooltipStyle} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
@@ -114,12 +122,21 @@ export function AreaChartComponent({ data, xKey, yKey, className }: ChartProps) 
           <CartesianGrid {...gridProps} />
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
-          <Tooltip contentStyle={{ backgroundColor: "var(--background)", color: "var(--foreground)", border: "1px solid #e2e8f0" }} />
-          <Area type="monotone" dataKey={yKey ?? "value"} stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
+          <Tooltip contentStyle={tooltipStyle} />
+          <Area type="monotone" dataKey={yKey ?? "value"} stroke="var(--acc)" fill="var(--acc)" fillOpacity={0.2} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-export const chartColors = ["#4f46e5", "#22c55e", "#ef4444", "#eab308", "#f97316", "#a855f7", "#06b6d4", "#64748b"];
+export const chartColors = [
+  "var(--acc)",
+  "var(--acc2)",
+  "var(--pass)",
+  "var(--fail)",
+  "var(--warn)",
+  "var(--info)",
+  "var(--fg2)",
+  "var(--fg3)",
+];

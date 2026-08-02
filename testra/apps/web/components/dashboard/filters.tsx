@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import type { MetricsFilter } from "@/types/analytics";
 
 interface DashboardFiltersProps {
@@ -31,13 +29,13 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
   }, [filter.workspace_id, filter.project_id, onChange]);
 
   const inputClass =
-    "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+    "w-full rounded-[11px] border border-hair bg-panel px-3 py-2 text-[13px] text-fg outline-none transition-colors focus:border-acc";
 
   return (
-    <Card className="p-4 dark:bg-slate-900 dark:border-slate-700">
+    <div className="animate-pop rounded-[20px] border border-hair bg-panel p-4 shadow-glass">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label htmlFor="filter-release" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Release</label>
+          <label htmlFor="filter-release" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">Release</label>
           <input
             id="filter-release"
             className={inputClass}
@@ -47,7 +45,7 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label htmlFor="filter-sprint" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Sprint</label>
+          <label htmlFor="filter-sprint" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">Sprint</label>
           <input
             id="filter-sprint"
             className={inputClass}
@@ -57,7 +55,7 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label htmlFor="filter-environment" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Environment</label>
+          <label htmlFor="filter-environment" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">Environment</label>
           <input
             id="filter-environment"
             className={inputClass}
@@ -67,7 +65,7 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label htmlFor="filter-source" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Source</label>
+          <label htmlFor="filter-source" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">Source</label>
           <select
             id="filter-source"
             className={inputClass}
@@ -81,7 +79,7 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           </select>
         </div>
         <div>
-          <label htmlFor="filter-start" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">Start</label>
+          <label htmlFor="filter-start" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">Start</label>
           <input
             id="filter-start"
             type="date"
@@ -91,7 +89,7 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
         <div>
-          <label htmlFor="filter-end" className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">End</label>
+          <label htmlFor="filter-end" className="mb-1 block text-[11px] font-semibold tracking-wide text-fg3">End</label>
           <input
             id="filter-end"
             type="date"
@@ -101,12 +99,20 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
           />
         </div>
       </div>
-      <div className="mt-3 flex justify-end gap-2">
-        <Button variant="secondary" onClick={clear}>
+      <div className="mt-3 flex justify-end gap-2.5">
+        <button
+          onClick={clear}
+          className="h-8 rounded-[11px] border border-hair-hi bg-transparent px-3.5 text-[12.5px] font-semibold text-fg2 transition-colors hover:bg-panel-hi"
+        >
           Clear
-        </Button>
-        <Button onClick={apply}>Apply</Button>
+        </button>
+        <button
+          onClick={apply}
+          className="h-8 rounded-[11px] bg-gradient-to-br from-acc to-acc2 px-4 text-[12.5px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)]"
+        >
+          Apply
+        </button>
       </div>
-    </Card>
+    </div>
   );
 }

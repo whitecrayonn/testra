@@ -9,8 +9,8 @@ interface ProjectOnboardingProps {
 
 export function ProjectOnboarding({ onCreate }: ProjectOnboardingProps) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-      <div className="mx-flex mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+    <div className="animate-pop rounded-[22px] border border-dashed border-hair-hi bg-panel p-8 text-center shadow-glass">
+      <div className="mx-flex mx-auto flex h-12 w-12 animate-float-y items-center justify-center rounded-xl bg-acc-soft text-acc">
         <FolderKanban className="h-6 w-6" />
       </div>
       <h2 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
