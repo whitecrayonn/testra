@@ -3,18 +3,73 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --bg: #eef0f6;
+  --blob1: rgba(124, 92, 255, 0.20);
+  --blob2: rgba(0, 208, 199, 0.16);
+  --blob3: rgba(255, 92, 160, 0.10);
+  --panel: rgba(255, 255, 255, 0.66);
+  --panel-hi: rgba(255, 255, 255, 0.9);
+  --glass: rgba(255, 255, 255, 0.76);
+  --hair: rgba(16, 20, 45, 0.08);
+  --hair-hi: rgba(16, 20, 45, 0.16);
+  --fg: #15182b;
+  --fg2: #4e5470;
+  --fg3: #7c8299;
+  --acc: #5b46e5;
+  --acc2: #0aa89c;
+  --acc-soft: rgba(91, 70, 229, 0.10);
+  --pass: #12a06a;
+  --pass-soft: rgba(18, 160, 106, 0.12);
+  --fail: #e0355a;
+  --fail-soft: rgba(224, 53, 90, 0.12);
+  --warn: #b8820a;
+  --warn-soft: rgba(184, 130, 10, 0.12);
+  --info: #2a7fd4;
+  --shadow: 0 30px 70px -34px rgba(24, 30, 80, 0.28);
+  --ring: rgba(91, 70, 229, 0.25);
+
+  /* Deprecated aliases kept for one release cycle so un-migrated components don't break. */
+  --background: var(--bg);
+  --foreground: var(--fg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-  }
+.dark {
+  --bg: #0a0b12;
+  --blob1: rgba(124, 92, 255, 0.34);
+  --blob2: rgba(0, 208, 199, 0.20);
+  --blob3: rgba(255, 92, 160, 0.13);
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-hi: rgba(255, 255, 255, 0.085);
+  --glass: rgba(13, 15, 25, 0.72);
+  --hair: rgba(255, 255, 255, 0.09);
+  --hair-hi: rgba(255, 255, 255, 0.17);
+  --fg: #f2f3f8;
+  --fg2: #a7abbe;
+  --fg3: #71768c;
+  --acc: #8b7bff;
+  --acc2: #35e0d0;
+  --acc-soft: rgba(139, 123, 255, 0.16);
+  --pass: #3ddc97;
+  --pass-soft: rgba(61, 220, 151, 0.13);
+  --fail: #ff5c7a;
+  --fail-soft: rgba(255, 92, 122, 0.16);
+  --warn: #ffc857;
+  --warn-soft: rgba(255, 200, 87, 0.14);
+  --info: #68b6ff;
+  --shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.85);
+  --ring: rgba(139, 123, 255, 0.35);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--fg);
+  transition: background-color .45s ease, color .45s ease;
 }
+
+@keyframes drawLine { from { stroke-dashoffset: 640; } to { stroke-dashoffset: 0; } }
+@keyframes growY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes ringDraw { from { stroke-dashoffset: 408; } to { stroke-dashoffset: 36; } }
+@keyframes drawerIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes toastIn { from { opacity: 0; transform: translateX(120%) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes toastBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
