@@ -40,7 +40,7 @@ export function Sidebar() {
   const nav: NavEntry[] = [
     { kind: "label", key: "l-workspace", label: "WORKSPACE" },
     { kind: "item", key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { kind: "item", key: "analytics", href: "/dashboard/executive", label: "Analytics", icon: Activity },
+    { kind: "item", key: "analytics", href: "/dashboard/analytics", label: "Analytics", icon: Activity },
     { kind: "item", key: "projects", href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
     { kind: "label", key: "l-quality", label: "QUALITY" },
     { kind: "item", key: "test-cases", href: "/dashboard/test-cases", label: "Test Cases", icon: TestTube },
