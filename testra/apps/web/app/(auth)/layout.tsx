@@ -17,11 +17,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="mb-7 flex animate-rise-sm flex-col items-center gap-2.5 text-center">
             <Link
               href="/"
+              aria-label="Testra home"
               className="flex h-11 w-11 items-end justify-center gap-[3px] rounded-[13px] bg-gradient-to-br from-acc to-acc2 pb-2.5 shadow-[0_10px_28px_-10px_var(--ring)]"
             >
-              <span className="h-2.5 w-1 rounded-sm bg-white/95" />
-              <span className="h-4 w-1 rounded-sm bg-white/95" />
-              <span className="h-[13px] w-1 rounded-sm bg-white/95" />
+              <span aria-hidden="true" className="h-2.5 w-1 rounded-sm bg-white/95" />
+              <span aria-hidden="true" className="h-4 w-1 rounded-sm bg-white/95" />
+              <span aria-hidden="true" className="h-[13px] w-1 rounded-sm bg-white/95" />
             </Link>
             <span className="text-[19px] font-bold tracking-[0.14em] text-fg">TESTRA</span>
             <p className="font-mono text-[10px] tracking-[0.12em] text-fg3">ONE PLATFORM · EVERY TEST</p>
