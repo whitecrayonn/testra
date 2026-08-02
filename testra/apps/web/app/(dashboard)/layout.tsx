@@ -3,6 +3,8 @@
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { AmbientBackground } from "@/components/dashboard/ambient-background";
+import { BootSequence } from "@/components/dashboard/boot-sequence";
+import { ProductTour } from "@/components/dashboard/product-tour";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { WorkspaceProvider } from "@/components/providers/workspace-provider";
 import { CommandPalette } from "@/components/command-palette";
@@ -22,6 +24,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <CommandPalette />
         <GlobalSearch />
+        <BootSequence />
+        <ProductTour />
       </WorkspaceProvider>
     </RouteGuard>
   );

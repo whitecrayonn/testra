@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
       {state?.workspaceId ? (
         <>
-          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1.55fr_1fr]">
+          <div data-tour="hero" className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1.55fr_1fr]">
             <ReleaseReadinessCard metrics={metrics} loading={loadingHero} />
             <LiveExecutionCard runs={runs} loading={loadingHero} />
           </div>

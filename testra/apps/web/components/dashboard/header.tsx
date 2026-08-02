@@ -38,6 +38,15 @@ export function Header() {
     document.dispatchEvent(new CustomEvent("open-command-palette"));
   }
 
+  function startTour() {
+    document.dispatchEvent(new CustomEvent("start-product-tour"));
+  }
+
+  function replayBoot() {
+    sessionStorage.removeItem("testra_boot_shown");
+    document.dispatchEvent(new CustomEvent("replay-boot-sequence"));
+  }
+
   return (
     <header className="flex animate-rise items-center gap-3.5 rounded-[20px] border border-hair bg-glass p-2.5 px-3.5 shadow-glass backdrop-blur-[26px] backdrop-saturate-150">
       <div className="flex items-center gap-1.5 text-[12.5px] text-fg3">
@@ -48,6 +57,7 @@ export function Header() {
 
       <button
         onClick={openPalette}
+        data-tour="search"
         className="flex h-[34px] max-w-[420px] flex-1 items-center gap-2 rounded-xl border border-hair bg-panel px-3 text-[12.5px] text-fg3 transition-colors hover:border-hair-hi hover:bg-panel-hi"
       >
         <Search className="h-3.5 w-3.5" aria-hidden="true" />
@@ -58,6 +68,7 @@ export function Header() {
       <div className="flex-1" />
 
       <button
+        onClick={startTour}
         className="flex h-8 items-center gap-1.5 rounded-xl border border-hair bg-panel px-3 text-xs font-medium text-fg2 transition-colors hover:bg-panel-hi hover:text-fg"
         title="Tour"
       >
@@ -65,6 +76,7 @@ export function Header() {
         Tour
       </button>
       <button
+        onClick={replayBoot}
         className="flex h-8 w-8 items-center justify-center rounded-xl border border-hair bg-panel text-fg2 transition-colors hover:bg-panel-hi"
         title="Replay loading"
       >
