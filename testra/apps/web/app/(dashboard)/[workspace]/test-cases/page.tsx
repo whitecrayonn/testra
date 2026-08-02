@@ -3,28 +3,22 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Search, Plus, ChevronRight, TestTube } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { LinkButton } from "@/components/ui/link-button";
+import { StatusPill } from "@/components/ui/status-pill";
 import { listTestCases, searchTestCases } from "@/features/testmanagement/api";
 import type { TestCase, PaginationMeta } from "@/types/testmanagement";
 
-const statusVariants: Record<string, "neutral" | "success" | "danger"> = {
-  draft: "neutral",
-  active: "success",
-  deprecated: "danger",
+const PRIORITY_TONE: Record<string, "fail" | "warn" | "info" | "neutral"> = {
+  critical: "fail",
+  high: "warn",
+  medium: "info",
+  low: "neutral",
 };
 
-const priorityVariants: Record<string, "neutral" | "info" | "warning" | "danger"> = {
-  low: "neutral",
-  medium: "info",
-  high: "warning",
-  critical: "danger",
+const PRIORITY_ACCENT: Record<string, string> = {
+  critical: "bg-fail",
+  high: "bg-warn",
+  medium: "bg-info",
+  low: "bg-hair-hi",
 };
 
 export default function TestCasesPage() {
@@ -93,96 +87,145 @@ export default function TestCasesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Test Cases"
-        description="Manage and search your test case repository."
-        actions={
-          <LinkButton href="/dashboard/test-cases/new">
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            New Test Case
-          </LinkButton>
-        }
-      />
+    <div className="flex flex-col gap-3.5">
+      <div className="flex animate-rise-sm items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[27px] font-bold tracking-tight text-fg">Test Cases</h1>
+          <p className="mt-1.5 text-[13px] text-fg2">Manage and search your test case repository.</p>
+        </div>
+        <Link
+          href="/dashboard/test-cases/new"
+          className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          New Test Case
+        </Link>
+      </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Input
-          placeholder="Search test cases..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md"
-        />
-        <Button variant="secondary" onClick={handleSearch}>
-          <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+      <div className="flex animate-rise-sm gap-2.5">
+        <div className="flex h-[38px] max-w-md flex-1 items-center gap-2 rounded-[13px] border border-hair bg-panel px-3.5">
+          <Search className="h-3.5 w-3.5 text-fg3" aria-hidden="true" />
+          <input
+            placeholder="Search test cases..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="flex-1 bg-transparent text-[13px] text-fg outline-none placeholder:text-fg3"
+          />
+        </div>
+        <button
+          onClick={handleSearch}
+          className="flex h-[38px] items-center gap-2 rounded-[13px] border border-hair-hi bg-panel px-4 text-[13px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden="true" />
           Search
-        </Button>
+        </button>
       </div>
 
       {error && (
-        <div role="alert">
-          <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </Card>
+        <div role="alert" className="rounded-[16px] border border-fail-soft bg-fail-soft p-4 text-[13px] text-fail">
+          {error}
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {!projectId ? (
-          <EmptyState
-            icon={TestTube}
-            title="No project selected"
-            description="Select a project in Projects to view and create test cases."
-            action={{ label: "Go to Projects", href: "/dashboard/projects" }}
-          />
+          <NoProject />
         ) : loading && cases.length === 0 ? (
-          <CardSkeleton count={4} />
+          <ListSkeleton count={4} />
         ) : cases.length === 0 ? (
-          <EmptyState
-            icon={TestTube}
-            title="No test cases found"
-            description="Create your first test case to get started."
-            action={{ label: "New Test Case", href: "/dashboard/test-cases/new" }}
-            secondaryAction={{ label: "Go to Projects", href: "/dashboard/projects" }}
-          />
+          <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+            <div className="mb-1.5 flex h-[62px] w-[62px] animate-float-y items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+              <TestTube className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">No test cases found</h3>
+            <p className="m-0 max-w-sm text-[13px] text-fg2">Create your first test case to get started.</p>
+            <div className="mt-3.5 flex gap-2.5">
+              <Link
+                href="/dashboard/test-cases/new"
+                className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                New Test Case
+              </Link>
+              <Link
+                href="/dashboard/projects"
+                className="flex h-[38px] items-center rounded-[13px] border border-hair-hi bg-panel px-4 text-[13px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+              >
+                Go to Projects
+              </Link>
+            </div>
+          </div>
         ) : (
           <>
-            {cases.map((tc) => (
+            {cases.map((tc, i) => (
               <Link
                 key={tc.id}
                 href={`/dashboard/test-cases/${tc.id}`}
-                className="group block"
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="group relative flex animate-rise-sm items-center gap-3.5 overflow-hidden rounded-[17px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi"
               >
-                <Card className="flex items-center justify-between p-4 transition-colors group-hover:border-brand-300">
-                  <div className="flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-900">{tc.title}</span>
-                      <Badge variant={statusVariants[tc.status] || "neutral"}>{tc.status}</Badge>
-                      <Badge variant={priorityVariants[tc.priority] || "neutral"}>{tc.priority}</Badge>
-                    </div>
-                    {tc.description && (
-                      <p className="line-clamp-1 text-sm text-slate-500">{tc.description}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                      <span>v{tc.version}</span>
-                      <span>{tc.steps.length} steps</span>
-                      {tc.tags.length > 0 && <span>{tc.tags.join(", ")}</span>}
-                    </div>
+                <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r-[3px] ${PRIORITY_ACCENT[tc.priority] ?? "bg-hair-hi"}`} />
+                <div className="min-w-0 flex-1 pl-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[14px] font-semibold text-fg">{tc.title}</span>
+                    <StatusPill tone="neutral">{tc.status}</StatusPill>
+                    <StatusPill tone={PRIORITY_TONE[tc.priority] ?? "neutral"}>{tc.priority}</StatusPill>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-slate-400" aria-hidden="true" />
-                </Card>
+                  {tc.description && (
+                    <p className="mt-1 truncate text-[12.5px] text-fg3">{tc.description}</p>
+                  )}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-[11px] text-fg3">
+                    <span>v{tc.version}</span>
+                    <span>{tc.steps.length} steps</span>
+                    {tc.tags.length > 0 && <span>{tc.tags.join(", ")}</span>}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 flex-none text-fg3" aria-hidden="true" />
               </Link>
             ))}
             {meta?.has_more && (
-              <div className="pt-4 text-center">
-                <Button variant="secondary" onClick={handleLoadMore} loading={loading}>
-                  Load More
-                </Button>
+              <div className="pt-3.5 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loading}
+                  className="h-9 rounded-[13px] border border-hair-hi bg-panel px-4 text-[12.5px] font-semibold text-fg2 transition-colors hover:bg-panel-hi disabled:opacity-50"
+                >
+                  {loading ? "Loading…" : "Load More"}
+                </button>
               </div>
             )}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function NoProject() {
+  return (
+    <div className="flex animate-pop flex-col items-center justify-center gap-2 rounded-[22px] border border-dashed border-hair-hi bg-panel p-16 text-center shadow-glass">
+      <div className="mb-1.5 flex h-[62px] w-[62px] items-center justify-center rounded-[20px] bg-acc-soft text-acc">
+        <TestTube className="h-6 w-6" aria-hidden="true" />
+      </div>
+      <h3 className="m-0 text-[19px] font-semibold tracking-tight text-fg">No project selected</h3>
+      <p className="m-0 max-w-sm text-[13px] text-fg2">Select a project in Projects to view and create test cases.</p>
+      <Link
+        href="/dashboard/projects"
+        className="mt-3.5 flex h-[38px] items-center rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white"
+      >
+        Go to Projects
+      </Link>
+    </div>
+  );
+}
+
+function ListSkeleton({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-[86px] animate-pulse rounded-[17px] border border-hair bg-panel" />
+      ))}
     </div>
   );
 }
