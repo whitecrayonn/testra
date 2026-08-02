@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, ChevronRight, Play, CheckCircle2, XCircle, Clock, SkipForward, Ban } from "lucide-react";
+import { Plus, ChevronRight, Play, CheckCircle2, XCircle, Clock, SkipForward, Ban, Eye, ArrowUpRight } from "lucide-react";
 import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
 import { SegmentedBar } from "@/components/ui/segmented-bar";
+import { SlideOver, SlideOverHeader, SlideOverBody, SlideOverFooter } from "@/components/ui/slide-over";
 import { listTestRuns } from "@/features/results/api";
 import type { TestRun, PaginationMeta } from "@/types/results";
 
@@ -32,6 +33,7 @@ export default function TestRunsPage() {
   const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [peekRun, setPeekRun] = useState<TestRun | null>(null);
 
   const projectId =
     typeof window !== "undefined"
@@ -132,30 +134,40 @@ export default function TestRunsPage() {
             const Icon = STATUS_ICON[run.status];
             const tone = STATUS_TONE[run.status];
             return (
-              <Link
+              <div
                 key={run.id}
-                href={`/dashboard/test-runs/${run.id}`}
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
-                className="flex animate-rise-sm items-center gap-4 rounded-[18px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi sm:gap-5"
+                className="relative flex animate-rise-sm items-center gap-4 rounded-[18px] border border-hair bg-panel p-4 shadow-glass transition-all hover:-translate-y-0.5 hover:border-hair-hi hover:bg-panel-hi sm:gap-5"
               >
-                <span className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[13px] bg-acc-soft text-acc">
+                <Link href={`/dashboard/test-runs/${run.id}`} className="absolute inset-0" aria-label={`Open ${run.name}`} />
+                <span className="pointer-events-none flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[13px] bg-acc-soft text-acc">
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="pointer-events-none min-w-0 flex-1">
                   <h3 className="m-0 text-[14.5px] font-semibold text-fg">{run.name}</h3>
                   <div className="mt-1 font-mono text-[11px] text-fg3">
                     {run.source} · {run.passed}P · {run.failed}F · {run.skipped}S · {run.total} total
                   </div>
                 </div>
-                <div className="hidden w-[190px] flex-none flex-col gap-1.5 sm:flex">
+                <div className="pointer-events-none hidden w-[190px] flex-none flex-col gap-1.5 sm:flex">
                   <SegmentedBar passed={run.passed} failed={run.failed} skipped={run.skipped} blocked={run.blocked} total={run.total} />
                 </div>
-                <StatusPill tone={tone}>{run.status}</StatusPill>
-                <span className="hidden w-[58px] flex-none text-right font-mono text-[11px] text-fg3 md:inline">
+                <span className="pointer-events-none">
+                  <StatusPill tone={tone}>{run.status}</StatusPill>
+                </span>
+                <span className="pointer-events-none hidden w-[58px] flex-none text-right font-mono text-[11px] text-fg3 md:inline">
                   {new Date(run.created_at).toLocaleDateString()}
                 </span>
-                <ChevronRight className="h-4 w-4 flex-none text-fg3" aria-hidden="true" />
-              </Link>
+                <button
+                  onClick={() => setPeekRun(run)}
+                  title="Quick peek"
+                  aria-label={`Quick peek at ${run.name}`}
+                  className="relative z-10 flex h-8 w-8 flex-none items-center justify-center rounded-[10px] text-fg3 transition-colors hover:bg-panel-hi hover:text-fg"
+                >
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <ChevronRight className="pointer-events-none h-4 w-4 flex-none text-fg3" aria-hidden="true" />
+              </div>
             );
           })}
 
@@ -172,6 +184,58 @@ export default function TestRunsPage() {
           )}
         </div>
       )}
+
+      {peekRun && (
+        <SlideOver open={!!peekRun} onClose={() => setPeekRun(null)} ariaLabel={`${peekRun.name} summary`}>
+          <SlideOverHeader
+            icon={STATUS_ICON[peekRun.status]}
+            kicker={peekRun.source.toUpperCase()}
+            title={peekRun.name}
+            meta={`Created ${new Date(peekRun.created_at).toLocaleString()}`}
+            onClose={() => setPeekRun(null)}
+          />
+          <SlideOverBody>
+            <div className="grid grid-cols-4 gap-2.5">
+              <PeekStat label="PASSED" value={peekRun.passed} color="text-pass" />
+              <PeekStat label="FAILED" value={peekRun.failed} color="text-fail" />
+              <PeekStat label="SKIPPED" value={peekRun.skipped} color="text-warn" />
+              <PeekStat label="TOTAL" value={peekRun.total} color="text-fg" />
+            </div>
+            <div className="mt-4">
+              <SegmentedBar
+                passed={peekRun.passed}
+                failed={peekRun.failed}
+                skipped={peekRun.skipped}
+                blocked={peekRun.blocked}
+                total={peekRun.total}
+                className="h-2"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between text-[12.5px]">
+              <span className="text-fg3">Status</span>
+              <StatusPill tone={STATUS_TONE[peekRun.status]}>{peekRun.status}</StatusPill>
+            </div>
+          </SlideOverBody>
+          <SlideOverFooter>
+            <Link
+              href={`/dashboard/test-runs/${peekRun.id}`}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 text-[13px] font-bold text-white"
+            >
+              Open full run
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </SlideOverFooter>
+        </SlideOver>
+      )}
+    </div>
+  );
+}
+
+function PeekStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-[13px] border border-hair bg-panel p-2.5">
+      <div className={`font-mono text-[16px] font-bold ${color}`}>{value}</div>
+      <div className="mt-0.5 text-[9px] tracking-wide text-fg3">{label}</div>
     </div>
   );
 }
