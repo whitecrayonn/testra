@@ -25,7 +25,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <span aria-hidden="true" className="h-[13px] w-1 rounded-sm bg-white/95" />
             </Link>
             <h1 className="text-[19px] font-bold tracking-[0.14em] text-fg">TESTRA</h1>
-            <p className="font-mono text-[10px] tracking-[0.12em] text-fg3">ONE PLATFORM · EVERY TEST</p>
+            <p className="font-mono text-[10px] tracking-[0.12em] text-fg2">ONE PLATFORM · EVERY TEST</p>
           </div>
           {children}
         </main>
