@@ -11,7 +11,7 @@ export function Toaster() {
     <div
       aria-live="polite"
       aria-atomic="false"
-      className="fixed right-4 top-4 z-50 flex w-full max-w-sm flex-col gap-2"
+      className="fixed bottom-[18px] right-[18px] z-[88] flex flex-col items-end gap-2.5"
     >
       {toasts.map((t: ToastType) => (
         <Toast key={t.id} id={t.id} message={t.message} type={t.type} onDismiss={dismiss} />

@@ -1,19 +1,11 @@
-import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import type { ToastType } from "@/components/providers/toast-provider";
 
-const styles: Record<ToastType, string> = {
-  success: "bg-green-50 text-green-800 border-green-200",
-  error: "bg-red-50 text-red-800 border-red-200",
-  warning: "bg-yellow-50 text-yellow-800 border-yellow-200",
-  info: "bg-blue-50 text-blue-800 border-blue-200",
-};
-
-const icons: Record<ToastType, string> = {
-  success: "✓",
-  error: "✕",
-  warning: "!",
-  info: "i",
+const TONE: Record<ToastType, { badgeBg: string; fg: string; barBg: string; icon: typeof CheckCircle2 }> = {
+  success: { badgeBg: "bg-pass-soft", fg: "text-pass", barBg: "bg-pass", icon: CheckCircle2 },
+  error: { badgeBg: "bg-fail-soft", fg: "text-fail", barBg: "bg-fail", icon: XCircle },
+  warning: { badgeBg: "bg-warn-soft", fg: "text-warn", barBg: "bg-warn", icon: AlertTriangle },
+  info: { badgeBg: "bg-acc-soft", fg: "text-info", barBg: "bg-info", icon: Info },
 };
 
 interface ToastProps {
@@ -24,27 +16,27 @@ interface ToastProps {
 }
 
 export function Toast({ id, message, type, onDismiss }: ToastProps) {
+  const tone = TONE[type];
+  const Icon = tone.icon;
   return (
     <div
       role="alert"
-      className={cn(
-        "flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm",
-        styles[type],
-      )}
+      className="relative flex min-w-[280px] animate-toast-in items-center gap-3 overflow-hidden rounded-2xl border border-hair-hi bg-glass p-3.5 shadow-glass backdrop-blur-[26px] backdrop-saturate-150"
     >
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/10 text-xs font-bold">
-        {icons[type]}
+      <span className={`flex h-[26px] w-[26px] flex-none items-center justify-center rounded-lg ${tone.badgeBg} ${tone.fg}`}>
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
-      <p className="flex-1 text-sm font-medium">{message}</p>
+      <p className="flex-1 text-[12.5px] font-medium text-fg">{message}</p>
       {onDismiss && (
         <button
           onClick={() => onDismiss(id)}
-          className="text-current/70 hover:text-current"
+          className="flex-none text-fg3 transition-colors hover:text-fg"
           aria-label="Dismiss"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
+      <span className={`absolute inset-x-0 bottom-0 h-0.5 origin-left animate-toast-bar ${tone.barBg}`} />
     </div>
   );
 }
