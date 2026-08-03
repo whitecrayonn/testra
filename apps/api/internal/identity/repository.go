@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/testra/testra/apps/api/internal/shared/db"
@@ -170,4 +171,31 @@ func (r *SQLRepository) RevokeAllUserRefreshTokens(ctx context.Context, userID u
 		userID,
 	)
 	return err
+}
+
+func (r *SQLRepository) DenylistAccessToken(ctx context.Context, jti string, userID uuid.UUID, expiresAt time.Time) error {
+	if jti == "" {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO access_token_denylist (jti, user_id, expires_at) VALUES ($1, $2, $3)
+		 ON CONFLICT (jti) DO NOTHING`,
+		jti, userID, expiresAt,
+	)
+	return err
+}
+
+func (r *SQLRepository) IsAccessTokenDenylisted(ctx context.Context, jti string) (bool, error) {
+	if jti == "" {
+		return false, nil
+	}
+	var exists bool
+	err := r.db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM access_token_denylist WHERE jti = $1 AND expires_at > NOW())`,
+		jti,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }

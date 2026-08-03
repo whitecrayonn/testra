@@ -311,6 +311,52 @@ paths:
                         $ref: '#/components/schemas/User'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /audit-events:
+    get:
+      tags:
+        - Auth
+      operationId: listMyAuditEvents
+      summary: List the authenticated user's own audit trail
+      description: >-
+        Returns the current user's own audit events (logins, password
+        changes, MFA changes, etc.), most recent first. Scoped to the
+        requesting user rather than their whole organization/workspace,
+        since `audit_events` has no `organization_id` column yet
+        (see `docs/engineering/SPRINT_BACKLOG.md` SBL-080); an org-wide
+        view for owners/admins depends on that column existing.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Opaque pagination cursor from a previous response's `meta.next_cursor`.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Page of the current user's audit events
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AuditEvent'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /organizations:
     post:
       tags:
@@ -4672,6 +4718,29 @@ components:
         has_more:
           type: boolean
           description: Whether more results exist beyond the current page
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          example: login
+        resource:
+          type: string
+          example: session
+        resource_id:
+          type: string
+        ip_address:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
     PaginatedAPICollections:
       type: object
       properties:

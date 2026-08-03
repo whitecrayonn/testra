@@ -10,6 +10,23 @@
 
 ## M1 — Production Security & Trust
 
+> **Sprint 1–3 status (2026-08-03 audit + implementation pass):** SBL-001, 002, 003,
+> 005, 006, 008, 009, 010, 012 were found already implemented and verified in code
+> (cookie/CSRF auth, apiFetch migration, password policy incl. breach blocklist,
+> API-key scope registry, refresh-token revocation ordering, rate-limiter
+> fail-closed config, log/audit redaction, secrets provider abstraction) — no
+> changes needed. SBL-004 (jti + access-token denylist), SBL-007 (audit-events
+> read endpoint, scoped to the current user — see the note below), and SBL-013
+> (RBAC integration tests: cross-tenant denial + permission grant/revoke) were
+> genuine gaps and have now been implemented, with unit/integration test
+> coverage. SBL-011 stays open (blocked on SBL-025/VM in M2). SBL-014–024 are
+> untouched and are the real remaining Sprint 4 work — see `SPRINT_PLAN.md`.
+>
+> SBL-007 note: `audit_events` has no `organization_id` column yet (SBL-080),
+> so the read endpoint is scoped to the requesting user's own events rather
+> than an org-wide view, to avoid a cross-tenant data leak. An org-wide view
+> for owners/admins is future work once SBL-080 lands.
+
 | ID | Title | Priority | Effort | Affected Modules | Expected Deliverables | Validation | Rollback Considerations | Dependencies |
 |----|-------|----------|--------|------------------|---------------------|------------|-------------------------|--------------|
 | SBL-001 | Implement httpOnly cookie/session auth backend | P0 | L | `apps/api/internal/identity`, `apps/api/internal/shared/server`, `apps/api/internal/shared/middleware` | Cookie auth endpoints, session store schema, middleware attaching user context | `go test ./apps/api/internal/identity/...`; integration tests; login/logout E2E | Revert middleware order; keep JWT bearer fallback | — |

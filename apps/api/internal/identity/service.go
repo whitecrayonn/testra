@@ -467,6 +467,26 @@ func (s *Service) LogoutAllDevices(ctx context.Context, userID uuid.UUID) error 
 	return nil
 }
 
+// RevokeAccessToken denylists the given access token's jti so it is rejected
+// by the Auth middleware for the remainder of its natural lifetime, even
+// though the JWT signature itself is still otherwise valid. This closes the
+// gap left by refresh-token revocation alone: without it, a still-live access
+// token keeps working after logout until it expires on its own.
+//
+// This is intentionally best-effort: an empty, already-expired, or malformed
+// token is not an error, since the caller (logout) should always be able to
+// proceed even if there is nothing meaningful to revoke.
+func (s *Service) RevokeAccessToken(ctx context.Context, tokenString string) error {
+	if tokenString == "" {
+		return nil
+	}
+	claims, err := s.tokenManager.Parse(tokenString)
+	if err != nil {
+		return nil
+	}
+	return s.repo.DenylistAccessToken(ctx, claims.ID, claims.UserID, claims.ExpiresAt.Time)
+}
+
 func validatePassword(pw string) error {
 	if err := passwordPolicy.Validate(pw); err != nil {
 		return fmt.Errorf("%w: %v", sharederrors.ErrInvalidInput, err)

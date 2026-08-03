@@ -35,7 +35,7 @@
 | Project management | ✅ | ✅ | ✅ | 🔄 | ❌ | Frontend key generation now matches backend regex |
 | API keys (CRUD) | ✅ | ✅ | ✅ | 🔄 | ❌ | Settings UI implemented; `/ingest` now protected by API-key auth with scope and rate limiting |
 | RBAC (roles, permissions, assignments) | 🔄 | ❌ | 🔄 | 🔄 | ❌ | Org-scoped only; permission-name drift |
-| Audit logging | ✅ | ❌ | ❌ | 🔄 | ❌ | Fire-and-forget, no UI |
+| Audit logging | ✅ | 🔄 | ✅ | 🔄 | ❌ | Write path is durable (C6); `GET /audit-events` + Settings UI now exist, scoped to the current user's own events (no `organization_id` column yet — SBL-080) |
 | Billing / subscriptions | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
 
 ## Testing layer
@@ -63,7 +63,7 @@
 | Settings — members | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
 | Settings — roles | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
 | Settings — API keys | ✅ | ✅ | ✅ | 🔄 | ❌ | Backend CRUD and `/dashboard/settings/api-keys` UI implemented |
-| Settings — audit logs | ✅ | ❌ | ❌ | 🔄 | ❌ | Backend stores events; no UI |
+| Settings — audit logs | ✅ | ✅ | ✅ | 🔄 | ❌ | Self-scoped read endpoint + UI at `/dashboard/settings/audit-logs`; org-wide view for owners/admins blocked on SBL-080 |
 | Settings — billing | ❌ | ❌ | ❌ | ❌ | ❌ | Not started |
 | Settings — notifications | ✅ | ✅ | ✅ | 🔄 | ❌ | In-app feed, preferences, channels; needs production hardening |
 | Settings — profile / security | 🔄 | 🔄 | ❌ | ❌ | ❌ | Placeholder pages |

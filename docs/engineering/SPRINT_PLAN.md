@@ -18,6 +18,18 @@
 
 ---
 
+## Status: Sprints 1–3 complete (2026-08-03)
+
+An audit found most of Sprint 1–2's backend work already implemented and
+verified in code from an earlier pass — no changes needed there. The three
+genuine gaps (SBL-004 jti/denylist, SBL-007 audit read endpoint + UI,
+SBL-013 RBAC integration tests) have been implemented with test coverage.
+Details and the one deliberate scoping decision (SBL-007 is self-scoped
+pending SBL-080) are in the `SPRINT_BACKLOG.md` M1 status note. **Sprint 4 is
+next** — see the table below, all of it is still untouched.
+
+---
+
 ## Sprint 1 — Auth backbone (2 weeks)
 
 Goal: kill the `localStorage` XSS exposure, which is the #1 flagged risk in `LAUNCH_READINESS_PLAN.md`.

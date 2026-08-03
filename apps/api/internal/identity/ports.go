@@ -2,6 +2,7 @@ package identity
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,4 +23,12 @@ type Repository interface {
 	RevokeRefreshToken(ctx context.Context, tokenID uuid.UUID, replacedBy uuid.UUID) error
 	RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
+
+	// DenylistAccessToken records a still-live access token's jti as revoked so
+	// it is rejected by the Auth middleware before its natural expiry (e.g. on
+	// logout). expiresAt is the token's own expiry, used to bound how long the
+	// denylist row needs to be kept.
+	DenylistAccessToken(ctx context.Context, jti string, userID uuid.UUID, expiresAt time.Time) error
+	// IsAccessTokenDenylisted reports whether the given jti has been revoked.
+	IsAccessTokenDenylisted(ctx context.Context, jti string) (bool, error)
 }

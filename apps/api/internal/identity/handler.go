@@ -2,12 +2,29 @@ package identity
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	apihttp "github.com/testra/testra/apps/api/internal/shared/http"
 	"github.com/testra/testra/apps/api/internal/shared/middleware"
 )
+
+// accessTokenFromRequest returns the current access token from either the
+// httpOnly cookie or a bearer Authorization header, mirroring the middleware's
+// own extraction order. Used only for best-effort revocation on logout.
+func accessTokenFromRequest(r *http.Request) string {
+	if token, ok := middleware.AccessTokenFromCookie(r); ok {
+		return token
+	}
+	header := r.Header.Get("Authorization")
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
+		return parts[1]
+	}
+	return ""
+}
 
 type Handler struct {
 	service       *Service
@@ -296,6 +313,16 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		refreshToken = req.RefreshToken
 	}
 
+	// Best-effort: denylist the still-live access token so it stops working
+	// immediately rather than staying valid until its natural expiry. This
+	// must not block logout if it fails (e.g. DB hiccup) — the refresh-token
+	// revocation above/below is the primary defense.
+	if accessToken := accessTokenFromRequest(r); accessToken != "" {
+		if err := h.service.RevokeAccessToken(r.Context(), accessToken); err != nil {
+			log.Printf("identity: failed to denylist access token on logout: %v", err)
+		}
+	}
+
 	if err := h.service.Logout(r.Context(), refreshToken); err != nil {
 		middleware.ClearAuthCookies(w, r)
 		apihttp.MapError(w, err)
@@ -311,6 +338,12 @@ func (h *Handler) LogoutAllDevices(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
 		return
+	}
+
+	if accessToken := accessTokenFromRequest(r); accessToken != "" {
+		if err := h.service.RevokeAccessToken(r.Context(), accessToken); err != nil {
+			log.Printf("identity: failed to denylist access token on logout-all: %v", err)
+		}
 	}
 
 	if err := h.service.LogoutAllDevices(r.Context(), userID); err != nil {

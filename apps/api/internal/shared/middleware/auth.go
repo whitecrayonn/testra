@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -11,6 +12,13 @@ import (
 
 type AuthConfig struct {
 	TokenManager *jwt.Manager
+
+	// IsRevoked, if set, is called with the access token's jti (claims.ID) on
+	// every authenticated request to check a server-side denylist (e.g. tokens
+	// revoked by logout before their natural expiry). Optional: a nil value
+	// skips the check entirely, so existing tests and callers that don't wire
+	// a denylist keep working unchanged.
+	IsRevoked func(ctx context.Context, jti string) (bool, error)
 }
 
 func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
@@ -31,6 +39,18 @@ func Auth(cfg AuthConfig) func(http.Handler) http.Handler {
 			if err != nil {
 				apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
 				return
+			}
+
+			if cfg.IsRevoked != nil {
+				revoked, err := cfg.IsRevoked(r.Context(), claims.ID)
+				if err != nil {
+					apihttp.ErrorJSON(w, http.StatusInternalServerError, "INTERNAL", errors.ErrInternal.Error())
+					return
+				}
+				if revoked {
+					apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", errors.ErrUnauthorized.Error())
+					return
+				}
 			}
 
 			ctx := WithUserID(r.Context(), claims.UserID)

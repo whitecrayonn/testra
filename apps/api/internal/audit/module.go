@@ -6,9 +6,11 @@ import (
 
 type Module struct {
 	Service *Service
+	Handler *Handler
 }
 
 func NewModule(db db.DBTX) *Module {
 	repo := NewSQLRepository(db)
-	return &Module{Service: NewService(repo)}
+	service := NewService(repo)
+	return &Module{Service: service, Handler: NewHandler(service)}
 }

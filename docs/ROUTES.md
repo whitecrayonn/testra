@@ -107,6 +107,7 @@ GET    /auth/me          (Auth middleware)
 POST   /auth/mfa/setup   (Auth middleware)
 POST   /auth/mfa/verify  (Auth middleware)
 POST   /auth/mfa/disable (Auth middleware)
+GET    /audit-events     (Auth middleware; returns the caller's own events only — no org_id column on audit_events yet, see SBL-080)
 ```
 
 ### Organizations

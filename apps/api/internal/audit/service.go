@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -39,4 +40,10 @@ func (s *Service) Log(ctx context.Context, input LogInput) {
 		log.Printf("audit: failed to persist event action=%q resource=%q resource_id=%q user_id=%s: %v",
 			input.Action, input.Resource, input.ResourceID, input.UserID, err)
 	}
+}
+
+// ListByUser returns a page of the given user's own audit trail, most recent
+// first.
+func (s *Service) ListByUser(ctx context.Context, userID uuid.UUID, beforeCreatedAt *time.Time, beforeID uuid.UUID, limit int) ([]Event, error) {
+	return s.repo.ListByUser(ctx, userID, beforeCreatedAt, beforeID, limit)
 }

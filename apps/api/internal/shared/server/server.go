@@ -175,14 +175,19 @@ func New(cfg Config) http.Handler {
 	rbacLoader := rbac.NewSQLPermissionLoader(dbHandle)
 
 	idempotencyStore := idempotency.NewPostgresStore(dbHandle)
-	auditSvc := audit.NewModule(dbHandle).Service
+	auditModule := audit.NewModule(dbHandle)
+	auditSvc := auditModule.Service
 
 	eventBus := eventbus.New(256)
 	eventbus.SetDefault(eventBus)
 	integrationhubModule := integrationhub.New(cfg.DB, auditSvc, eventBus)
 	billingModule := billing.New(cfg.DB, cfg.StripeSecretKey)
 
-	authMiddleware := sharedmiddleware.Auth(sharedmiddleware.AuthConfig{TokenManager: cfg.JWTManager})
+	identityAuthRepo := identity.NewSQLRepository(cfg.DB)
+	authMiddleware := sharedmiddleware.Auth(sharedmiddleware.AuthConfig{
+		TokenManager: cfg.JWTManager,
+		IsRevoked:    identityAuthRepo.IsAccessTokenDenylisted,
+	})
 	rbacCfg := sharedmiddleware.RBACConfig{Loader: rbacLoader}
 
 	r.Get("/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
@@ -270,6 +275,7 @@ func New(cfg Config) http.Handler {
 			r.Post("/auth/mfa/setup", identityModule.SetupMFA)
 			r.Post("/auth/mfa/verify", identityModule.VerifyMFA)
 			r.Post("/auth/mfa/disable", identityModule.DisableMFA)
+			r.Get("/audit-events", auditModule.Handler.List)
 
 			r.Group(func(r chi.Router) {
 				r.Use(sharedmiddleware.TenantContext(cfg.DB,

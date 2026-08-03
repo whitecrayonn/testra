@@ -17,16 +17,18 @@ type fakeRepo struct {
 	usersByEmail    map[string]*User
 	resetTokens     map[string]*PasswordResetToken
 	refreshTokens   map[string]*RefreshToken
+	denylistedJTIs  map[string]time.Time
 	mfaUpdates      int
 	passwordUpdates int
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{
-		users:         make(map[uuid.UUID]*User),
-		usersByEmail:  make(map[string]*User),
-		resetTokens:   make(map[string]*PasswordResetToken),
-		refreshTokens: make(map[string]*RefreshToken),
+		users:          make(map[uuid.UUID]*User),
+		usersByEmail:   make(map[string]*User),
+		resetTokens:    make(map[string]*PasswordResetToken),
+		refreshTokens:  make(map[string]*RefreshToken),
+		denylistedJTIs: make(map[string]time.Time),
 	}
 }
 
@@ -140,6 +142,19 @@ func (r *fakeRepo) RevokeAllUserRefreshTokens(ctx context.Context, userID uuid.U
 		}
 	}
 	return nil
+}
+
+func (r *fakeRepo) DenylistAccessToken(ctx context.Context, jti string, userID uuid.UUID, expiresAt time.Time) error {
+	if jti == "" {
+		return nil
+	}
+	r.denylistedJTIs[jti] = expiresAt
+	return nil
+}
+
+func (r *fakeRepo) IsAccessTokenDenylisted(ctx context.Context, jti string) (bool, error) {
+	_, ok := r.denylistedJTIs[jti]
+	return ok, nil
 }
 
 func newTestService(repo *fakeRepo) *Service {
@@ -625,5 +640,71 @@ func TestLogoutAllDevices(t *testing.T) {
 
 	if _, err := svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: result2.RefreshToken}); err != sharederrors.ErrTokenRevoked {
 		t.Fatalf("expected ErrTokenRevoked after logout all, got %v", err)
+	}
+}
+
+func TestRevokeAccessToken(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "revoke-access@test.com", "TestPass123!@#")
+
+	result, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	claims, err := svc.tokenManager.Parse(result.Token)
+	if err != nil {
+		t.Fatalf("parse access token: %v", err)
+	}
+	if claims.ID == "" {
+		t.Fatal("expected access token to carry a non-empty jti")
+	}
+
+	denylisted, err := repo.IsAccessTokenDenylisted(context.Background(), claims.ID)
+	if err != nil {
+		t.Fatalf("check denylist before revoke: %v", err)
+	}
+	if denylisted {
+		t.Fatal("expected token not to be denylisted before revocation")
+	}
+
+	if err := svc.RevokeAccessToken(context.Background(), result.Token); err != nil {
+		t.Fatalf("revoke access token: %v", err)
+	}
+
+	denylisted, err = repo.IsAccessTokenDenylisted(context.Background(), claims.ID)
+	if err != nil {
+		t.Fatalf("check denylist after revoke: %v", err)
+	}
+	if !denylisted {
+		t.Fatal("expected token to be denylisted after revocation")
+	}
+}
+
+func TestRevokeAccessToken_EmptyTokenIsNoop(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+
+	if err := svc.RevokeAccessToken(context.Background(), ""); err != nil {
+		t.Fatalf("expected no error revoking an empty token, got %v", err)
+	}
+	if len(repo.denylistedJTIs) != 0 {
+		t.Fatal("expected no denylist entries for an empty token")
+	}
+}
+
+func TestRevokeAccessToken_MalformedTokenIsNoop(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+
+	if err := svc.RevokeAccessToken(context.Background(), "not-a-real-jwt"); err != nil {
+		t.Fatalf("expected no error revoking a malformed token, got %v", err)
+	}
+	if len(repo.denylistedJTIs) != 0 {
+		t.Fatal("expected no denylist entries for a malformed token")
 	}
 }
