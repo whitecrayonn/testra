@@ -2390,6 +2390,29 @@ paths:
           $ref: '#/components/responses/Forbidden'
       security:
         - bearerAuth: []
+  /generate/from-spec:
+    post:
+      tags:
+        - Test-Cases
+      operationId: postGenerateFromSpec
+      summary: postGenerateFromSpec
+      description: >
+        Deterministically generates draft test cases from an OpenAPI 3.0/3.1 spec
+        (JSON body). No AI/ML is used — see docs/architecture and
+        apps/api/internal/testgen for the rule-based generation logic. Created
+        cases have status pending_review and must be approved via
+        POST /test-cases/{id}/approve before they count toward coverage.
+      responses:
+        '201':
+          description: Created — returns the generation run summary and created case ids
+        '400':
+          description: Invalid input (missing workspace/project id, or spec has no usable paths)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
   /test-cases:
     get:
       tags:
@@ -2471,6 +2494,24 @@ paths:
       responses:
         '200':
           description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+  /test-cases/{id}/approve:
+    post:
+      tags:
+        - Test-Cases
+      operationId: postTest_casesIdApprove
+      summary: postTest_casesIdApprove
+      description: Moves a generated test case from pending_review to active. Only valid for cases with status pending_review.
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Case is not pending_review
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5139,6 +5180,7 @@ components:
             - draft
             - active
             - deprecated
+            - pending_review
         priority:
           type: string
           enum:
@@ -5161,6 +5203,19 @@ components:
         updated_at:
           type: string
           format: date-time
+        source:
+          type: string
+          enum:
+            - manual
+            - generated_spec
+        generation_run_id:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
     TestCaseVersion:
       type: object
       properties:

@@ -204,11 +204,52 @@ func (s *Service) CreateCase(ctx context.Context, input CreateCaseInput) (*TestC
 		CreatedBy:     input.CreatedBy,
 		CreatedAt:     time.Now().UTC(),
 		UpdatedAt:     time.Now().UTC(),
+		// Cases created through this path are always user-authored. Generated
+		// cases are inserted directly by the testgen module via the Repository
+		// port (see apps/api/internal/testgen), the same pattern automationhub
+		// uses for ingested results.
+		Source: TestCaseSourceManual,
 	}
 	if err := s.repo.CreateCase(ctx, tc); err != nil {
 		return nil, err
 	}
 	return tc, nil
+}
+
+// ApproveCase moves a generated test case from pending_review to active and
+// records who approved it. It is a no-op error for cases that are not
+// pending review, so a generated case can never be double-approved silently
+// and a manually created (already active) case cannot be "approved" again.
+func (s *Service) ApproveCase(ctx context.Context, id uuid.UUID, reviewerID uuid.UUID) (*TestCase, error) {
+	if reviewerID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+
+	var result *TestCase
+	err := s.repo.RunInTx(ctx, func(txRepo Repository) error {
+		tc, err := txRepo.GetCaseByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if tc.Status != TestCaseStatusPendingReview {
+			return sharederrors.ErrInvalidInput
+		}
+
+		tc.Status = TestCaseStatusActive
+		reviewer := reviewerID
+		tc.ReviewedBy = &reviewer
+		tc.UpdatedAt = time.Now().UTC()
+
+		if err := txRepo.UpdateCase(ctx, tc); err != nil {
+			return err
+		}
+		result = tc
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (s *Service) GetCase(ctx context.Context, id uuid.UUID) (*TestCase, error) {
@@ -317,7 +358,15 @@ func (s *Service) ListVersions(ctx context.Context, caseID uuid.UUID, cursor str
 
 func isValidStatus(s TestCaseStatus) bool {
 	switch s {
-	case TestCaseStatusDraft, TestCaseStatusActive, TestCaseStatusDeprecated:
+	case TestCaseStatusDraft, TestCaseStatusActive, TestCaseStatusDeprecated, TestCaseStatusPendingReview:
+		return true
+	}
+	return false
+}
+
+func isValidSource(s TestCaseSource) bool {
+	switch s {
+	case TestCaseSourceManual, TestCaseSourceGeneratedSpec:
 		return true
 	}
 	return false

@@ -304,12 +304,16 @@ func (r *SQLRepository) CreateCase(ctx context.Context, tc *TestCase) error {
 	if err != nil {
 		return fmt.Errorf("marshal steps: %w", err)
 	}
+	source := tc.Source
+	if source == "" {
+		source = TestCaseSourceManual
+	}
 	_, err = r.db.ExecContext(ctx,
-		`INSERT INTO test_cases (id, workspace_id, project_id, suite_id, title, description, preconditions, steps, status, priority, tags, version, created_by, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		`INSERT INTO test_cases (id, workspace_id, project_id, suite_id, title, description, preconditions, steps, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
 		tc.ID, tc.WorkspaceID, tc.ProjectID, tc.SuiteID, tc.Title, tc.Description, tc.Preconditions,
 		stepsJSON, string(tc.Status), string(tc.Priority), pq.Array(tc.Tags), tc.Version,
-		tc.CreatedBy, tc.CreatedAt, tc.UpdatedAt,
+		tc.CreatedBy, tc.CreatedAt, tc.UpdatedAt, string(source), tc.GenerationRunID, tc.ReviewedBy,
 	)
 	return err
 }
@@ -319,13 +323,15 @@ func (r *SQLRepository) GetCaseByID(ctx context.Context, id uuid.UUID) (*TestCas
 	var suiteID sql.NullString
 	var stepsJSON string
 	var tags []string
-	var status, priority string
+	var status, priority, source string
+	var generationRunID, reviewedBy sql.NullString
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+		`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 		 FROM test_cases WHERE id = $1`,
 		id,
 	).Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-		&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt)
+		&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt,
+		&source, &generationRunID, &reviewedBy)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sharederrors.ErrNotFound
 	}
@@ -335,12 +341,27 @@ func (r *SQLRepository) GetCaseByID(ctx context.Context, id uuid.UUID) (*TestCas
 	tc.Status = TestCaseStatus(status)
 	tc.Priority = TestCasePriority(priority)
 	tc.Tags = tags
+	tc.Source = TestCaseSource(source)
 	if suiteID.Valid {
 		sid, err := uuid.Parse(suiteID.String)
 		if err != nil {
 			return nil, fmt.Errorf("invalid stored suite_id: %w", err)
 		}
 		tc.SuiteID = &sid
+	}
+	if generationRunID.Valid {
+		gid, err := uuid.Parse(generationRunID.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored generation_run_id: %w", err)
+		}
+		tc.GenerationRunID = &gid
+	}
+	if reviewedBy.Valid {
+		rid, err := uuid.Parse(reviewedBy.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored reviewed_by: %w", err)
+		}
+		tc.ReviewedBy = &rid
 	}
 	if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
 		return nil, fmt.Errorf("unmarshal steps: %w", err)
@@ -354,28 +375,28 @@ func (r *SQLRepository) ListCases(ctx context.Context, projectID uuid.UUID, suit
 
 	if suiteID != nil && cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases WHERE project_id = $1 AND suite_id = $2 AND id < $3
 			 ORDER BY id DESC LIMIT $4`,
 			projectID, *suiteID, cursor, limit,
 		)
 	} else if suiteID != nil {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases WHERE project_id = $1 AND suite_id = $2
 			 ORDER BY id DESC LIMIT $3`,
 			projectID, *suiteID, limit,
 		)
 	} else if cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases WHERE project_id = $1 AND id < $2
 			 ORDER BY id DESC LIMIT $3`,
 			projectID, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases WHERE project_id = $1
 			 ORDER BY id DESC LIMIT $2`,
 			projectID, limit,
@@ -401,7 +422,7 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 
 	if cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases
 			 WHERE workspace_id = $1 AND (title ILIKE $2 OR description ILIKE $2)
 			   AND id < $3::uuid
@@ -410,7 +431,7 @@ func (r *SQLRepository) SearchCases(ctx context.Context, workspaceID uuid.UUID, 
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at
+			`SELECT id, workspace_id, project_id, suite_id, title, description, preconditions, steps::text, status, priority, tags, version, created_by, created_at, updated_at, source, generation_run_id, reviewed_by
 			 FROM test_cases
 			 WHERE workspace_id = $1 AND (title ILIKE $2 OR description ILIKE $2)
 			 ORDER BY updated_at DESC, id DESC LIMIT $3`,
@@ -441,10 +462,10 @@ func (r *SQLRepository) UpdateCase(ctx context.Context, tc *TestCase) error {
 		return fmt.Errorf("marshal steps: %w", err)
 	}
 	result, err := r.db.ExecContext(ctx,
-		`UPDATE test_cases SET title = $2, description = $3, preconditions = $4, steps = $5, status = $6, priority = $7, tags = $8, suite_id = $9, version = $10, updated_at = $11
+		`UPDATE test_cases SET title = $2, description = $3, preconditions = $4, steps = $5, status = $6, priority = $7, tags = $8, suite_id = $9, version = $10, updated_at = $11, reviewed_by = $12
 		 WHERE id = $1`,
 		tc.ID, tc.Title, tc.Description, tc.Preconditions, stepsJSON,
-		string(tc.Status), string(tc.Priority), pq.Array(tc.Tags), tc.SuiteID, tc.Version, tc.UpdatedAt,
+		string(tc.Status), string(tc.Priority), pq.Array(tc.Tags), tc.SuiteID, tc.Version, tc.UpdatedAt, tc.ReviewedBy,
 	)
 	if err != nil {
 		return err
@@ -527,30 +548,53 @@ func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID, curs
 	return versions, rows.Err()
 }
 
+func scanCaseCommon(tc *TestCase, suiteID, generationRunID, reviewedBy sql.NullString, status, priority, source, stepsJSON string, tags []string) error {
+	tc.Status = TestCaseStatus(status)
+	tc.Priority = TestCasePriority(priority)
+	tc.Source = TestCaseSource(source)
+	tc.Tags = tags
+	if suiteID.Valid {
+		sid, err := uuid.Parse(suiteID.String)
+		if err != nil {
+			return fmt.Errorf("invalid stored suite_id: %w", err)
+		}
+		tc.SuiteID = &sid
+	}
+	if generationRunID.Valid {
+		gid, err := uuid.Parse(generationRunID.String)
+		if err != nil {
+			return fmt.Errorf("invalid stored generation_run_id: %w", err)
+		}
+		tc.GenerationRunID = &gid
+	}
+	if reviewedBy.Valid {
+		rid, err := uuid.Parse(reviewedBy.String)
+		if err != nil {
+			return fmt.Errorf("invalid stored reviewed_by: %w", err)
+		}
+		tc.ReviewedBy = &rid
+	}
+	if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
+		return fmt.Errorf("unmarshal steps: %w", err)
+	}
+	return nil
+}
+
 func scanCases(rows *sql.Rows) ([]TestCase, error) {
 	var cases []TestCase
 	for rows.Next() {
 		var tc TestCase
-		var suiteID sql.NullString
+		var suiteID, generationRunID, reviewedBy sql.NullString
 		var stepsJSON string
 		var tags []string
-		var status, priority string
+		var status, priority, source string
 		if err := rows.Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt); err != nil {
+			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt,
+			&source, &generationRunID, &reviewedBy); err != nil {
 			return nil, err
 		}
-		tc.Status = TestCaseStatus(status)
-		tc.Priority = TestCasePriority(priority)
-		tc.Tags = tags
-		if suiteID.Valid {
-			sid, err := uuid.Parse(suiteID.String)
-			if err != nil {
-				return nil, fmt.Errorf("invalid stored suite_id: %w", err)
-			}
-			tc.SuiteID = &sid
-		}
-		if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
-			return nil, fmt.Errorf("unmarshal steps: %w", err)
+		if err := scanCaseCommon(&tc, suiteID, generationRunID, reviewedBy, status, priority, source, stepsJSON, tags); err != nil {
+			return nil, err
 		}
 		cases = append(cases, tc)
 	}
@@ -562,27 +606,18 @@ func scanCasesWithRank(rows *sql.Rows) ([]TestCase, float64, error) {
 	var lastRank float64
 	for rows.Next() {
 		var tc TestCase
-		var suiteID sql.NullString
+		var suiteID, generationRunID, reviewedBy sql.NullString
 		var stepsJSON string
 		var tags []string
-		var status, priority string
+		var status, priority, source string
 		var rank float64
 		if err := rows.Scan(&tc.ID, &tc.WorkspaceID, &tc.ProjectID, &suiteID, &tc.Title, &tc.Description, &tc.Preconditions,
-			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt, &rank); err != nil {
+			&stepsJSON, &status, &priority, pq.Array(&tags), &tc.Version, &tc.CreatedBy, &tc.CreatedAt, &tc.UpdatedAt,
+			&source, &generationRunID, &reviewedBy, &rank); err != nil {
 			return nil, 0, err
 		}
-		tc.Status = TestCaseStatus(status)
-		tc.Priority = TestCasePriority(priority)
-		tc.Tags = tags
-		if suiteID.Valid {
-			sid, err := uuid.Parse(suiteID.String)
-			if err != nil {
-				return nil, 0, fmt.Errorf("invalid stored suite_id: %w", err)
-			}
-			tc.SuiteID = &sid
-		}
-		if err := json.Unmarshal([]byte(stepsJSON), &tc.Steps); err != nil {
-			return nil, 0, fmt.Errorf("unmarshal steps: %w", err)
+		if err := scanCaseCommon(&tc, suiteID, generationRunID, reviewedBy, status, priority, source, stepsJSON, tags); err != nil {
+			return nil, 0, err
 		}
 		cases = append(cases, tc)
 		lastRank = rank

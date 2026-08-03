@@ -80,21 +80,24 @@ type stepResponse struct {
 }
 
 type caseResponse struct {
-	ID            string         `json:"id"`
-	WorkspaceID   string         `json:"workspace_id"`
-	ProjectID     string         `json:"project_id"`
-	SuiteID       *string        `json:"suite_id"`
-	Title         string         `json:"title"`
-	Description   string         `json:"description"`
-	Preconditions string         `json:"preconditions"`
-	Steps         []stepResponse `json:"steps"`
-	Status        string         `json:"status"`
-	Priority      string         `json:"priority"`
-	Tags          []string       `json:"tags"`
-	Version       int            `json:"version"`
-	CreatedBy     string         `json:"created_by"`
-	CreatedAt     string         `json:"created_at"`
-	UpdatedAt     string         `json:"updated_at"`
+	ID              string         `json:"id"`
+	WorkspaceID     string         `json:"workspace_id"`
+	ProjectID       string         `json:"project_id"`
+	SuiteID         *string        `json:"suite_id"`
+	Title           string         `json:"title"`
+	Description     string         `json:"description"`
+	Preconditions   string         `json:"preconditions"`
+	Steps           []stepResponse `json:"steps"`
+	Status          string         `json:"status"`
+	Priority        string         `json:"priority"`
+	Tags            []string       `json:"tags"`
+	Version         int            `json:"version"`
+	CreatedBy       string         `json:"created_by"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
+	Source          string         `json:"source"`
+	GenerationRunID *string        `json:"generation_run_id"`
+	ReviewedBy      *string        `json:"reviewed_by"`
 }
 
 func mapCaseResponse(tc *TestCase) caseResponse {
@@ -102,6 +105,16 @@ func mapCaseResponse(tc *TestCase) caseResponse {
 	if tc.SuiteID != nil {
 		s := tc.SuiteID.String()
 		suiteID = &s
+	}
+	var generationRunID *string
+	if tc.GenerationRunID != nil {
+		g := tc.GenerationRunID.String()
+		generationRunID = &g
+	}
+	var reviewedBy *string
+	if tc.ReviewedBy != nil {
+		rv := tc.ReviewedBy.String()
+		reviewedBy = &rv
 	}
 	steps := make([]stepResponse, len(tc.Steps))
 	for i, st := range tc.Steps {
@@ -117,21 +130,24 @@ func mapCaseResponse(tc *TestCase) caseResponse {
 		tags = []string{}
 	}
 	return caseResponse{
-		ID:            tc.ID.String(),
-		WorkspaceID:   tc.WorkspaceID.String(),
-		ProjectID:     tc.ProjectID.String(),
-		SuiteID:       suiteID,
-		Title:         tc.Title,
-		Description:   tc.Description,
-		Preconditions: tc.Preconditions,
-		Steps:         steps,
-		Status:        string(tc.Status),
-		Priority:      string(tc.Priority),
-		Tags:          tc.Tags,
-		Version:       tc.Version,
-		CreatedBy:     tc.CreatedBy.String(),
-		CreatedAt:     tc.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:     tc.UpdatedAt.Format(time.RFC3339),
+		ID:              tc.ID.String(),
+		WorkspaceID:     tc.WorkspaceID.String(),
+		ProjectID:       tc.ProjectID.String(),
+		SuiteID:         suiteID,
+		Title:           tc.Title,
+		Description:     tc.Description,
+		Preconditions:   tc.Preconditions,
+		Steps:           steps,
+		Status:          string(tc.Status),
+		Priority:        string(tc.Priority),
+		Tags:            tc.Tags,
+		Version:         tc.Version,
+		CreatedBy:       tc.CreatedBy.String(),
+		CreatedAt:       tc.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       tc.UpdatedAt.Format(time.RFC3339),
+		Source:          string(tc.Source),
+		GenerationRunID: generationRunID,
+		ReviewedBy:      reviewedBy,
 	}
 }
 
@@ -741,6 +757,31 @@ func (h *Handler) UpdateCase(w http.ResponseWriter, r *http.Request) {
 		Tags:          req.Tags,
 		ChangedBy:     userID,
 	})
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusOK, mapCaseResponse(tc))
+}
+
+// ApproveCase moves a generated test case (status pending_review) to active.
+// It is the only way a generated case can start counting toward coverage —
+// see docs/architecture/adrs for the generation feature's review requirement.
+func (h *Handler) ApproveCase(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid test case id")
+		return
+	}
+
+	tc, err := h.service.ApproveCase(r.Context(), id, userID)
 	if err != nil {
 		apihttp.MapError(w, err)
 		return

@@ -86,6 +86,15 @@ export async function deleteTestCase(id: string): Promise<void> {
   await apiFetch(`/api/v1/test-cases/${id}`, { method: "DELETE" });
 }
 
+/**
+ * Approves a generated test case, moving it from "pending_review" to
+ * "active". Only valid for cases with status "pending_review" — the backend
+ * rejects approving a case that isn't awaiting review.
+ */
+export async function approveTestCase(id: string): Promise<TestCase> {
+  return apiFetch(`/api/v1/test-cases/${id}/approve`, { method: "POST" });
+}
+
 export async function listTestCaseVersions(
   id: string,
 ): Promise<TestCaseVersion[]> {

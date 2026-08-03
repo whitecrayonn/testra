@@ -63,7 +63,8 @@ Route group `(dashboard)` applies `app/(dashboard)/layout.tsx` (sidebar + main c
 | `/[workspace]/projects` | `apps/web/app/(dashboard)/[workspace]/projects/page.tsx` | List/select/create projects |
 | `/[workspace]/test-cases` | `apps/web/app/(dashboard)/[workspace]/test-cases/page.tsx` | Search/list test cases |
 | `/[workspace]/test-cases/new` | `apps/web/app/(dashboard)/[workspace]/test-cases/new/page.tsx` | Create test case |
-| `/[workspace]/test-cases/[id]` | `apps/web/app/(dashboard)/[workspace]/test-cases/[id]/page.tsx` | Edit/view test case + version history |
+| `/[workspace]/test-cases/[id]` | `apps/web/app/(dashboard)/[workspace]/test-cases/[id]/page.tsx` | Edit/view test case + version history; shows Approve action when status is `pending_review` |
+| `/[workspace]/test-cases/generate` | `apps/web/app/(dashboard)/[workspace]/test-cases/generate/page.tsx` | Upload/paste an OpenAPI spec (JSON) and generate draft test cases; deterministic, no AI/ML |
 | `/[workspace]/test-runs` | `apps/web/app/(dashboard)/[workspace]/test-runs/page.tsx` | List test runs |
 | `/[workspace]/test-runs/new` | `apps/web/app/(dashboard)/[workspace]/test-runs/new/page.tsx` | Create manual test run |
 | `/[workspace]/test-runs/[id]` | `apps/web/app/(dashboard)/[workspace]/test-runs/[id]/page.tsx` | Run detail + SSE progress |
@@ -146,6 +147,7 @@ DELETE /api-keys/{id}                           (TenantContext via api_key_id + 
 POST   /test-folders   (tests:create + AuditLog)
 POST   /test-suites    (tests:create + AuditLog)
 POST   /test-cases     (tests:create + AuditLog)
+POST   /generate/from-spec                      (tests:create + AuditLog; deterministic, no AI/ML — apps/api/internal/testgen)
 
 GET    /test-folders?workspace_id=...
 GET    /test-suites?workspace_id=...
@@ -154,6 +156,7 @@ GET    /test-cases?project_id=...
 GET    /test-cases/{id}
 GET    /test-cases/{id}/versions
 PUT    /test-cases/{id}                         (tests:update + AuditLog)
+POST   /test-cases/{id}/approve                 (tests:update + AuditLog; moves pending_review -> active)
 DELETE /test-cases/{id}                         (tests:delete + AuditLog)
 
 GET    /test-folders/{id}

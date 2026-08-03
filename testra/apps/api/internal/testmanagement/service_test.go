@@ -577,6 +577,73 @@ func TestServiceUpdateCaseRequiresChangedBy(t *testing.T) {
 	}
 }
 
+func TestServiceApproveCase(t *testing.T) {
+	repo := newFakeRepository()
+	service := NewService(repo)
+	wsID := uuid.New()
+	projID := uuid.New()
+	authorID := uuid.New()
+	reviewerID := uuid.New()
+
+	tc, err := service.CreateCase(context.Background(), CreateCaseInput{
+		WorkspaceID: wsID,
+		ProjectID:   projID,
+		Title:       "Generated case awaiting review",
+		Status:      TestCaseStatusPendingReview,
+		CreatedBy:   authorID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating case: %v", err)
+	}
+
+	approved, err := service.ApproveCase(context.Background(), tc.ID, reviewerID)
+	if err != nil {
+		t.Fatalf("unexpected error approving case: %v", err)
+	}
+	if approved.Status != TestCaseStatusActive {
+		t.Errorf("expected status active after approval, got %s", approved.Status)
+	}
+	if approved.ReviewedBy == nil || *approved.ReviewedBy != reviewerID {
+		t.Errorf("expected ReviewedBy to be set to the reviewer, got %v", approved.ReviewedBy)
+	}
+
+	// Approving an already-active case must fail — a case can only leave
+	// pending_review once, so a case cannot be silently double-approved.
+	if _, err := service.ApproveCase(context.Background(), tc.ID, reviewerID); err != sharederrors.ErrInvalidInput {
+		t.Errorf("expected ErrInvalidInput approving an already-active case, got %v", err)
+	}
+}
+
+func TestServiceApproveCaseRequiresReviewer(t *testing.T) {
+	repo := newFakeRepository()
+	service := NewService(repo)
+
+	tc, err := service.CreateCase(context.Background(), CreateCaseInput{
+		WorkspaceID: uuid.New(),
+		ProjectID:   uuid.New(),
+		Title:       "Generated case",
+		Status:      TestCaseStatusPendingReview,
+		CreatedBy:   uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating case: %v", err)
+	}
+
+	if _, err := service.ApproveCase(context.Background(), tc.ID, uuid.Nil); err != sharederrors.ErrInvalidInput {
+		t.Errorf("expected ErrInvalidInput for a nil reviewer id, got %v", err)
+	}
+}
+
+func TestServiceApproveCaseNotFound(t *testing.T) {
+	repo := newFakeRepository()
+	service := NewService(repo)
+
+	_, err := service.ApproveCase(context.Background(), uuid.New(), uuid.New())
+	if err != sharederrors.ErrNotFound {
+		t.Errorf("expected ErrNotFound for an unknown case id, got %v", err)
+	}
+}
+
 func TestMapCaseResponseDoesNotMutateTags(t *testing.T) {
 	tc := &TestCase{
 		ID:          uuid.New(),
