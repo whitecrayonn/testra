@@ -114,6 +114,49 @@ jobs:
       - name: Typecheck SDK
         run: pnpm turbo run typecheck --filter @testra/sdk
 
+  security-scan:
+    name: Security scan (Trivy + SBOM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Build API binary
+        run: go build -o bin/testra-api ./apps/api/cmd/api
+        working-directory: .
+
+      - name: Build worker binary
+        run: go build -o bin/testra-worker ./apps/api/cmd/worker
+        working-directory: .
+
+      - name: Trivy vulnerability scan (dependency manifests + built binaries)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Generate SBOM (CycloneDX)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: cyclonedx
+          output: sbom.cdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 90
+
   ml:
     name: ML (lint, test)
     runs-on: ubuntu-latest

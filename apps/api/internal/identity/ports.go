@@ -14,6 +14,17 @@ type Repository interface {
 	UpdateMFA(ctx context.Context, userID uuid.UUID, secret string, enabled bool) error
 	UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash string) error
 
+	// IncrementFailedLoginAttempts atomically increments the user's failed
+	// login counter and returns the new count, so the caller can decide
+	// whether the account should now be locked.
+	IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) (int, error)
+	// LockAccount sets locked_until so further login attempts are rejected
+	// until the given time.
+	LockAccount(ctx context.Context, userID uuid.UUID, until time.Time) error
+	// ResetFailedLoginAttempts clears the failed-attempt counter and any
+	// lockout, called after a fully successful login.
+	ResetFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error
+
 	CreateResetToken(ctx context.Context, token *PasswordResetToken) error
 	GetResetTokenByHash(ctx context.Context, hash string) (*PasswordResetToken, error)
 	MarkResetTokenUsed(ctx context.Context, tokenID uuid.UUID) error

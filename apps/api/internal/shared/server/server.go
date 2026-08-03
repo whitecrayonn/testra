@@ -57,6 +57,7 @@ type Config struct {
 	SMTPPasswordSecret  string
 	SecretProvider      secrets.Provider
 	CORSAllowedOrigins  string
+	WebBaseURL          string
 	IdempotencyKeyTTL   time.Duration
 	MLServiceURL        string
 	StripeSecretKey     string
@@ -145,6 +146,7 @@ func New(cfg Config) http.Handler {
 		Username:       cfg.SMTPUsername,
 		SecretProvider: cfg.SecretProvider,
 		PasswordSecret: cfg.SMTPPasswordSecret,
+		WebBaseURL:     cfg.WebBaseURL,
 	}
 
 	identityModule := identity.NewModule(cfg.DB, cfg.JWTManager, cfg.JWTExpiry, refreshExpiry, refreshAbsolute, smtpCfg)

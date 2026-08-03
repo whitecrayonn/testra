@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,9 @@ type SMTPConfig struct {
 	Password       string // Deprecated: use SecretProvider + PasswordSecret
 	SecretProvider secrets.Provider
 	PasswordSecret string
+	// WebBaseURL is the origin of the web app, used to build the HTTPS magic
+	// link embedded in password reset emails (e.g. https://app.testra.io).
+	WebBaseURL string
 }
 
 type Service struct {
@@ -55,6 +59,9 @@ type mfaFailureState struct {
 const (
 	mfaMaxAttempts   = 5
 	mfaLockoutWindow = 15 * time.Minute
+
+	loginMaxAttempts   = 5
+	loginLockoutWindow = 15 * time.Minute
 )
 
 func NewService(repo Repository, tokenManager *jwt.Manager, jwtExpiry time.Duration, refreshExpiry time.Duration, refreshAbsolute time.Duration, smtpCfg SMTPConfig) *Service {
@@ -143,7 +150,12 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (AuthResult, erro
 		return AuthResult{}, sharederrors.ErrInvalidCredential
 	}
 
+	if user.LockedUntil != nil && time.Now().UTC().Before(*user.LockedUntil) {
+		return AuthResult{}, sharederrors.ErrTooManyRequests
+	}
+
 	if !password.Verify(input.Password, user.Password) {
+		s.recordFailedLogin(ctx, user.ID)
 		return AuthResult{}, sharederrors.ErrInvalidCredential
 	}
 
@@ -160,6 +172,12 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (AuthResult, erro
 			return AuthResult{}, sharederrors.ErrInvalidCredential
 		}
 		s.resetMFAFailures(user.ID)
+	}
+
+	// Login fully succeeded (password, and MFA if enabled): clear the failed
+	// password-attempt counter so it doesn't carry over to a future session.
+	if err := s.repo.ResetFailedLoginAttempts(ctx, user.ID); err != nil {
+		log.Printf("identity: failed to reset failed login attempts for %s: %v", user.ID, err)
 	}
 
 	token, err := s.tokenManager.Sign(user.ID, user.Email, s.jwtExpiry)
@@ -218,6 +236,24 @@ func (s *Service) resetMFAFailures(userID uuid.UUID) {
 	s.mfaMu.Lock()
 	defer s.mfaMu.Unlock()
 	delete(s.mfaFailures, userID)
+}
+
+// recordFailedLogin tracks a wrong-password attempt and locks the account
+// for loginLockoutWindow once loginMaxAttempts consecutive failures are
+// reached. It is best-effort: a persistence hiccup here must not turn into a
+// misleading error for what is otherwise a plain invalid-credential response.
+func (s *Service) recordFailedLogin(ctx context.Context, userID uuid.UUID) {
+	count, err := s.repo.IncrementFailedLoginAttempts(ctx, userID)
+	if err != nil {
+		log.Printf("identity: failed to record failed login attempt for %s: %v", userID, err)
+		return
+	}
+	if count >= loginMaxAttempts {
+		until := time.Now().UTC().Add(loginLockoutWindow)
+		if err := s.repo.LockAccount(ctx, userID, until); err != nil {
+			log.Printf("identity: failed to lock account %s after repeated failures: %v", userID, err)
+		}
+	}
 }
 
 type MFASetupResult struct {
@@ -341,6 +377,13 @@ func (s *Service) ResetPassword(ctx context.Context, input ResetPasswordInput) e
 	}
 
 	if err := s.repo.UpdatePassword(ctx, token.UserID, newHash); err != nil {
+		return err
+	}
+
+	// A password reset means any existing session may have been established
+	// under the compromised/forgotten password, so every refresh-token family
+	// for this user is revoked, forcing re-authentication everywhere.
+	if err := s.repo.RevokeAllUserRefreshTokens(ctx, token.UserID); err != nil {
 		return err
 	}
 
@@ -529,13 +572,27 @@ func (s *Service) RequestPasswordReset(ctx context.Context, input RequestPasswor
 	return rawToken, nil
 }
 
+// passwordResetLink builds the HTTPS magic link a user follows from their
+// email to reach the reset-password page with the token pre-filled.
+func (s *Service) passwordResetLink(token string) string {
+	base := strings.TrimRight(s.smtp.WebBaseURL, "/")
+	if base == "" {
+		base = "http://localhost:3000"
+	}
+	return fmt.Sprintf("%s/reset-password?token=%s", base, url.QueryEscape(token))
+}
+
 func (s *Service) sendPasswordResetEmail(to, token string) error {
 	if s.smtp.Host == "" {
 		return nil
 	}
 
+	link := s.passwordResetLink(token)
 	subject := "Testra — Password Reset"
-	body := fmt.Sprintf("Use this token to reset your password: %s\nThis token expires in 30 minutes.", token)
+	body := fmt.Sprintf(
+		"Click the link below to reset your password. This link expires in 30 minutes.\n\n%s\n\nIf you did not request this, you can safely ignore this email.",
+		link,
+	)
 	msg := strings.Join([]string{
 		"From: " + s.smtp.From,
 		"To: " + to,

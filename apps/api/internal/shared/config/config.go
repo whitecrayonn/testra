@@ -34,6 +34,7 @@ type Config struct {
 	SMTPUsername             string
 	SMTPPasswordSecret       string
 	CORSAllowedOrigins       string
+	WebBaseURL               string
 	IdempotencyKeyTTLMinutes int
 	MLServiceURL             string
 	StripeSecretKey          string
@@ -61,6 +62,7 @@ func Load() Config {
 		SMTPUsername:             getEnv("SMTP_USERNAME", ""),
 		SMTPPasswordSecret:       getEnv("SMTP_PASSWORD_SECRET", "SMTP_PASSWORD"),
 		CORSAllowedOrigins:       getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"),
+		WebBaseURL:               getEnv("WEB_BASE_URL", "http://localhost:3000"),
 		IdempotencyKeyTTLMinutes: getEnvInt("IDEMPOTENCY_KEY_TTL_MINUTES", 1440),
 		MLServiceURL:             getEnv("ML_SERVICE_URL", ""),
 		StripeSecretKey:          getEnv("STRIPE_SECRET_KEY", ""),

@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/testra/testra/apps/api/internal/shared/jwt"
+	sharedmiddleware "github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/server"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -258,6 +259,19 @@ func makeRequest(t *testing.T, handler http.Handler, method, path, token, idempo
 	if idempotencyKey != "" {
 		req.Header.Set("Idempotency-Key", idempotencyKey)
 	}
+
+	// The double-submit CSRF middleware guards every mutating route in the
+	// authenticated group regardless of auth scheme. A real browser client
+	// gets this cookie from GET /auth/csrf; tests short-circuit that round
+	// trip by minting a matching cookie/header pair directly. Harmless to
+	// attach even to GET requests or CSRF-exempt routes (e.g. the API-key
+	// group), since it's only ever checked where it applies.
+	csrfToken, err := sharedmiddleware.GenerateCSRFToken()
+	if err != nil {
+		t.Fatalf("generate csrf token: %v", err)
+	}
+	req.AddCookie(&http.Cookie{Name: sharedmiddleware.CSRFCookieName, Value: csrfToken})
+	req.Header.Set("X-CSRF-Token", csrfToken)
 
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
