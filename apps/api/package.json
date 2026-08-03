@@ -1,0 +1,11 @@
+{
+  "name": "@testra/api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ../../scripts/dev/go-dev.mjs cmd/api",
+    "build": "go build -o bin/api ./cmd/api",
+    "test": "go test ./...",
+    "lint": "go vet ./..."
+  }
+}

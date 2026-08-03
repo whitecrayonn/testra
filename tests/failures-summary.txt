@@ -1,0 +1,537 @@
+1) [chromium] ΓÇ║ e2e\accessibility\accessibility-expanded.spec.ts:7:7 ΓÇ║ Accessibility - Expanded @a11y @accessibility ΓÇ║ login page has no detectable accessibility violations
+    Error: expect(received).toEqual(expected) // deep equality
+    > 11 |     expect(results.violations).toEqual([]);
+
+2) [chromium] ΓÇ║ e2e\accessibility\accessibility-expanded.spec.ts:14:7 ΓÇ║ Accessibility - Expanded @a11y @accessibility ΓÇ║ register page has no detectable accessibility violations
+    Error: expect(received).toEqual(expected) // deep equality
+    > 18 |     expect(results.violations).toEqual([]);
+
+3) [chromium] ΓÇ║ e2e\accessibility\accessibility-expanded.spec.ts:21:7 ΓÇ║ Accessibility - Expanded @a11y @accessibility ΓÇ║ dashboard has no critical accessibility violations
+    Error: expect(received).toEqual(expected) // deep equality
+    > 35 |     expect(results.violations).toEqual([]);
+
+4) [chromium] ΓÇ║ e2e\accessibility\accessibility.spec.ts:7:7 ΓÇ║ Accessibility @a11y ΓÇ║ login page has no detectable accessibility violations
+    Error: expect(received).toEqual(expected) // deep equality
+    > 11 |     expect(accessibilityScanResults.violations).toEqual([]);
+
+5) [chromium] ΓÇ║ e2e\accessibility\accessibility.spec.ts:14:7 ΓÇ║ Accessibility @a11y ΓÇ║ dashboard has no critical accessibility violations
+    Error: expect(received).toEqual(expected) // deep equality
+    > 28 |     expect(accessibilityScanResults.violations).toEqual([]);
+
+6) [chromium] ΓÇ║ e2e\analytics\analytics.spec.ts:11:7 ΓÇ║ Analytics @analytics ΓÇ║ executive dashboard loads
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: 'Executive Dashboard' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+    Call log:
+    > 14 |     await expect(this.page.getByRole("heading", { name: title, exact: false })).toBeVisible();
+
+7) [chromium] ΓÇ║ e2e\api-testing\api-testing.spec.ts:6:7 ΓÇ║ API Testing Module @api @apitests ΓÇ║ user can create and view an API collection
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    20 |     await expect(this.page.getByText(name)).toBeVisible();
+
+8) [chromium] ΓÇ║ e2e\api-testing\api-testing.spec.ts:49:7 ΓÇ║ API Testing Module @api @apitests ΓÇ║ negative: execute request with invalid URL
+    Error: expect(received).rejects.toThrow()
+    58 |     await expect(
+    Error Context: reports\test-results\api-testing-api-testing-AP-3d1df-te-request-with-invalid-URL-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    58 |     await expect(
+    Error Context: reports\test-results\api-testing-api-testing-AP-3d1df-te-request-with-invalid-URL-chromium-retry1\error-context.md
+    Error: expect(received).not.toBe(expected) // Object.is equality
+    Expected: not "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOThhMGFlNTktMjdmYy00ZDk1LWI3M2ItZmQzM2Q5N2ZhMWMyIiwiZW1haWwiOiJ0ZXN0cmErMTc4NTI0OTIwMjg5MC04b2tzQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiOThhMGFlNTktMjdmYy00ZDk1LWI3M2ItZmQzM2Q5N2ZhMWMyIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg1MjUwMTAzLCJpYXQiOjE3ODUyNDkyMDN9.WYx0NLlrINFdOf07nm7zJLXPna6Eqz0Pr0HdFqmVQEfgw9SXAYayN1wdoGy25tshe4zV5I2Eq2fhrNxUI00nedsKQ_AkCQJ_yKfo2F64jrllneibBHOcnbZFsjBiN0UDTsnb7XwZEKF78rAfDvOh35xKvG5HlNVaEy18jbVEaConZNHyokj0e7LLpW04Fz0oPyQr6L-T9N6QMwK4gCor_avkUTv0zFsorp8wZPDJdd6xRUoqeSPJ4XOm6qDlrAIkrMqOPTZZ2OtTE6EOKw6gXQ9HKcF34Sxw65196nY2SRTs3XPEaOdeXBWINJVxwMTVS5VnYo8dUd73uX-I2XsGzA"
+
+9) [chromium] ΓÇ║ e2e\auth\session.spec.ts:7:7 ΓÇ║ Session & Token Management @session @auth ΓÇ║ refresh token returns new access token
+    Error: expect(received).not.toBe(expected) // Object.is equality
+    Expected: not "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOThhMGFlNTktMjdmYy00ZDk1LWI3M2ItZmQzM2Q5N2ZhMWMyIiwiZW1haWwiOiJ0ZXN0cmErMTc4NTI0OTIwMjg5MC04b2tzQGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiOThhMGFlNTktMjdmYy00ZDk1LWI3M2ItZmQzM2Q5N2ZhMWMyIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg1MjUwMTAzLCJpYXQiOjE3ODUyNDkyMDN9.WYx0NLlrINFdOf07nm7zJLXPna6Eqz0Pr0HdFqmVQEfgw9SXAYayN1wdoGy25tshe4zV5I2Eq2fhrNxUI00nedsKQ_AkCQJ_yKfo2F64jrllneibBHOcnbZFsjBiN0UDTsnb7XwZEKF78rAfDvOh35xKvG5HlNVaEy18jbVEaConZNHyokj0e7LLpW04Fz0oPyQr6L-T9N6QMwK4gCor_avkUTv0zFsorp8wZPDJdd6xRUoqeSPJ4XOm6qDlrAIkrMqOPTZZ2OtTE6EOKw6gXQ9HKcF34Sxw65196nY2SRTs3XPEaOdeXBWINJVxwMTVS5VnYo8dUd73uX-I2XsGzA"
+    20 |     expect(refreshed.token).toBeTruthy();
+    21 |     expect(refreshed.refresh_token).toBeTruthy();
+    > 22 |     expect(refreshed.token).not.toBe(loginResult.token);
+    Error Context: reports\test-results\auth-session-Session-Token-5e5d7-en-returns-new-access-token-chromium\error-context.md
+    Error: expect(received).not.toBe(expected) // Object.is equality
+    Expected: not "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRldiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDBlMzI3MWQtMGNhYS00MTNlLThkNzEtZTNjMjQwNjYzZDEzIiwiZW1haWwiOiJ0ZXN0cmErMTc4NTI0OTIwMzc4My02MjV4QGV4YW1wbGUuY29tIiwiaXNzIjoidGVzdHJhIiwic3ViIjoiMDBlMzI3MWQtMGNhYS00MTNlLThkNzEtZTNjMjQwNjYzZDEzIiwiYXVkIjpbInRlc3RyYS1hcGkiXSwiZXhwIjoxNzg1MjUwMTAzLCJpYXQiOjE3ODUyNDkyMDN9.wr01gPdff4kOMIGxekxq2pprueERgg-Jqxuu_1rMQUA7PeSJDqKNXBIneZor8v86WJN4AzlQz48cZcuhNeSd9HlHA6DWFDDaxVOgJ2OgPVAj3VvYc5lW_FQ0fOuDBAlBaJTfTuWtfaAvdOmIzPBpj70xK8y9HPkOhan7ys8iQ0mUIMG5T-px3M0yVXIBx-nwlPYFsYeJjsGVHIffEglj0VmSZB0ciViTy6A33oEyL17EbHWCTY3kT7nCuTqncpUdwfavThXaqQfyNhoUDStG6D_TDOP6mQOHVwB7D7b0nmhzIT7JlGOQ6bwg87WV-TMRzhuSbrv1dEahqmYrkTUdDg"
+
+10) [chromium] ΓÇ║ e2e\auth\session.spec.ts:131:7 ΓÇ║ Cookie Management @cookie @auth ΓÇ║ register sets auth cookies
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 142 |     expect(res.ok()).toBeTruthy();
+    144 |     expect(setCookie).toBeTruthy();
+    Error Context: reports\test-results\auth-session-Cookie-Manage-087a0--register-sets-auth-cookies-chromium\error-context.md
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 142 |     expect(res.ok()).toBeTruthy();
+
+11) [chromium] ΓÇ║ e2e\auth\session.spec.ts:149:7 ΓÇ║ Password Reset Flow @password-reset @auth ΓÇ║ request password reset for existing user succeeds
+    Error: expect(received).resolves.toBeUndefined()
+    Rejected to value: [Error: internal server error]
+    154 |     await expect(
+    Error Context: reports\test-results\auth-session-Password-Rese-75307--for-existing-user-succeeds-chromium\error-context.md
+    Error: expect(received).resolves.toBeUndefined()
+    Rejected to value: [Error: internal server error]
+    154 |     await expect(
+    Error Context: reports\test-results\auth-session-Password-Rese-75307--for-existing-user-succeeds-chromium-retry1\error-context.md
+
+12) [chromium] ΓÇ║ e2e\automation\automation.spec.ts:6:7 ΓÇ║ Automation Hub @automation ΓÇ║ user can create an automation project through UI
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+
+13) [chromium] ΓÇ║ e2e\automation\automation.spec.ts:36:7 ΓÇ║ Automation Hub @automation ΓÇ║ negative: create automation project with unsupported framework
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\automation-automation-Auto-53747--with-unsupported-framework-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\automation-automation-Auto-53747--with-unsupported-framework-chromium-retry1\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    > 142 |     expect(list.length).toBeGreaterThan(0);
+    143 |     expect(list.some((p: any) => p.id === project.id)).toBeTruthy();
+    Error Context: reports\test-results\crud-crud-Project-CRUD-cru-59a2f-list-projects-for-workspace-chromium\error-context.md
+
+14) [chromium] ΓÇ║ e2e\crud\crud.spec.ts:140:7 ΓÇ║ Project CRUD @crud @projects @regression ΓÇ║ list projects for workspace
+    Error: expect(received).toBeGreaterThan(expected)
+    > 142 |     expect(list.length).toBeGreaterThan(0);
+    143 |     expect(list.some((p: any) => p.id === project.id)).toBeTruthy();
+    Error Context: reports\test-results\crud-crud-Project-CRUD-cru-59a2f-list-projects-for-workspace-chromium\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    > 142 |     expect(list.length).toBeGreaterThan(0);
+    143 |     expect(list.some((p: any) => p.id === project.id)).toBeTruthy();
+    Error Context: reports\test-results\crud-crud-Project-CRUD-cru-59a2f-list-projects-for-workspace-chromium-retry1\error-context.md
+
+15) [chromium] ΓÇ║ e2e\crud\crud.spec.ts:219:7 ΓÇ║ Defect CRUD @crud @defects @regression ΓÇ║ list defects for project
+    TypeError: Cannot read properties of undefined (reading 'length')
+    > 221 |     expect(list.data.length).toBeGreaterThan(0);
+    222 |     expect(list.data.some((d: any) => d.id === defect.id)).toBeTruthy();
+    Error Context: reports\test-results\crud-crud-Defect-CRUD-crud-a3272-on-list-defects-for-project-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'length')
+    > 221 |     expect(list.data.length).toBeGreaterThan(0);
+    222 |     expect(list.data.some((d: any) => d.id === defect.id)).toBeTruthy();
+    Error Context: reports\test-results\crud-crud-Defect-CRUD-crud-a3272-on-list-defects-for-project-chromium-retry1\error-context.md
+
+16) [chromium] ΓÇ║ e2e\crud\crud.spec.ts:275:7 ΓÇ║ Automation Project CRUD @crud @automation @regression ΓÇ║ create automation project with unsupported framework fails
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Automation-Proje-7a92b-unsupported-framework-fails-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Automation-Proje-7a92b-unsupported-framework-fails-chromium-retry1\error-context.md
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Test-Run-CRUD-cr-428ca-un-without-test-cases-fails-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Test-Run-CRUD-cr-428ca-un-without-test-cases-fails-chromium-retry1\error-context.md
+
+17) [chromium] ΓÇ║ e2e\crud\crud.spec.ts:397:7 ΓÇ║ Test Run CRUD @crud @testruns @regression ΓÇ║ create test run without test cases fails
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Test-Run-CRUD-cr-428ca-un-without-test-cases-fails-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    Error Context: reports\test-results\crud-crud-Test-Run-CRUD-cr-428ca-un-without-test-cases-fails-chromium-retry1\error-context.md
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('link', { name: /test cases/i })
+    Expected: visible
+    Error: strict mode violation: getByRole('link', { name: /test cases/i }) resolved to 2 elements:
+
+18) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:48:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard has quick action links
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('link', { name: /test cases/i })
+    Expected: visible
+    Error: strict mode violation: getByRole('link', { name: /test cases/i }) resolved to 2 elements:
+    Call log:
+    59 |     await expect(authPage.getByRole("link", { name: /test runs/i })).toBeVisible();
+    > 60 |     await expect(authPage.getByRole("link", { name: /test cases/i })).toBeVisible();
+    61 |     await expect(authPage.getByRole("link", { name: /projects/i })).toBeVisible();
+
+19) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:64:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard quick action new test case navigates correctly
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    76 |     await expect(authPage).toHaveURL(/.*test-cases\/new.*/);
+
+20) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:79:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard quick action new test run navigates correctly
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    91 |     await expect(authPage).toHaveURL(/.*test-runs\/new.*/);
+
+21) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:99:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard analytics section loads when workspace is set
+    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
+
+22) [chromium] ΓÇ║ e2e\dashboard\dashboard.spec.ts:20:7 ΓÇ║ Dashboard @dashboard ΓÇ║ dashboard navigation links work
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    22 |     await expect(this.page).toHaveURL(/.*test-cases/);
+
+23) [chromium] ΓÇ║ e2e\defects\defects.spec.ts:6:7 ΓÇ║ Defects @defects ΓÇ║ user can create a defect through UI
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /new defect/i }) resolved to 2 elements:
+    Call log:
+
+24) [chromium] ΓÇ║ e2e\defects\defects.spec.ts:19:7 ΓÇ║ Defects @defects ΓÇ║ defect via API carries severity and priority
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 32 |     expect(list.data.some((d) => d.id === defect.id)).toBeTruthy();
+    Error Context: reports\test-results\defects-defects-Defects-de-415da-rries-severity-and-priority-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 32 |     expect(list.data.some((d) => d.id === defect.id)).toBeTruthy();
+    Error Context: reports\test-results\defects-defects-Defects-de-415da-rries-severity-and-priority-chromium-retry1\error-context.md
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+
+25) [chromium] ΓÇ║ e2e\file-upload\file-upload.spec.ts:8:7 ΓÇ║ File Upload @upload @automation ΓÇ║ upload JUnit XML report to automation project
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    38 |     await expect(authPage.getByText(autoProject.name)).toBeVisible();
+
+26) [chromium] ΓÇ║ e2e\integrations\integrations-expanded.spec.ts:14:7 ΓÇ║ Integrations - Expanded @integrations @regression ΓÇ║ list integrations via API
+    Error: invalid input: github config requires 'token'
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\integrations-integrations--2400f-n-list-integrations-via-API-chromium\error-context.md
+    Error: invalid input: github config requires 'token'
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\integrations-integrations--2400f-n-list-integrations-via-API-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+27) [chromium] ΓÇ║ e2e\integrations\integrations-expanded.spec.ts:61:7 ΓÇ║ Integrations - Expanded @integrations @regression ΓÇ║ delete integration via API
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\integrations-integrations--feb6d--delete-integration-via-API-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\integrations-integrations--feb6d--delete-integration-via-API-chromium-retry1\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 94 |     expect(list.data.some((i: any) => i.name === "Private Integration")).toBe(false);
+
+28) [chromium] ΓÇ║ e2e\integrations\integrations-expanded.spec.ts:74:7 ΓÇ║ Integrations - Expanded @integrations @regression ΓÇ║ integrations are scoped to workspace
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 94 |     expect(list.data.some((i: any) => i.name === "Private Integration")).toBe(false);
+    Error Context: reports\test-results\integrations-integrations--9a63b-ons-are-scoped-to-workspace-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 94 |     expect(list.data.some((i: any) => i.name === "Private Integration")).toBe(false);
+    Error Context: reports\test-results\integrations-integrations--9a63b-ons-are-scoped-to-workspace-chromium-retry1\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 15 |     expect(list.data.some((i: any) => (i as any).id === (integration as any).id || (i as any).name === "Slack Integration")).toBeTruthy();
+
+29) [chromium] ΓÇ║ e2e\integrations\integrations.spec.ts:4:7 ΓÇ║ Integration Hub @integrations ΓÇ║ create and list integration via API
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 15 |     expect(list.data.some((i: any) => (i as any).id === (integration as any).id || (i as any).name === "Slack Integration")).toBeTruthy();
+    Error Context: reports\test-results\integrations-integrations--e1162-nd-list-integration-via-API-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'some')
+    > 15 |     expect(list.data.some((i: any) => (i as any).id === (integration as any).id || (i as any).name === "Slack Integration")).toBeTruthy();
+    Error Context: reports\test-results\integrations-integrations--e1162-nd-list-integration-via-API-chromium-retry1\error-context.md
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+30) [chromium] ΓÇ║ e2e\manual-run\manual-run.spec.ts:6:7 ΓÇ║ Manual Test Runner @manual @runs ΓÇ║ user can create a manual test run
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+    25 |     await expect(this.page).toHaveURL(/.*test-runs\/.+/);
+
+31) [chromium] ΓÇ║ e2e\manual-run\manual-run.spec.ts:32:7 ΓÇ║ Manual Test Runner @manual @runs ΓÇ║ negative: create run without test cases returns error
+    Error: expect(received).rejects.toThrow()
+    33 |     await expect(
+    Error Context: reports\test-results\manual-run-manual-run-Manu-c29fc-ut-test-cases-returns-error-chromium\error-context.md
+    Error: expect(received).rejects.toThrow()
+    33 |     await expect(
+    Error Context: reports\test-results\manual-run-manual-run-Manu-c29fc-ut-test-cases-returns-error-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+32) [chromium] ΓÇ║ e2e\notifications\notifications-expanded.spec.ts:20:7 ΓÇ║ Notifications - Expanded @notifications @regression ΓÇ║ create notification via API
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-2c4d5-create-notification-via-API-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-2c4d5-create-notification-via-API-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+33) [chromium] ΓÇ║ e2e\notifications\notifications-expanded.spec.ts:29:7 ΓÇ║ Notifications - Expanded @notifications @regression ΓÇ║ list notifications via API
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-ce7cb--list-notifications-via-API-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-ce7cb--list-notifications-via-API-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+34) [chromium] ΓÇ║ e2e\notifications\notifications-expanded.spec.ts:71:7 ΓÇ║ Notifications - Expanded @notifications @regression ΓÇ║ mark notification as read via API
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-7121d-otification-as-read-via-API-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-7121d-otification-as-read-via-API-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+35) [chromium] ΓÇ║ e2e\notifications\notifications-expanded.spec.ts:83:7 ΓÇ║ Notifications - Expanded @notifications @regression ΓÇ║ notifications are scoped to workspace
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-d79c6-ons-are-scoped-to-workspace-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-d79c6-ons-are-scoped-to-workspace-chromium-retry1\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+
+36) [chromium] ΓÇ║ e2e\notifications\notifications.spec.ts:19:7 ΓÇ║ Notifications @notifications ΓÇ║ create and mark notification read via API
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-9e0bb-k-notification-read-via-API-chromium\error-context.md
+    Error: could not resolve organization from request
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\notifications-notification-9e0bb-k-notification-read-via-API-chromium-retry1\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    > 26 |     expect(orgs.length).toBeGreaterThan(0);
+
+37) [chromium] ΓÇ║ e2e\onboarding\onboarding.spec.ts:19:7 ΓÇ║ Workspace Onboarding @onboarding @smoke ΓÇ║ onboarding flow creates organization and workspace
+    Error: expect(received).toBeGreaterThan(expected)
+    > 26 |     expect(orgs.length).toBeGreaterThan(0);
+    28 |     expect(workspaces.length).toBeGreaterThan(0);
+
+38) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:26:7 ΓÇ║ Pagination @pagination @testcases ΓÇ║ pagination cursor returns next page
+    Error: internal server error
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Pagi-8dcb2-on-cursor-returns-next-page-chromium\error-context.md
+    Error: internal server error
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Pagi-8dcb2-on-cursor-returns-next-page-chromium-retry1\error-context.md
+    Error: expect(received).toBeDefined()
+    Received: undefined
+
+39) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:55:7 ΓÇ║ Pagination @pagination @testcases ΓÇ║ defects list returns pagination metadata
+    Error: expect(received).toBeDefined()
+    Received: undefined
+    > 57 |     expect(result.data).toBeDefined();
+    58 |     expect(result.meta).toBeDefined();
+    59 |     expect(typeof result.meta.has_more).toBe("boolean");
+    Error Context: reports\test-results\pagination-pagination-Pagi-00365-returns-pagination-metadata-chromium\error-context.md
+    Error: expect(received).toBeDefined()
+    Received: undefined
+
+40) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:62:7 ΓÇ║ Pagination @pagination @testcases ΓÇ║ organizations list returns pagination metadata
+    Error: unauthorized
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Pagi-2d3e9-returns-pagination-metadata-chromium\error-context.md
+    Error: unauthorized
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Pagi-2d3e9-returns-pagination-metadata-chromium-retry1\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+
+41) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:76:7 ΓÇ║ Search & Filtering @search @filtering ΓÇ║ search test cases by title returns matching results
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+    Received:   0
+    > 78 |     expect(results.data.length).toBeGreaterThan(0);
+    79 |     expect(
+    Error Context: reports\test-results\pagination-pagination-Sear-40beb-le-returns-matching-results-chromium\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+
+42) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:117:7 ΓÇ║ Search & Filtering @search @filtering ΓÇ║ global search API returns results
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 119 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\pagination-pagination-Sear-a2959--search-API-returns-results-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 119 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\pagination-pagination-Sear-a2959--search-API-returns-results-chromium-retry1\error-context.md
+    Error: Request failed with 404
+    > 47 |       throw new ApiError(
+
+43) [chromium] ΓÇ║ e2e\pagination\pagination.spec.ts:185:7 ΓÇ║ Analytics Trends & Metrics @analytics @filtering ΓÇ║ analytics recent activity returns data
+    Error: Request failed with 404
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Anal-fcf72-ecent-activity-returns-data-chromium\error-context.md
+    Error: Request failed with 404
+    > 47 |       throw new ApiError(
+    Error Context: reports\test-results\pagination-pagination-Anal-fcf72-ecent-activity-returns-data-chromium-retry1\error-context.md
+    Error: expect(received).toBeTruthy()
+    Received: false
+
+44) [chromium] ΓÇ║ e2e\permissions\permissions.spec.ts:12:7 ΓÇ║ RBAC @rbac @permissions ΓÇ║ authenticated user can read own workspaces
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 18 |     expect(Array.isArray(orgs)).toBeTruthy();
+    Error Context: reports\test-results\permissions-permissions-RB-93321-ser-can-read-own-workspaces-chromium\error-context.md
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 18 |     expect(Array.isArray(orgs)).toBeTruthy();
+    Error Context: reports\test-results\permissions-permissions-RB-93321-ser-can-read-own-workspaces-chromium-retry1\error-context.md
+
+45) [chromium] ΓÇ║ e2e\permissions\permissions.spec.ts:21:7 ΓÇ║ RBAC @rbac @permissions ΓÇ║ missing permission blocks workspace mutations
+    Error: expect(received).rejects.toThrow(expected)
+    > 47 |       throw new ApiError(
+    at TimeoutManager.withRunnable (../node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/lib/worker/workerProcessEntry.js:425:14)
+    at TestInfoImpl._runWithTimeout (../node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/lib/worker/workerProcessEntry.js:1152:7)
+    27 |     await expect(
+    Error Context: reports\test-results\permissions-permissions-RB-370ab--blocks-workspace-mutations-chromium\error-context.md
+    Error: expect(received).rejects.toThrow(expected)
+    > 47 |       throw new ApiError(
+
+46) [chromium] ΓÇ║ e2e\permissions\rbac-expanded.spec.ts:11:7 ΓÇ║ RBAC - Role-Based Access Control @rbac @permissions ΓÇ║ authenticated user can list their organizations
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 16 |     expect(Array.isArray(orgs)).toBeTruthy();
+    Error Context: reports\test-results\permissions-rbac-expanded--3614e-an-list-their-organizations-chromium\error-context.md
+    Error: expect(received).toBeTruthy()
+    Received: false
+    > 16 |     expect(Array.isArray(orgs)).toBeTruthy();
+    Error Context: reports\test-results\permissions-rbac-expanded--3614e-an-list-their-organizations-chromium-retry1\error-context.md
+
+47) [chromium] ΓÇ║ e2e\permissions\rbac-expanded.spec.ts:156:7 ΓÇ║ Tenant Isolation - Cross-Workspace @tenant @isolation ΓÇ║ projects are isolated between workspaces
+    TypeError: projects.some is not a function
+    > 169 |     expect(projects.some((p: any) => p.id === proj1.id)).toBe(false);
+    Error Context: reports\test-results\permissions-rbac-expanded--d85ec-isolated-between-workspaces-chromium\error-context.md
+    TypeError: projects.some is not a function
+    > 169 |     expect(projects.some((p: any) => p.id === proj1.id)).toBe(false);
+    Error Context: reports\test-results\permissions-rbac-expanded--d85ec-isolated-between-workspaces-chromium-retry1\error-context.md
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /new project|create project/i }) resolved to 2 elements:
+    Call log:
+
+48) [chromium] ΓÇ║ e2e\projects\projects.spec.ts:6:7 ΓÇ║ Projects @projects ΓÇ║ user can create and select a project through UI
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /new project|create project/i }) resolved to 2 elements:
+    Call log:
+
+49) [chromium] ΓÇ║ e2e\projects\projects.spec.ts:31:7 ΓÇ║ Projects @projects ΓÇ║ happy path: create project via API
+    TypeError: list.some is not a function
+    > 39 |     expect(list.some((p) => p.id === project.id)).toBeTruthy();
+    Error Context: reports\test-results\projects-projects-Projects-25bb9-path-create-project-via-API-chromium\error-context.md
+    TypeError: list.some is not a function
+    > 39 |     expect(list.some((p) => p.id === project.id)).toBeTruthy();
+    Error Context: reports\test-results\projects-projects-Projects-25bb9-path-create-project-via-API-chromium-retry1\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  9 |     expect(results.data.results.length).toBeGreaterThan(0);
+
+50) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:7:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ search returns test case via API
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  9 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-7db4d-h-returns-test-case-via-API-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  9 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-7db4d-h-returns-test-case-via-API-chromium-retry1\error-context.md
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+51) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:12:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ search UI displays results
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+52) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:26:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ search via test-cases search endpoint returns matching cases
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+    Received:   0
+    > 28 |     expect(results.data.length).toBeGreaterThan(0);
+    29 |     expect(results.data.some((tc: any) => tc.id === testCase.id)).toBeTruthy();
+    Error Context: reports\test-results\search-search-expanded-Sea-f9cbe-oint-returns-matching-cases-chromium\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+
+53) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:32:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ search with partial title matches
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+    Received:   0
+    > 41 |     expect(results.data.length).toBeGreaterThan(0);
+    42 |     expect(results.data.some((r: any) => r.id === tc.id)).toBeTruthy();
+    Error Context: reports\test-results\search-search-expanded-Sea-14785--with-partial-title-matches-chromium\error-context.md
+    Error: expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+
+54) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:83:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ global search API returns results for test cases
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 85 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-afc67-urns-results-for-test-cases-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 85 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-afc67-urns-results-for-test-cases-chromium-retry1\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 90 |     expect(results.data.results.length).toBe(0);
+
+55) [chromium] ΓÇ║ e2e\search\search-expanded.spec.ts:88:7 ΓÇ║ Search - Expanded @search @regression ΓÇ║ global search API returns empty for non-matching query
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 90 |     expect(results.data.results.length).toBe(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-00105-mpty-for-non-matching-query-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    > 90 |     expect(results.data.results.length).toBe(0);
+    Error Context: reports\test-results\search-search-expanded-Sea-00105-mpty-for-non-matching-query-chromium-retry1\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  8 |     expect(results.data.results.length).toBeGreaterThan(0);
+
+56) [chromium] ΓÇ║ e2e\search\search.spec.ts:6:7 ΓÇ║ Global Search @search ΓÇ║ search returns test case via API
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  8 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-Global-Searc-c4f71-h-returns-test-case-via-API-chromium\error-context.md
+    TypeError: Cannot read properties of undefined (reading 'results')
+    >  8 |     expect(results.data.results.length).toBeGreaterThan(0);
+    Error Context: reports\test-results\search-search-Global-Searc-c4f71-h-returns-test-case-via-API-chromium-retry1\error-context.md
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+57) [chromium] ΓÇ║ e2e\search\search.spec.ts:11:7 ΓÇ║ Global Search @search ΓÇ║ search UI displays results
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+58) [chromium] ΓÇ║ e2e\tenant\tenant-isolation.spec.ts:6:7 ΓÇ║ Tenant Isolation @tenant ΓÇ║ user cannot access workspace they do not belong to
+    Error: expect(received).rejects.toThrow(expected)
+    > 47 |       throw new ApiError(
+    at TimeoutManager.withRunnable (../node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/lib/worker/workerProcessEntry.js:425:14)
+    at TestInfoImpl._runWithTimeout (../node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/lib/worker/workerProcessEntry.js:1152:7)
+    > 18 |     await expect(otherApi.listProjects(workspace.id)).rejects.toThrow(/forbidden|not found|unauthorized/i);
+    Error Context: reports\test-results\tenant-tenant-isolation-Te-280fb-space-they-do-not-belong-to-chromium\error-context.md
+    Error: expect(received).rejects.toThrow(expected)
+    > 47 |       throw new ApiError(
+
+59) [chromium] ΓÇ║ e2e\testcases\testcases.spec.ts:6:7 ΓÇ║ Test Cases @testcases ΓÇ║ user can create a test case through UI
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+    28 |         await this.page.getByLabel(/expected/i).last().fill(`Expected: ${step}`);
+
+60) [chromium] ΓÇ║ e2e\testcases\testcases.spec.ts:19:7 ΓÇ║ Test Cases @testcases ΓÇ║ test case search returns expected result
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: 'Test Cases' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+    Call log:
+    > 14 |     await expect(this.page.getByRole("heading", { name: title, exact: false })).toBeVisible();
+
+61) [chromium] ΓÇ║ e2e\testplans\testplans.spec.ts:6:7 ΓÇ║ Test Plans @testplans ΓÇ║ user can create a test plan through UI
+    TimeoutError: locator.fill: Timeout 15000ms exceeded.
+    Call log:
+
+62) [chromium] ΓÇ║ e2e\testplans\testplans.spec.ts:19:7 ΓÇ║ Test Plans @testplans ΓÇ║ test plan via API includes test cases
+    Error: expect(received).toContain(expected) // indexOf
+    > 28 |     expect(fetched.test_case_ids).toContain(testCase.id);
+    Error Context: reports\test-results\testplans-testplans-Test-P-f696b-via-API-includes-test-cases-chromium\error-context.md
+    Error: expect(received).toContain(expected) // indexOf
+    > 28 |     expect(fetched.test_case_ids).toContain(testCase.id);
+    Error Context: reports\test-results\testplans-testplans-Test-P-f696b-via-API-includes-test-cases-chromium-retry1\error-context.md
+    Error: expect(page).toHaveScreenshot(expected) failed
+    Call log:
+
+63) [chromium] ΓÇ║ e2e\visual\visual-regression.spec.ts:12:7 ΓÇ║ Visual Regression @visual ΓÇ║ dashboard screenshot
+    Error: expect(page).toHaveScreenshot(expected) failed
+    Call log:
+    > 23 |     await expect(authPage).toHaveScreenshot("dashboard.png");
+
+64) [chromium] ΓÇ║ e2e\auth\login.spec.ts:5:7 ΓÇ║ Authentication @auth @smoke ΓÇ║ user can register and log in
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: 'Dashboard' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+    Call log:
+    9 |     await expect(page).toHaveURL(/.*\/dashboard/);
+    > 10 |     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+
+65) [chromium] ΓÇ║ e2e\dashboard\dashboard-expanded.spec.ts:20:7 ΓÇ║ Dashboard - Expanded @dashboard @regression ΓÇ║ dashboard shows project badge when project is set
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText('Project testra-1785249207033-govi88').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+    Call log:
+    > 31 |     await expect(authPage.getByText(project.name).first()).toBeVisible();
+
+66) [chromium] ΓÇ║ e2e\visual\visual-regression-expanded.spec.ts:32:7 ΓÇ║ Visual Regression - Expanded @visual @regression ΓÇ║ dashboard without project context screenshot
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: 'Dashboard' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+    Call log:
+    > 14 |     await expect(this.page.getByRole("heading", { name: title, exact: false })).toBeVisible();

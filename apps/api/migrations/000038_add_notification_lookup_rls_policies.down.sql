@@ -1,0 +1,5 @@
+DROP POLICY IF EXISTS notification_history_lookup_user ON notification_history;
+DROP POLICY IF EXISTS notification_templates_lookup_user ON notification_templates;
+DROP POLICY IF EXISTS notification_channels_lookup_user ON notification_channels;
+DROP POLICY IF EXISTS notification_preferences_lookup_user ON notification_preferences;
+DROP POLICY IF EXISTS notifications_lookup_user ON notifications;

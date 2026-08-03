@@ -1,0 +1,8 @@
+{
+  "name": "@testra/redis-dev",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "node ../../scripts/dev/redis-dev.mjs"
+  }
+}
