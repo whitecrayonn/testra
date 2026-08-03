@@ -2,20 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { getTestCase, updateTestCase, deleteTestCase, listTestCaseVersions } from "@/features/testmanagement/api";
+import {
+  getTestCase,
+  updateTestCase,
+  deleteTestCase,
+  listTestCaseVersions,
+  approveTestCase,
+} from "@/features/testmanagement/api";
 import type { TestCase, TestCaseVersion, TestStep } from "@/types/testmanagement";
 
-const statusVariants: Record<string, "neutral" | "success" | "danger"> = {
+const statusVariants: Record<string, "neutral" | "success" | "danger" | "warning"> = {
   draft: "neutral",
   active: "success",
   deprecated: "danger",
+  pending_review: "warning",
 };
 
 const priorityVariants: Record<string, "neutral" | "info" | "warning" | "danger"> = {
@@ -32,6 +39,7 @@ export default function TestCaseDetailPage() {
   const [versions, setVersions] = useState<TestCaseVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showVersions, setShowVersions] = useState(false);
 
@@ -104,6 +112,20 @@ export default function TestCaseDetailPage() {
     }
   }
 
+  async function handleApprove() {
+    setApproving(true);
+    setError(null);
+    try {
+      const updated = await approveTestCase(id);
+      setTc(updated);
+      setStatus(updated.status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to approve test case");
+    } finally {
+      setApproving(false);
+    }
+  }
+
   async function handleDelete() {
     if (!confirm("Are you sure you want to delete this test case?")) return;
     try {
@@ -172,6 +194,12 @@ export default function TestCaseDetailPage() {
               <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
               Delete
             </Button>
+            {tc.status === "pending_review" && (
+              <Button onClick={handleApprove} loading={approving} size="sm" variant="primary">
+                <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                Approve
+              </Button>
+            )}
             <Button onClick={handleSave} loading={saving} size="sm">
               <Save className="mr-2 h-4 w-4" aria-hidden="true" />
               Save
@@ -181,9 +209,19 @@ export default function TestCaseDetailPage() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <Badge variant={statusVariants[tc.status] || "neutral"}>{tc.status}</Badge>
+        <Badge variant={statusVariants[tc.status] || "neutral"}>{tc.status.replace("_", " ")}</Badge>
         <Badge variant={priorityVariants[tc.priority] || "neutral"}>{tc.priority}</Badge>
+        {tc.source === "generated_spec" && <Badge variant="info">Generated from spec</Badge>}
       </div>
+      {tc.status === "pending_review" && (
+        <div role="status">
+          <Card className="border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            This test case was generated automatically and hasn&apos;t been reviewed yet. Check the
+            steps below, edit anything that needs fixing, then click <strong>Approve</strong> before
+            it counts toward coverage.
+          </Card>
+        </div>
+      )}
 
       {error && (
         <div role="alert">

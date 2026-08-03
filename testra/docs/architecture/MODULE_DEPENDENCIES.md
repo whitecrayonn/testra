@@ -25,6 +25,8 @@ flowchart TD
     RBAC[RBAC / Enterprise] --> Identity
     RBAC --> Organization
     TestMgmt[Test Management] --> Project
+    TestGen[Test Generation] --> Project
+    TestGen --> TestMgmt
     Results[Results / Execution] --> Project
     Results --> TestMgmt
     APITesting[API Testing] --> Project
@@ -45,6 +47,7 @@ flowchart TD
 - Test and result modules may depend on project scope, not on identity repository internals.
 - Analytics and intelligence consume published facts or ports; they must not become transaction owners for core entities.
 - Integrations use ports for external systems and must not spread vendor SDKs through domain modules.
+- Test generation (`testgen`) depends on `testmanagement`'s `Repository` port to create cases (the same cross-module composition pattern `automationhub` uses), and must remain deterministic/rule-based — no LLM or external AI call, per the "No External LLM" principle.
 
 ## Dependency Review Checklist
 

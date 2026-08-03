@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, Plus, ChevronRight, TestTube } from "lucide-react";
+import { Search, Plus, ChevronRight, TestTube, FileJson, Check } from "lucide-react";
 import { StatusPill } from "@/components/ui/status-pill";
-import { listTestCases, searchTestCases } from "@/features/testmanagement/api";
+import {
+  listTestCases,
+  searchTestCases,
+  approveTestCase,
+} from "@/features/testmanagement/api";
 import type { TestCase, PaginationMeta } from "@/types/testmanagement";
 
 const PRIORITY_TONE: Record<string, "fail" | "warn" | "info" | "neutral"> = {
@@ -12,6 +16,13 @@ const PRIORITY_TONE: Record<string, "fail" | "warn" | "info" | "neutral"> = {
   high: "warn",
   medium: "info",
   low: "neutral",
+};
+
+const STATUS_TONE: Record<string, "pass" | "fail" | "warn" | "info" | "neutral"> = {
+  active: "pass",
+  draft: "neutral",
+  deprecated: "fail",
+  pending_review: "warn",
 };
 
 const PRIORITY_ACCENT: Record<string, string> = {
@@ -29,6 +40,8 @@ export default function TestCasesPage() {
   const [searchMode, setSearchMode] = useState(false);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const projectId =
     typeof window !== "undefined"
@@ -86,6 +99,24 @@ export default function TestCasesPage() {
     }
   };
 
+  async function handleApprove(id: string) {
+    setApprovingId(id);
+    setError(null);
+    try {
+      const updated = await approveTestCase(id);
+      setCases((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to approve test case");
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  const pendingReviewCount = cases.filter((c) => c.status === "pending_review").length;
+  const visibleCases = needsReviewOnly
+    ? cases.filter((c) => c.status === "pending_review")
+    : cases;
+
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex animate-rise-sm items-end justify-between gap-4">
@@ -93,13 +124,22 @@ export default function TestCasesPage() {
           <h1 className="m-0 text-[27px] font-bold tracking-tight text-fg">Test Cases</h1>
           <p className="mt-1.5 text-[13px] text-fg2">Manage and search your test case repository.</p>
         </div>
-        <Link
-          href="/dashboard/test-cases/new"
-          className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
-        >
-          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-          New Test Case
-        </Link>
+        <div className="flex gap-2.5">
+          <Link
+            href="/dashboard/test-cases/generate"
+            className="flex h-[38px] items-center gap-2 rounded-[13px] border border-hair-hi bg-panel px-4 text-[13px] font-semibold text-fg transition-colors hover:bg-panel-hi"
+          >
+            <FileJson className="h-3.5 w-3.5" aria-hidden="true" />
+            Generate from Spec
+          </Link>
+          <Link
+            href="/dashboard/test-cases/new"
+            className="flex h-[38px] items-center gap-2 rounded-[13px] bg-gradient-to-br from-acc to-acc2 px-4 text-[13px] font-bold text-white shadow-[0_10px_26px_-12px_var(--ring)] transition-transform hover:-translate-y-px"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+            New Test Case
+          </Link>
+        </div>
       </div>
 
       <div className="flex animate-rise-sm gap-2.5">
@@ -120,6 +160,19 @@ export default function TestCasesPage() {
           <Search className="h-3.5 w-3.5" aria-hidden="true" />
           Search
         </button>
+        {pendingReviewCount > 0 && (
+          <button
+            onClick={() => setNeedsReviewOnly((v) => !v)}
+            aria-pressed={needsReviewOnly}
+            className={`flex h-[38px] items-center gap-2 rounded-[13px] border px-4 text-[13px] font-semibold transition-colors ${
+              needsReviewOnly
+                ? "border-warn bg-warn-soft text-warn"
+                : "border-hair-hi bg-panel text-fg hover:bg-panel-hi"
+            }`}
+          >
+            Needs Review ({pendingReviewCount})
+          </button>
+        )}
       </div>
 
       {error && (
@@ -158,7 +211,7 @@ export default function TestCasesPage() {
           </div>
         ) : (
           <>
-            {cases.map((tc, i) => (
+            {visibleCases.map((tc, i) => (
               <Link
                 key={tc.id}
                 href={`/dashboard/test-cases/${tc.id}`}
@@ -169,8 +222,13 @@ export default function TestCasesPage() {
                 <div className="min-w-0 flex-1 pl-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[14px] font-semibold text-fg">{tc.title}</span>
-                    <StatusPill tone="neutral">{tc.status}</StatusPill>
+                    <StatusPill tone={STATUS_TONE[tc.status] ?? "neutral"}>
+                      {tc.status.replace("_", " ")}
+                    </StatusPill>
                     <StatusPill tone={PRIORITY_TONE[tc.priority] ?? "neutral"}>{tc.priority}</StatusPill>
+                    {tc.source === "generated_spec" && (
+                      <StatusPill tone="info">generated</StatusPill>
+                    )}
                   </div>
                   {tc.description && (
                     <p className="mt-1 truncate text-[12.5px] text-fg3">{tc.description}</p>
@@ -181,6 +239,20 @@ export default function TestCasesPage() {
                     {tc.tags.length > 0 && <span>{tc.tags.join(", ")}</span>}
                   </div>
                 </div>
+                {tc.status === "pending_review" && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleApprove(tc.id);
+                    }}
+                    disabled={approvingId === tc.id}
+                    className="flex h-8 flex-none items-center gap-1.5 rounded-[10px] border border-pass-soft bg-pass-soft px-3 text-[12px] font-semibold text-pass transition-colors hover:brightness-95 disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                    {approvingId === tc.id ? "Approving…" : "Approve"}
+                  </button>
+                )}
                 <ChevronRight className="h-4 w-4 flex-none text-fg3" aria-hidden="true" />
               </Link>
             ))}

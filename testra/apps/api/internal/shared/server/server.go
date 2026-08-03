@@ -38,6 +38,7 @@ import (
 	sharedmiddleware "github.com/testra/testra/apps/api/internal/shared/middleware"
 	"github.com/testra/testra/apps/api/internal/shared/secrets"
 	"github.com/testra/testra/apps/api/internal/shared/tenant"
+	"github.com/testra/testra/apps/api/internal/testgen"
 	"github.com/testra/testra/apps/api/internal/testmanagement"
 	"github.com/testra/testra/apps/api/internal/workspace"
 )
@@ -152,6 +153,7 @@ func New(cfg Config) http.Handler {
 	projectModule := project.NewModule(cfg.DB)
 	apiKeyModule := apikeys.NewModule(cfg.DB)
 	testMgmtModule := testmanagement.NewModule(cfg.DB)
+	testGenModule := testgen.NewModule(cfg.DB, testmanagement.NewSQLRepository(cfg.DB))
 	resultsModule := results.NewModule(cfg.DB)
 	defectsModule := defects.NewModule(cfg.DB)
 	apiTestingModule := apitesting.NewModule(cfg.DB)
@@ -394,6 +396,14 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/test-cases", testMgmtModule.Handler.CreateCase)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "tests:create"),
+					sharedmiddleware.AuditLog("test_case.generate", "generation_run",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/generate/from-spec", testGenModule.Handler.GenerateFromSpec)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -432,6 +442,14 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Put("/test-cases/{id}", testMgmtModule.Handler.UpdateCase)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "tests:update"),
+					sharedmiddleware.AuditLog("test_case.approve", "test_case",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return chi.URLParam(r, "id") },
+						auditLogFn,
+					),
+				).Post("/test-cases/{id}/approve", testMgmtModule.Handler.ApproveCase)
 				r.With(
 					sharedmiddleware.RequirePermission(rbacCfg, "tests:delete"),
 					sharedmiddleware.AuditLog("test_case.delete", "test_case",

@@ -14,13 +14,19 @@ export interface TestCase {
   description: string;
   preconditions: string;
   steps: TestStep[];
-  status: "draft" | "active" | "deprecated";
+  status: "draft" | "active" | "deprecated" | "pending_review";
   priority: "low" | "medium" | "high" | "critical";
   tags: string[];
   version: number;
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** "manual" for user-authored cases, "generated_spec" for cases produced by
+   * the deterministic OpenAPI-driven generator (apps/api/internal/testgen).
+   * No AI/ML is involved in generation — see docs/BIBLICAL_TESTRA.md. */
+  source: "manual" | "generated_spec";
+  generation_run_id: string | null;
+  reviewed_by: string | null;
 }
 
 export interface TestCaseVersion {

@@ -137,6 +137,12 @@
 - [x] Composite cursor pagination for search (rank, id)
 - [x] Transactional version snapshot + update for test cases
 - [x] Audit logging on all 9 mutating endpoints
+- [x] `testgen` module: deterministic (no AI/ML) test case generation from an imported OpenAPI spec — required-field, enum, type, string/numeric boundary, and auth rule checks (see `apps/api/internal/testgen`)
+- [x] Migration 000042: `generation_runs` table; `source`/`generation_run_id`/`reviewed_by` added to `test_cases`; RLS on `generation_runs`
+- [x] `POST /generate/from-spec` and `POST /test-cases/{id}/approve` endpoints, OpenAPI updated
+- [x] Unit tests for the generation rule set and service (`testgen`) and for `ApproveCase` (`testmanagement`)
+- [x] Web UI for triggering generation (`/test-cases/generate`) and reviewing/approving generated cases (inline "Approve" on the list and detail pages, "Needs Review" filter)
+- [ ] `make test && make lint` verification — not run in this environment (no Go toolchain available); must be run and confirmed before merge
 
 ### Engineering Review
 - Review, resolution, and phase gate reports are archived under `docs/archive/historical/reviews/` and `docs/archive/historical/phase-gates/`.

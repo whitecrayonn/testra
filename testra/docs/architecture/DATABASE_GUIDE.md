@@ -41,6 +41,9 @@
 | `000030_idempotency_org_scope.up.sql` | Moves idempotency records to organization scope. |
 | `000031_add_performance_indexes.up.sql` | Adds secondary indexes for hot query paths. |
 | `000032_add_api_testing.up.sql` | Creates `api_collections`, `api_folders`, `api_environments`, `api_requests`, and `api_request_history` tables with RLS and `api_testing:*` permissions. |
+| `000042_add_test_case_generation.up.sql` | Creates `generation_runs`; adds `source`, `generation_run_id`, `reviewed_by` to `test_cases`; enables RLS on `generation_runs`. |
+
+> Migrations `000019`–`000041` (excluding those listed above) exist in `apps/api/migrations/` but predate this catalog entry and are not yet individually documented here — see the migration files themselves for their `up`/`down` SQL. This gap predates the generation feature and is called out rather than silently left unmentioned.
 
 Each migration has a corresponding `.down.sql` file for rollback.
 
@@ -60,6 +63,7 @@ users
                  └─ test_cases (project_id, workspace_id)
             └─ test_folders (workspace_id, parent_id self-reference)
             └─ test_suites (workspace_id, folder_id)
+            └─ generation_runs (workspace_id, project_id) -> test_cases.generation_run_id
             └─ api_keys (workspace_id)
             └─ test_runs (workspace_id, project_id, suite_id)
             └─ idempotency_records (workspace_id)
@@ -309,6 +313,7 @@ api_request_history (workspace_id, request_id?, environment_id?)
 | `test_suites` | `test_suites_tenant` | `workspace_id IN (workspaces of tenant)` |
 | `test_cases` | `test_cases_tenant` | `workspace_id IN (workspaces of tenant)` |
 | `test_case_versions` | `test_case_versions_tenant` | `test_case_id IN (test_cases of tenant)` |
+| `generation_runs` | `generation_runs_tenant` | `workspace_id IN (workspaces of tenant)` |
 | `test_runs` | `test_runs_tenant` | `workspace_id IN (workspaces of tenant)` |
 | `test_run_items` | `test_run_items_tenant` | `run_id IN (test_runs of tenant)` |
 | `idempotency_records` | `idempotency_records_tenant` | `workspace_id IN (workspaces of tenant)` |

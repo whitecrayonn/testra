@@ -301,6 +301,7 @@ Every backend module follows Clean / Hexagonal Architecture. The dependency rule
 | `apikeys` | [Implemented] | Create, list, revoke scoped API keys | `testra/apps/api/internal/apikeys/` |
 | `rbac` | [Implemented] | Roles, permissions, role assignments, SQL loader | `testra/apps/api/internal/rbac/`, `shared/middleware/rbac.go` |
 | `testmanagement` | [Implemented] | Folders, suites, cases, versioning, full-text search | `testra/apps/api/internal/testmanagement/` |
+| `testgen` | [Implemented] | Deterministic (no AI/ML) test case generation from an OpenAPI spec | `testra/apps/api/internal/testgen/` |
 | `results` | [Implemented] | Test runs and items, status updates, SSE progress | `testra/apps/api/internal/results/` |
 | `automationhub` | [Implemented] | Ingest JUnit XML and Playwright/Cypress JSON | `testra/apps/api/internal/automationhub/` |
 | `notification` | [Implemented] | In-app notifications, preferences, channels | `testra/apps/api/internal/notification/` |
@@ -393,6 +394,8 @@ flowchart TD
     RBAC --> Organization
     APIKeys[API Keys] --> Workspace
     TestMgmt[Test Management] --> Project
+    TestGen[Test Generation] --> Project
+    TestGen --> TestMgmt
     Results[Results / Execution] --> Project
     Results --> TestMgmt
     AutomationHub[Automation Hub] --> Results
@@ -416,6 +419,7 @@ flowchart TD
 - **RBAC depends on Identity and Organization.** Permissions are scoped to an organization and checked after tenant resolution.
 - **API Keys narrow to a Workspace.** They are managed by the `apikeys` module and used by CI/CD after the ingestion endpoint is wired to accept them.
 - **Test Management depends on Project.** Folders, suites, and cases live inside a workspace/project scope.
+- **Test Generation depends on Project and Test Management.** It parses an OpenAPI spec deterministically (no AI/ML — see §Core Philosophies) and writes `pending_review` cases through the `testmanagement.Repository` port, the same cross-module pattern Automation Hub uses for Results.
 - **Results depend on Project and Test Management.** A run can be attached to a suite and project; run items may reference test cases.
 - **Automation Hub depends on Results.** It parses CI output and creates `test_runs` and `test_run_items` through the `results` module.
 - **Defects, Analytics, and Intelligence depend on Results.** They consume run outcomes and metadata.
@@ -739,6 +743,8 @@ Tenant resolution and RLS are non-negotiable. No repository call may run on a co
 | API Keys | POST/GET | /api-keys | `apikeys:*` |
 | API Keys | DELETE | /api-keys/{id} | `apikeys:delete` |
 | Test Management | CRUD | /test-folders, /test-suites, /test-cases, /test-cases/{id}/versions | `tests:*` |
+| Test Generation | POST | /generate/from-spec | `tests:create`, deterministic (no AI/ML) |
+| Test Generation | POST | /test-cases/{id}/approve | `tests:update`, moves `pending_review` → `active` |
 | Test Runs | CRUD | /test-runs, /test-runs/{id}, /test-runs/{id}/items, /test-runs/{id}/stream | `runs:*` |
 | Run Items | PUT | /test-run-items/{id} | `runs:update` |
 | Ingest | POST | /ingest | `runs:ingest`, `Idempotency-Key` required, currently JWT only (API-key auth pending) |
@@ -1027,7 +1033,7 @@ flowchart LR
 
 ## Data Model and Database Schema
 
-The authoritative database schema is the set of `golang-migrate` files under `testra/apps/api/migrations/` (currently `000001` through `000018`). This section provides a high-level map.
+The authoritative database schema is the set of `golang-migrate` files under `testra/apps/api/migrations/` (currently `000001` through `000042`; see `DATABASE_GUIDE.md` §1 for the catalog, which does not yet individually document every migration in that range). This section provides a high-level map.
 
 ### Schema groups
 
@@ -1038,7 +1044,8 @@ The authoritative database schema is the set of `golang-migrate` files under `te
 | Tenancy | `organizations`, `organization_members`, `workspaces`, `workspace_members`, `projects` | Organization/workspace/project hierarchy and membership. |
 | RBAC | `roles`, `permissions`, `role_permissions`, `role_assignments` | System roles, permissions, and organization-scoped assignments. |
 | API Keys | `api_keys` | Workspace-scoped hashed API keys with scopes and expiry. |
-| Test Management | `test_folders`, `test_suites`, `test_cases`, `test_case_versions` | Folder tree, suites, case definitions, immutable version snapshots. |
+| Test Management | `test_folders`, `test_suites`, `test_cases`, `test_case_versions` | Folder tree, suites, case definitions, immutable version snapshots. `test_cases` also carries `source` (manual/generated_spec), `generation_run_id`, `reviewed_by`. |
+| Test Generation | `generation_runs` | Audit trail for deterministic OpenAPI-driven generation jobs (spec filename, endpoint/case counts). |
 | Execution | `test_runs`, `test_run_items` | Manual and CI run records with item-level status. |
 | Idempotency | `idempotency_records` | Idempotency key replay storage. |
 | Notifications | `notifications`, `notification_preferences`, `notification_channels` | In-app notifications and channel configuration. |
