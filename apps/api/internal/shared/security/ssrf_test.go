@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -177,6 +178,69 @@ func TestResolveHost_BoundsLookupWithTimeout(t *testing.T) {
 	}
 	if !deadlineWithinBudget {
 		t.Fatal("expected the deadline to be bounded by dnsLookupTimeout")
+	}
+}
+
+// TestResolveHost_PrunesExpiredEntries is a regression test: the DNS cache
+// must not retain entries for hostnames that are no longer being queried,
+// since ValidateURL runs against user-supplied endpoints (webhook/integration
+// URLs) with an unbounded set of distinct hostnames.
+func TestResolveHost_PrunesExpiredEntries(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
+	})
+
+	if _, err := resolveHost(context.Background(), "stale-host.example.com"); err != nil {
+		t.Fatalf("resolveHost: unexpected error: %v", err)
+	}
+
+	dnsCacheMu.Lock()
+	if len(dnsCache) != 1 {
+		dnsCacheMu.Unlock()
+		t.Fatalf("expected 1 cache entry, got %d", len(dnsCache))
+	}
+	// Force the entry to look expired, as if its TTL had already elapsed.
+	entry := dnsCache["stale-host.example.com"]
+	entry.expires = time.Now().Add(-time.Second)
+	dnsCache["stale-host.example.com"] = entry
+	dnsCacheMu.Unlock()
+
+	// A lookup for a *different* host triggers the write-path prune, which
+	// should evict the now-expired entry above rather than leaving it to
+	// occupy memory indefinitely.
+	if _, err := resolveHost(context.Background(), "other-host.example.com"); err != nil {
+		t.Fatalf("resolveHost: unexpected error: %v", err)
+	}
+
+	dnsCacheMu.Lock()
+	defer dnsCacheMu.Unlock()
+	if _, ok := dnsCache["stale-host.example.com"]; ok {
+		t.Fatal("expected the expired entry to have been pruned")
+	}
+	if len(dnsCache) != 1 {
+		t.Fatalf("expected only the fresh entry to remain, got %d entries", len(dnsCache))
+	}
+}
+
+// TestResolveHost_CapsCacheSize is a regression test: even within a single
+// TTL window, the number of distinct cached hostnames must not grow without
+// bound.
+func TestResolveHost_CapsCacheSize(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
+	})
+
+	for i := 0; i < dnsCacheMaxEntries+50; i++ {
+		host := fmt.Sprintf("host-%d.example.com", i)
+		if _, err := resolveHost(context.Background(), host); err != nil {
+			t.Fatalf("resolveHost(%s): unexpected error: %v", host, err)
+		}
+	}
+
+	dnsCacheMu.Lock()
+	defer dnsCacheMu.Unlock()
+	if len(dnsCache) > dnsCacheMaxEntries {
+		t.Fatalf("expected cache size to stay capped at %d, got %d", dnsCacheMaxEntries, len(dnsCache))
 	}
 }
 

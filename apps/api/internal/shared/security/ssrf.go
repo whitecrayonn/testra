@@ -13,13 +13,21 @@ import (
 
 const (
 	// dnsCacheTTL bounds how long a resolved hostname is trusted before a
-	// fresh lookup is required, so a DNS record change (e.g. an attacker
-	// re-pointing a hostname at an internal address after the initial check)
-	// is picked up promptly rather than being cached indefinitely.
-	dnsCacheTTL = 5 * time.Minute
+	// fresh lookup is required. Kept short (rather than a more typical
+	// resolver TTL) because ValidateURL's result is used to gate an SSRF
+	// check on a URL the caller then dials independently: caching widens the
+	// window between "validated as public" and "actually connected to" that
+	// a DNS-rebinding attacker could exploit by re-pointing the record. This
+	// still gives repeat validations of the same host a cache hit without
+	// leaving a long-lived blind spot.
+	dnsCacheTTL = 30 * time.Second
 	// dnsLookupTimeout bounds a single resolution so a slow or hanging
 	// resolver cannot stall the caller beyond a fixed budget.
 	dnsLookupTimeout = 2 * time.Second
+	// dnsCacheMaxEntries bounds the cache's memory footprint. Entries are
+	// user-influenced (any hostname passed to ValidateURL), so without a cap
+	// the map would grow for the lifetime of the process.
+	dnsCacheMaxEntries = 512
 )
 
 // lookupIPAddr resolves a hostname. It is a package-level variable so tests
@@ -57,10 +65,28 @@ func resolveHost(ctx context.Context, host string) ([]net.IPAddr, error) {
 	}
 
 	dnsCacheMu.Lock()
-	dnsCache[host] = dnsCacheEntry{addrs: addrs, expires: time.Now().Add(dnsCacheTTL)}
+	pruneExpiredDNSCacheLocked(time.Now())
+	// If the cache is still full after pruning expired entries, skip caching
+	// this result rather than growing further; the lookup above already
+	// succeeded, so the caller is unaffected, and this bounds worst-case
+	// memory even under a burst of many distinct hostnames within one TTL
+	// window.
+	if len(dnsCache) < dnsCacheMaxEntries {
+		dnsCache[host] = dnsCacheEntry{addrs: addrs, expires: time.Now().Add(dnsCacheTTL)}
+	}
 	dnsCacheMu.Unlock()
 
 	return addrs, nil
+}
+
+// pruneExpiredDNSCacheLocked removes expired entries from dnsCache. Callers
+// must hold dnsCacheMu.
+func pruneExpiredDNSCacheLocked(now time.Time) {
+	for host, entry := range dnsCache {
+		if now.After(entry.expires) {
+			delete(dnsCache, host)
+		}
+	}
 }
 
 // ValidateURL blocks user-controlled URLs that point to local or private network

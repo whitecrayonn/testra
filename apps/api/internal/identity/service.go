@@ -150,8 +150,25 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (AuthResult, erro
 		return AuthResult{}, sharederrors.ErrInvalidCredential
 	}
 
-	if user.LockedUntil != nil && time.Now().UTC().Before(*user.LockedUntil) {
-		return AuthResult{}, sharederrors.ErrTooManyRequests
+	if user.LockedUntil != nil {
+		if time.Now().UTC().Before(*user.LockedUntil) {
+			// Still run the (constant-time-ish) password check so this branch
+			// stays indistinguishable in response and timing from an ordinary
+			// wrong-password attempt: returning a distinct error here would let
+			// an unauthenticated caller enumerate which emails exist and are
+			// currently locked, and would let an attacker confirm a targeted
+			// lockout succeeded by sending five wrong passwords.
+			password.Verify(input.Password, user.Password)
+			return AuthResult{}, sharederrors.ErrInvalidCredential
+		}
+		// The lock has expired: clear the stale counter now instead of
+		// waiting for a fully successful login, so a single further mistake
+		// doesn't immediately re-lock the account for another window.
+		if err := s.repo.ResetFailedLoginAttempts(ctx, user.ID); err != nil {
+			log.Printf("identity: failed to clear expired lockout for %s: %v", user.ID, err)
+		}
+		user.FailedLoginAttempts = 0
+		user.LockedUntil = nil
 	}
 
 	if !password.Verify(input.Password, user.Password) {
@@ -385,6 +402,13 @@ func (s *Service) ResetPassword(ctx context.Context, input ResetPasswordInput) e
 	// for this user is revoked, forcing re-authentication everywhere.
 	if err := s.repo.RevokeAllUserRefreshTokens(ctx, token.UserID); err != nil {
 		return err
+	}
+
+	// Resetting the password is the normal self-service escape from an
+	// account lockout; without this, a user who proves ownership of the
+	// account via email would still be locked out until the window expires.
+	if err := s.repo.ResetFailedLoginAttempts(ctx, token.UserID); err != nil {
+		log.Printf("identity: failed to clear lockout after password reset for %s: %v", token.UserID, err)
 	}
 
 	return s.repo.MarkResetTokenUsed(ctx, token.ID)
