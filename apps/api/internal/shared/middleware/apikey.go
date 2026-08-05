@@ -89,6 +89,7 @@ func APIKeyAuth(pool *sql.DB, validator APIKeyValidator) func(http.Handler) http
 			}
 
 			ctx = db.WithTenantID(ctx, key.GetOrganizationID())
+			ctx = db.WithAPIKeyWorkspaceID(ctx, key.GetWorkspaceID())
 			ctx = WithUserID(ctx, key.GetCreatedBy())
 			ctx = WithAPIKeyScopes(ctx, key.GetScopes())
 

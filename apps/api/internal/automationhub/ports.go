@@ -33,5 +33,10 @@ type Repository interface {
 	// to, used to verify tenant ownership independent of row-level security.
 	GetWorkspaceOrganization(ctx context.Context, workspaceID uuid.UUID) (uuid.UUID, error)
 
+	// GetProjectWorkspace returns the workspace a project belongs to, used to
+	// verify a caller-supplied project actually lives in the workspace they
+	// claim it does (see GetWorkspaceOrganization).
+	GetProjectWorkspace(ctx context.Context, projectID uuid.UUID) (uuid.UUID, error)
+
 	RunInTx(ctx context.Context, fn func(Repository) error) error
 }

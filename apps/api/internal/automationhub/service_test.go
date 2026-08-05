@@ -22,14 +22,20 @@ type fakeAutomationRepo struct {
 	executions map[uuid.UUID]*AutomationExecution
 	artifacts  map[uuid.UUID]*AutomationArtifact
 	logs       map[uuid.UUID]*AutomationLog
+
+	// projectWorkspaces fakes the "real" projects table's project->workspace
+	// relationship consulted by GetProjectWorkspace. Tests exercising Ingest
+	// register the pairing they expect to resolve.
+	projectWorkspaces map[uuid.UUID]uuid.UUID
 }
 
 func newFakeAutomationRepo() *fakeAutomationRepo {
 	return &fakeAutomationRepo{
-		projects:   make(map[uuid.UUID]*AutomationProject),
-		executions: make(map[uuid.UUID]*AutomationExecution),
-		artifacts:  make(map[uuid.UUID]*AutomationArtifact),
-		logs:       make(map[uuid.UUID]*AutomationLog),
+		projects:          make(map[uuid.UUID]*AutomationProject),
+		executions:        make(map[uuid.UUID]*AutomationExecution),
+		artifacts:         make(map[uuid.UUID]*AutomationArtifact),
+		logs:              make(map[uuid.UUID]*AutomationLog),
+		projectWorkspaces: make(map[uuid.UUID]uuid.UUID),
 	}
 }
 
@@ -162,6 +168,13 @@ func (f *fakeAutomationRepo) RunInTx(_ context.Context, fn func(Repository) erro
 func (f *fakeAutomationRepo) GetWorkspaceOrganization(ctx context.Context, _ uuid.UUID) (uuid.UUID, error) {
 	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
 		return tenantID, nil
+	}
+	return uuid.Nil, sharederrors.ErrNotFound
+}
+
+func (f *fakeAutomationRepo) GetProjectWorkspace(_ context.Context, projectID uuid.UUID) (uuid.UUID, error) {
+	if wsID, ok := f.projectWorkspaces[projectID]; ok {
+		return wsID, nil
 	}
 	return uuid.Nil, sharederrors.ErrNotFound
 }
@@ -429,10 +442,11 @@ func mustParse(t *testing.T, err error) {
 // ---------- Tests ----------
 
 func TestIngestJUnit(t *testing.T) {
-	svc, _, rRepo, _, _ := newTestService(t)
+	svc, aRepo, rRepo, _, _ := newTestService(t)
 	wsID := uuid.New()
 	projID := uuid.New()
 	uid := uuid.New()
+	aRepo.projectWorkspaces[projID] = wsID
 
 	junitXML := []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>

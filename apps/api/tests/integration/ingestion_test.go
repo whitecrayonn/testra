@@ -345,6 +345,69 @@ func TestIngestTenantIsolation(t *testing.T) {
 	}
 }
 
+// TestIngestForeignProjectWithOwnWorkspace guards against pairing a caller's
+// own (legitimate) workspace_id with another tenant's project_id to smuggle
+// results into a foreign project. The workspace-ownership check alone would
+// pass here since tenA really does own workspace A; only an explicit
+// project->workspace check catches the mismatch.
+func TestIngestForeignProjectWithOwnWorkspace(t *testing.T) {
+	db := openTestDB(t)
+	handler := newTestServer(db)
+	tenA := newTenant(t, db, ownerRoleID)
+	tenB := newTenant(t, db, ownerRoleID)
+	apiKeyA := createAPIKey(t, handler, tenA, []string{"runs:ingest"})
+
+	body := map[string]any{
+		"workspace_id": tenA.WorkspaceID.String(),
+		"project_id":   tenB.ProjectID.String(),
+		"name":         "Foreign Project",
+		"format":       "junit",
+		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
+	}
+
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKeyA, uuid.New().String(), body)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for a project outside the claimed workspace, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
+// TestIngestAPIKeyWorkspaceScope verifies that an API key provisioned for one
+// workspace cannot be used to ingest into a sibling workspace in the same
+// organization: the key's own workspace scope must match the request, not
+// just the organization.
+func TestIngestAPIKeyWorkspaceScope(t *testing.T) {
+	db := openTestDB(t)
+	handler := newTestServer(db)
+	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
+
+	otherWorkspaceID := uuid.New()
+	otherProjectID := uuid.New()
+	if _, err := db.Exec(
+		`INSERT INTO workspaces (id, organization_id, name, slug, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+		otherWorkspaceID, ten.OrgID, "Sibling Workspace", "sibling-"+otherWorkspaceID.String()); err != nil {
+		t.Fatalf("insert sibling workspace: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO projects (id, workspace_id, name, key, description, created_at, updated_at) VALUES ($1, $2, $3, $4, '', NOW(), NOW())`,
+		otherProjectID, otherWorkspaceID, "Sibling Project", "SIBLING01"); err != nil {
+		t.Fatalf("insert sibling project: %v", err)
+	}
+
+	body := map[string]any{
+		"workspace_id": otherWorkspaceID.String(),
+		"project_id":   otherProjectID.String(),
+		"name":         "Sibling Workspace Ingest",
+		"format":       "junit",
+		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
+	}
+
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for a workspace outside the key's own scope, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
 // TestIngestInsufficientPermission verifies that an API key lacking the
 // runs:ingest scope is rejected, exercising the scope-based authorization
 // that guards /ingest (see sharedmiddleware.RequireScope in server.go).
