@@ -23,6 +23,7 @@ func TestIngestJUnit(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	payload := `<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
@@ -43,7 +44,7 @@ func TestIngestJUnit(t *testing.T) {
 		"payload":      payload,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -72,6 +73,7 @@ func TestIngestPlaywright(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	payload := `{
   "suites": [
@@ -95,7 +97,7 @@ func TestIngestPlaywright(t *testing.T) {
 		"payload":      payload,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -115,6 +117,7 @@ func TestIngestCypress(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	payload := `{
   "suites": [
@@ -137,7 +140,7 @@ func TestIngestCypress(t *testing.T) {
 		"payload":      payload,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -157,6 +160,7 @@ func TestIngestDuplicateUpload(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 	idempotencyKey := uuid.New().String()
 
 	payload := `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`
@@ -168,7 +172,7 @@ func TestIngestDuplicateUpload(t *testing.T) {
 		"payload":      payload,
 	}
 
-	rr1 := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body)
+	rr1 := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body)
 	if rr1.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr1.Code, rr1.Body.String())
 	}
@@ -179,7 +183,7 @@ func TestIngestDuplicateUpload(t *testing.T) {
 		t.Fatalf("unmarshal first: %v", err)
 	}
 
-	rr2 := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body)
+	rr2 := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body)
 	if rr2.Code != http.StatusCreated {
 		t.Fatalf("expected replay 201, got %d: %s", rr2.Code, rr2.Body.String())
 	}
@@ -208,6 +212,7 @@ func TestIngestDuplicateKeyDifferentPayload(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 	idempotencyKey := uuid.New().String()
 
 	body1 := map[string]any{
@@ -217,7 +222,7 @@ func TestIngestDuplicateKeyDifferentPayload(t *testing.T) {
 		"format":       "junit",
 		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
 	}
-	rr1 := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body1)
+	rr1 := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body1)
 	if rr1.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr1.Code, rr1.Body.String())
 	}
@@ -229,16 +234,22 @@ func TestIngestDuplicateKeyDifferentPayload(t *testing.T) {
 		"format":       "junit",
 		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.2"><testcase name="T2" time="0.2"/></testsuite></testsuites>`,
 	}
-	rr2 := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body2)
+	rr2 := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body2)
 	if rr2.Code != http.StatusConflict {
 		t.Fatalf("expected 409 conflict, got %d: %s", rr2.Code, rr2.Body.String())
 	}
 }
 
+// TestIngestMissingKey verifies that omitting the Idempotency-Key header
+// does not block ingestion: IdempotencyKey (see
+// internal/shared/middleware/idempotency.go) treats the header as optional
+// and simply skips replay/conflict detection when absent, rather than
+// rejecting the request.
 func TestIngestMissingKey(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	body := map[string]any{
 		"workspace_id": ten.WorkspaceID.String(),
@@ -248,13 +259,9 @@ func TestIngestMissingKey(t *testing.T) {
 		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, "", body)
-	if rr.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 for missing Idempotency-Key, got %d: %s", rr.Code, rr.Body.String())
-	}
-	env := parseResponse(t, rr)
-	if env.Error == nil || env.Error.Code != "IDEMPOTENCY_KEY_REQUIRED" {
-		t.Fatalf("expected IDEMPOTENCY_KEY_REQUIRED, got %+v", env.Error)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, "", body)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected 201 without an Idempotency-Key, got %d: %s", rr.Code, rr.Body.String())
 	}
 }
 
@@ -262,6 +269,7 @@ func TestIngestInvalidPayload(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	body := map[string]any{
 		"workspace_id": ten.WorkspaceID.String(),
@@ -271,7 +279,7 @@ func TestIngestInvalidPayload(t *testing.T) {
 		"payload":      "not valid xml",
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusInternalServerError && rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 or 500 for invalid payload, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -281,16 +289,17 @@ func TestIngestUnsupportedFormat(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	body := map[string]any{
 		"workspace_id": ten.WorkspaceID.String(),
 		"project_id":   ten.ProjectID.String(),
 		"name":         "Unsupported",
-		"format":       "robot",
+		"format":       "testcomplete",
 		"payload":      "{}",
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for unsupported format, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -320,6 +329,7 @@ func TestIngestTenantIsolation(t *testing.T) {
 	handler := newTestServer(db)
 	tenA := newTenant(t, db, ownerRoleID)
 	tenB := newTenant(t, db, ownerRoleID)
+	apiKeyB := createAPIKey(t, handler, tenB, []string{"runs:ingest"})
 
 	body := map[string]any{
 		"workspace_id": tenA.WorkspaceID.String(),
@@ -329,34 +339,20 @@ func TestIngestTenantIsolation(t *testing.T) {
 		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", tenB.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKeyB, uuid.New().String(), body)
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for cross-tenant request, got %d: %s", rr.Code, rr.Body.String())
 	}
 }
 
+// TestIngestInsufficientPermission verifies that an API key lacking the
+// runs:ingest scope is rejected, exercising the scope-based authorization
+// that guards /ingest (see sharedmiddleware.RequireScope in server.go).
 func TestIngestInsufficientPermission(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	target := newTenant(t, db, ownerRoleID)
-	viewer := newTenant(t, db, viewerRoleID)
-
-	// Grant the viewer membership in the target organization by adding them to the target org.
-	_, err := db.Exec(`
-		INSERT INTO organization_members (organization_id, user_id, role, created_at)
-		VALUES ($1, $2, 'member', NOW())
-		ON CONFLICT DO NOTHING`,
-		target.OrgID, viewer.UserID)
-	if err != nil {
-		t.Fatalf("grant membership: %v", err)
-	}
-	_, err = db.Exec(`
-		INSERT INTO role_assignments (id, role_id, user_id, scope_type, scope_id, created_at)
-		VALUES ($1, $2, $3, 'organization', $4, NOW())`,
-		uuid.New(), viewerRoleID, viewer.UserID, target.OrgID)
-	if err != nil {
-		t.Fatalf("assign viewer role: %v", err)
-	}
+	apiKey := createAPIKey(t, handler, target, []string{"results:read"})
 
 	body := map[string]any{
 		"workspace_id": target.WorkspaceID.String(),
@@ -366,7 +362,7 @@ func TestIngestInsufficientPermission(t *testing.T) {
 		"payload":      `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`,
 	}
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", viewer.Token, uuid.New().String(), body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, uuid.New().String(), body)
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for insufficient permission, got %d: %s", rr.Code, rr.Body.String())
 	}
