@@ -1,8 +1,0 @@
-{
-  "extends": "@testra/config/typescript/react-library.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"]
-}
