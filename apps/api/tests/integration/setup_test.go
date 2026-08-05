@@ -259,17 +259,6 @@ func makeRequest(t *testing.T, handler http.Handler, method, path, token, idempo
 	if idempotencyKey != "" {
 		req.Header.Set("Idempotency-Key", idempotencyKey)
 	}
-	// The JWT-authenticated route group enforces double-submit CSRF
-	// protection on mutating requests (see internal/shared/middleware/csrf.go).
-	// A bearer-token client that never received the CSRF cookie from a
-	// browser session can still satisfy the check by presenting a
-	// self-consistent cookie/header pair, since the middleware only verifies
-	// the two match.
-	if isMutatingHTTPMethod(method) {
-		req.AddCookie(&http.Cookie{Name: "testra_csrf_token", Value: "integration-test-csrf-token"})
-		req.Header.Set("X-CSRF-Token", "integration-test-csrf-token")
-	}
-
 	// The double-submit CSRF middleware guards every mutating route in the
 	// authenticated group regardless of auth scheme. A real browser client
 	// gets this cookie from GET /auth/csrf; tests short-circuit that round
@@ -286,15 +275,6 @@ func makeRequest(t *testing.T, handler http.Handler, method, path, token, idempo
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	return rr
-}
-
-func isMutatingHTTPMethod(method string) bool {
-	switch strings.ToUpper(method) {
-	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
-		return false
-	default:
-		return true
-	}
 }
 
 // createAPIKey provisions an API key scoped to ten's workspace via the
