@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -88,25 +89,22 @@ func TestIsBlockedIP(t *testing.T) {
 	}
 }
 
-// withFakeResolver swaps lookupIPAddr for the duration of the test and clears
-// the shared DNS cache before and after, so this test cannot see entries left
-// by other tests (real hostnames like api.github.com) and vice versa.
+// withFakeResolver swaps lookupIPAddr for the duration of the test and
+// restores it afterward.
 func withFakeResolver(t *testing.T, fn func(ctx context.Context, host string) ([]net.IPAddr, error)) {
 	t.Helper()
 	original := lookupIPAddr
 	lookupIPAddr = fn
-	dnsCacheMu.Lock()
-	dnsCache = map[string]dnsCacheEntry{}
-	dnsCacheMu.Unlock()
 	t.Cleanup(func() {
 		lookupIPAddr = original
-		dnsCacheMu.Lock()
-		dnsCache = map[string]dnsCacheEntry{}
-		dnsCacheMu.Unlock()
 	})
 }
 
-func TestResolveHost_CachesResult(t *testing.T) {
+// TestResolveHost_NeverCaches is a regression test: resolveHost must perform
+// a fresh lookup on every call. It intentionally has no cache — see its doc
+// comment — so a stale pre-flight answer can never be a factor, however
+// briefly, in what ValidateURL approves.
+func TestResolveHost_NeverCaches(t *testing.T) {
 	var calls int32
 	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
 		atomic.AddInt32(&calls, 1)
@@ -114,44 +112,13 @@ func TestResolveHost_CachesResult(t *testing.T) {
 	})
 
 	for i := 0; i < 3; i++ {
-		addrs, err := resolveHost(context.Background(), "cached.example.com")
-		if err != nil {
+		if _, err := resolveHost(context.Background(), "repeated.example.com"); err != nil {
 			t.Fatalf("resolveHost call %d: unexpected error: %v", i, err)
 		}
-		if len(addrs) != 1 || addrs[0].IP.String() != "8.8.8.8" {
-			t.Fatalf("resolveHost call %d: unexpected addrs %v", i, addrs)
-		}
 	}
 
-	if got := atomic.LoadInt32(&calls); got != 1 {
-		t.Fatalf("expected the underlying resolver to be called once (cached thereafter), got %d calls", got)
-	}
-}
-
-func TestResolveHost_ReResolvesAfterTTLExpiry(t *testing.T) {
-	var calls int32
-	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
-		atomic.AddInt32(&calls, 1)
-		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
-	})
-
-	if _, err := resolveHost(context.Background(), "expiring.example.com"); err != nil {
-		t.Fatalf("first resolveHost call: unexpected error: %v", err)
-	}
-
-	// Force the cached entry to look expired instead of waiting out the real TTL.
-	dnsCacheMu.Lock()
-	entry := dnsCache["expiring.example.com"]
-	entry.expires = time.Now().Add(-time.Second)
-	dnsCache["expiring.example.com"] = entry
-	dnsCacheMu.Unlock()
-
-	if _, err := resolveHost(context.Background(), "expiring.example.com"); err != nil {
-		t.Fatalf("second resolveHost call: unexpected error: %v", err)
-	}
-
-	if got := atomic.LoadInt32(&calls); got != 2 {
-		t.Fatalf("expected a fresh lookup after TTL expiry, got %d total calls", got)
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Fatalf("expected the underlying resolver to be called once per resolveHost call (no caching), got %d calls", got)
 	}
 }
 
@@ -180,6 +147,133 @@ func TestResolveHost_BoundsLookupWithTimeout(t *testing.T) {
 	}
 }
 
+type fakeConn struct {
+	net.Conn
+}
+
+// withFakeDialer swaps dialContext for the duration of the test, so it never
+// needs real network access, and restores it afterward.
+func withFakeDialer(t *testing.T, fn func(ctx context.Context, network, addr string) (net.Conn, error)) {
+	t.Helper()
+	original := dialContext
+	dialContext = fn
+	t.Cleanup(func() {
+		dialContext = original
+	})
+}
+
+// TestSafeDialContext_RejectsBlockedLiteralIP is a regression test: dialing
+// a raw loopback/private IP address must be rejected without ever reaching
+// the real dialer.
+func TestSafeDialContext_RejectsBlockedLiteralIP(t *testing.T) {
+	var dialed bool
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialed = true
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "127.0.0.1:8080")
+	if err == nil {
+		t.Fatal("expected error dialing a loopback IP")
+	}
+	if dialed {
+		t.Fatal("expected the real dialer never to be invoked for a blocked IP")
+	}
+}
+
+// TestSafeDialContext_RejectsInternalHostnameSuffix is a regression test:
+// hostnames disallowed by name (e.g. .internal) must be rejected before any
+// DNS resolution or dial is attempted.
+func TestSafeDialContext_RejectsInternalHostnameSuffix(t *testing.T) {
+	var resolved, dialed bool
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		resolved = true
+		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
+	})
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialed = true
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "service.internal:443")
+	if err == nil {
+		t.Fatal("expected error dialing an .internal hostname")
+	}
+	if resolved || dialed {
+		t.Fatal("expected neither resolution nor dial to occur for a disallowed hostname")
+	}
+}
+
+// TestSafeDialContext_PinsToResolvedAddress is a regression test for the
+// DNS-rebinding gap: the address actually dialed must be the exact address
+// that was just validated, not a second, independent resolution.
+func TestSafeDialContext_PinsToResolvedAddress(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("203.0.113.10")}}, nil
+	})
+
+	var dialedAddr string
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialedAddr = addr
+		return &fakeConn{}, nil
+	})
+
+	conn, err := SafeDialContext(context.Background(), "tcp", "api.example.com:443")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if conn == nil {
+		t.Fatal("expected a non-nil connection")
+	}
+	if dialedAddr != "203.0.113.10:443" {
+		t.Fatalf("expected dial pinned to the resolved IP:port, got %q", dialedAddr)
+	}
+}
+
+// TestSafeDialContext_SkipsBlockedAddressesInResolvedList is a regression
+// test: if a hostname resolves to multiple addresses, a blocked one among
+// them must not be dialed even if it's returned first.
+func TestSafeDialContext_SkipsBlockedAddressesInResolvedList(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{
+			{IP: net.ParseIP("127.0.0.1")},
+			{IP: net.ParseIP("203.0.113.20")},
+		}, nil
+	})
+
+	var dialedAddr string
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialedAddr = addr
+		return &fakeConn{}, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "multi.example.com:443")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dialedAddr != "203.0.113.20:443" {
+		t.Fatalf("expected dial to skip the blocked address and use the allowed one, got %q", dialedAddr)
+	}
+}
+
+// TestSafeDialContext_RejectsWhenAllResolvedAddressesBlocked is a regression
+// test: a hostname that resolves only to disallowed addresses (e.g. after
+// DNS rebinding) must be rejected outright.
+func TestSafeDialContext_RejectsWhenAllResolvedAddressesBlocked(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("127.0.0.1")}, {IP: net.ParseIP("169.254.169.254")}}, nil
+	})
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		t.Fatal("expected the dialer never to be invoked when every resolved address is blocked")
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "rebound.example.com:443")
+	if err == nil {
+		t.Fatal("expected error when every resolved address is blocked")
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(substr) == 0 || (len(s) >= len(substr) && findSubstr(s, substr))
 }
@@ -191,4 +285,35 @@ func findSubstr(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// TestSafeHTTPClient_PreservesDefaultTransportSettings is a regression test:
+// SafeHTTPClient must keep proxy support, connection pooling, and HTTP/2
+// from http.DefaultTransport, only swapping DialContext. A hand-built
+// &http.Transport{DialContext: ...} would silently drop all of that.
+func TestSafeHTTPClient_PreservesDefaultTransportSettings(t *testing.T) {
+	client := SafeHTTPClient(10 * time.Second)
+
+	transport, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("expected *http.Transport, got %T", client.Transport)
+	}
+
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+
+	if transport.Proxy == nil {
+		t.Fatal("expected Proxy support (e.g. HTTP_PROXY/HTTPS_PROXY) to be preserved")
+	}
+	if transport.MaxIdleConns != defaultTransport.MaxIdleConns {
+		t.Fatalf("expected MaxIdleConns %d, got %d", defaultTransport.MaxIdleConns, transport.MaxIdleConns)
+	}
+	if transport.IdleConnTimeout != defaultTransport.IdleConnTimeout {
+		t.Fatalf("expected IdleConnTimeout %v, got %v", defaultTransport.IdleConnTimeout, transport.IdleConnTimeout)
+	}
+	if transport.ForceAttemptHTTP2 != defaultTransport.ForceAttemptHTTP2 {
+		t.Fatalf("expected ForceAttemptHTTP2 %v, got %v", defaultTransport.ForceAttemptHTTP2, transport.ForceAttemptHTTP2)
+	}
+	if transport.DialContext == nil {
+		t.Fatal("expected DialContext to be set to SafeDialContext")
+	}
 }

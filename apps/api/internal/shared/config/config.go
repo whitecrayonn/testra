@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -105,6 +106,21 @@ func (c Config) Validate() error {
 	}
 	if strings.Contains(c.DatabaseURL, "sslmode=disable") {
 		return fmt.Errorf("DATABASE_URL must not disable TLS (sslmode=disable) in production")
+	}
+
+	// WebBaseURL is embedded verbatim in password-reset emails; left at its
+	// localhost development default in production, it silently emails
+	// unusable reset links instead of failing loudly.
+	webURL, err := url.Parse(c.WebBaseURL)
+	if c.WebBaseURL == "" || err != nil {
+		return fmt.Errorf("WEB_BASE_URL must be a valid absolute URL in production")
+	}
+	if webURL.Scheme != "https" {
+		return fmt.Errorf("WEB_BASE_URL must use https in production")
+	}
+	host := webURL.Hostname()
+	if host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return fmt.Errorf("WEB_BASE_URL must not point at a localhost address in production")
 	}
 
 	return nil

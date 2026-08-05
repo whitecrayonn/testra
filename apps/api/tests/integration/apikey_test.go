@@ -19,7 +19,7 @@ type apiKeyCreateResult struct {
 	RawKey string `json:"raw_key"`
 }
 
-func createAPIKey(t *testing.T, handler http.Handler, ten *testTenant) apiKeyCreateResult {
+func createAPIKeyWithID(t *testing.T, handler http.Handler, ten *testTenant) apiKeyCreateResult {
 	t.Helper()
 
 	body := map[string]any{
@@ -71,7 +71,7 @@ func TestAPIKeyAuthXAPIKeyHeader(t *testing.T) {
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
 
-	created := createAPIKey(t, handler, ten)
+	created := createAPIKeyWithID(t, handler, ten)
 
 	rr := ingestWithAPIKey(handler, ten, "X-API-Key", "", created.RawKey)
 	if rr.Code != http.StatusCreated {
@@ -87,7 +87,7 @@ func TestAPIKeyAuthAuthorizationApiKeyScheme(t *testing.T) {
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
 
-	created := createAPIKey(t, handler, ten)
+	created := createAPIKeyWithID(t, handler, ten)
 
 	rr := ingestWithAPIKey(handler, ten, "Authorization", "ApiKey", created.RawKey)
 	if rr.Code != http.StatusCreated {
@@ -116,7 +116,7 @@ func TestAPIKeyAuthRejectsRevokedKey(t *testing.T) {
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
 
-	created := createAPIKey(t, handler, ten)
+	created := createAPIKeyWithID(t, handler, ten)
 
 	rr := ingestWithAPIKey(handler, ten, "X-API-Key", "", created.RawKey)
 	if rr.Code != http.StatusCreated {

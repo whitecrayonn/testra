@@ -346,13 +346,98 @@ func TestLoginRepeatedFailuresLockout(t *testing.T) {
 		}
 	}
 
-	// The account is now locked, even with the correct password.
+	// The account is now locked. The response must stay indistinguishable
+	// from an ordinary wrong-password failure (ErrInvalidCredential, not a
+	// distinct ErrTooManyRequests/429), even with the correct password,
+	// so a caller can't enumerate "this email exists and is locked" versus
+	// "invalid credentials". The lock itself is verified via the repo below.
+	if user.LockedUntil == nil {
+		t.Fatal("expected account to be locked in the repository")
+	}
 	_, err := svc.Login(context.Background(), LoginInput{
 		Email:    user.Email,
 		Password: "TestPass123!@#",
 	})
-	if err != sharederrors.ErrTooManyRequests {
-		t.Fatalf("expected ErrTooManyRequests once locked, got %v", err)
+	if err != sharederrors.ErrInvalidCredential {
+		t.Fatalf("expected ErrInvalidCredential once locked (uniform response), got %v", err)
+	}
+}
+
+// TestLoginLockoutExpiryClearsCounter is a regression test: once a lockout
+// window has passed, a single further mistake must not immediately re-lock
+// the account for another window. It must behave like a fresh account.
+func TestLoginLockoutExpiryClearsCounter(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "expired-lockout@test.com", "TestPass123!@#")
+
+	// Simulate an already-expired lockout left over from a previous window.
+	user.FailedLoginAttempts = loginMaxAttempts
+	past := time.Now().UTC().Add(-time.Minute)
+	user.LockedUntil = &past
+
+	// One more wrong password should behave like attempt 1 of a fresh
+	// window (still ErrInvalidCredential), not re-trigger a lock.
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "WrongPassword!",
+	}); err != sharederrors.ErrInvalidCredential {
+		t.Fatalf("expected ErrInvalidCredential, got %v", err)
+	}
+	if user.LockedUntil != nil {
+		t.Fatal("expected account not to be re-locked after only one failure past an expired window")
+	}
+
+	// The correct password should now succeed outright.
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected successful login after expired lockout cleared, got %v", err)
+	}
+}
+
+// TestResetPasswordClearsLockout is a regression test: resetting a password
+// is the normal self-service escape from a lockout and must clear it, not
+// leave the account locked despite the user proving account ownership.
+func TestResetPasswordClearsLockout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "locked-reset@test.com", "TestPass123!@#")
+
+	future := time.Now().UTC().Add(10 * time.Minute)
+	user.FailedLoginAttempts = loginMaxAttempts
+	user.LockedUntil = &future
+
+	rawToken, _ := generateResetToken()
+	hash := hashToken(rawToken)
+	repo.resetTokens[hash] = &PasswordResetToken{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		TokenHash: hash,
+		ExpiresAt: time.Now().UTC().Add(30 * time.Minute),
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := svc.ResetPassword(context.Background(), ResetPasswordInput{
+		Token:       rawToken,
+		NewPassword: "NewPass123!@#",
+	}); err != nil {
+		t.Fatalf("reset password: %v", err)
+	}
+
+	if user.LockedUntil != nil {
+		t.Fatal("expected lockout to be cleared by password reset")
+	}
+	if user.FailedLoginAttempts != 0 {
+		t.Fatalf("expected failed attempts cleared, got %d", user.FailedLoginAttempts)
+	}
+
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "NewPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected login with new password to succeed, got %v", err)
 	}
 }
 

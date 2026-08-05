@@ -83,6 +83,14 @@ The selected workspace/project IDs are stored in `localStorage` under:
 | `testra_project_id` | Selected project UUID |
 | `testra_project_name` | Selected project display name |
 
+### Next.js API route handlers — `app/api/`
+
+Server-side route handlers served directly by the Next.js app (distinct from the Go backend routes below).
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `POST /api/csp-report` | `apps/web/app/api/csp-report/route.ts` | Unauthenticated `Content-Security-Policy` violation report sink (see the CSP `report-uri` directive in `apps/web/middleware.ts`). Logs a size- and shape-bounded, rate-limited summary; no persistence. |
+
 ---
 
 ## Backend routes

@@ -41,7 +41,10 @@ func NewService(repo Repository, smtpCfg SMTPConfig) *Service {
 	return &Service{
 		repo:         repo,
 		smtp:         smtpCfg,
-		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		// Dials through security.SafeDialContext so requests to user-configured
+		// notification-channel webhook URLs are validated at connection time,
+		// not just by the earlier, separately-timed urlValidator check below.
+		httpClient:   security.SafeHTTPClient(10 * time.Second),
 		smtpSender:   smtp.SendMail,
 		urlValidator: security.ValidateURL,
 	}
