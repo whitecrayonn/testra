@@ -3,8 +3,8 @@ package security
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -89,25 +89,22 @@ func TestIsBlockedIP(t *testing.T) {
 	}
 }
 
-// withFakeResolver swaps lookupIPAddr for the duration of the test and clears
-// the shared DNS cache before and after, so this test cannot see entries left
-// by other tests (real hostnames like api.github.com) and vice versa.
+// withFakeResolver swaps lookupIPAddr for the duration of the test and
+// restores it afterward.
 func withFakeResolver(t *testing.T, fn func(ctx context.Context, host string) ([]net.IPAddr, error)) {
 	t.Helper()
 	original := lookupIPAddr
 	lookupIPAddr = fn
-	dnsCacheMu.Lock()
-	dnsCache = map[string]dnsCacheEntry{}
-	dnsCacheMu.Unlock()
 	t.Cleanup(func() {
 		lookupIPAddr = original
-		dnsCacheMu.Lock()
-		dnsCache = map[string]dnsCacheEntry{}
-		dnsCacheMu.Unlock()
 	})
 }
 
-func TestResolveHost_CachesResult(t *testing.T) {
+// TestResolveHost_NeverCaches is a regression test: resolveHost must perform
+// a fresh lookup on every call. It intentionally has no cache — see its doc
+// comment — so a stale pre-flight answer can never be a factor, however
+// briefly, in what ValidateURL approves.
+func TestResolveHost_NeverCaches(t *testing.T) {
 	var calls int32
 	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
 		atomic.AddInt32(&calls, 1)
@@ -115,44 +112,13 @@ func TestResolveHost_CachesResult(t *testing.T) {
 	})
 
 	for i := 0; i < 3; i++ {
-		addrs, err := resolveHost(context.Background(), "cached.example.com")
-		if err != nil {
+		if _, err := resolveHost(context.Background(), "repeated.example.com"); err != nil {
 			t.Fatalf("resolveHost call %d: unexpected error: %v", i, err)
 		}
-		if len(addrs) != 1 || addrs[0].IP.String() != "8.8.8.8" {
-			t.Fatalf("resolveHost call %d: unexpected addrs %v", i, addrs)
-		}
 	}
 
-	if got := atomic.LoadInt32(&calls); got != 1 {
-		t.Fatalf("expected the underlying resolver to be called once (cached thereafter), got %d calls", got)
-	}
-}
-
-func TestResolveHost_ReResolvesAfterTTLExpiry(t *testing.T) {
-	var calls int32
-	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
-		atomic.AddInt32(&calls, 1)
-		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
-	})
-
-	if _, err := resolveHost(context.Background(), "expiring.example.com"); err != nil {
-		t.Fatalf("first resolveHost call: unexpected error: %v", err)
-	}
-
-	// Force the cached entry to look expired instead of waiting out the real TTL.
-	dnsCacheMu.Lock()
-	entry := dnsCache["expiring.example.com"]
-	entry.expires = time.Now().Add(-time.Second)
-	dnsCache["expiring.example.com"] = entry
-	dnsCacheMu.Unlock()
-
-	if _, err := resolveHost(context.Background(), "expiring.example.com"); err != nil {
-		t.Fatalf("second resolveHost call: unexpected error: %v", err)
-	}
-
-	if got := atomic.LoadInt32(&calls); got != 2 {
-		t.Fatalf("expected a fresh lookup after TTL expiry, got %d total calls", got)
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Fatalf("expected the underlying resolver to be called once per resolveHost call (no caching), got %d calls", got)
 	}
 }
 
@@ -178,69 +144,6 @@ func TestResolveHost_BoundsLookupWithTimeout(t *testing.T) {
 	}
 	if !deadlineWithinBudget {
 		t.Fatal("expected the deadline to be bounded by dnsLookupTimeout")
-	}
-}
-
-// TestResolveHost_PrunesExpiredEntries is a regression test: the DNS cache
-// must not retain entries for hostnames that are no longer being queried,
-// since ValidateURL runs against user-supplied endpoints (webhook/integration
-// URLs) with an unbounded set of distinct hostnames.
-func TestResolveHost_PrunesExpiredEntries(t *testing.T) {
-	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
-		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
-	})
-
-	if _, err := resolveHost(context.Background(), "stale-host.example.com"); err != nil {
-		t.Fatalf("resolveHost: unexpected error: %v", err)
-	}
-
-	dnsCacheMu.Lock()
-	if len(dnsCache) != 1 {
-		dnsCacheMu.Unlock()
-		t.Fatalf("expected 1 cache entry, got %d", len(dnsCache))
-	}
-	// Force the entry to look expired, as if its TTL had already elapsed.
-	entry := dnsCache["stale-host.example.com"]
-	entry.expires = time.Now().Add(-time.Second)
-	dnsCache["stale-host.example.com"] = entry
-	dnsCacheMu.Unlock()
-
-	// A lookup for a *different* host triggers the write-path prune, which
-	// should evict the now-expired entry above rather than leaving it to
-	// occupy memory indefinitely.
-	if _, err := resolveHost(context.Background(), "other-host.example.com"); err != nil {
-		t.Fatalf("resolveHost: unexpected error: %v", err)
-	}
-
-	dnsCacheMu.Lock()
-	defer dnsCacheMu.Unlock()
-	if _, ok := dnsCache["stale-host.example.com"]; ok {
-		t.Fatal("expected the expired entry to have been pruned")
-	}
-	if len(dnsCache) != 1 {
-		t.Fatalf("expected only the fresh entry to remain, got %d entries", len(dnsCache))
-	}
-}
-
-// TestResolveHost_CapsCacheSize is a regression test: even within a single
-// TTL window, the number of distinct cached hostnames must not grow without
-// bound.
-func TestResolveHost_CapsCacheSize(t *testing.T) {
-	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
-		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
-	})
-
-	for i := 0; i < dnsCacheMaxEntries+50; i++ {
-		host := fmt.Sprintf("host-%d.example.com", i)
-		if _, err := resolveHost(context.Background(), host); err != nil {
-			t.Fatalf("resolveHost(%s): unexpected error: %v", host, err)
-		}
-	}
-
-	dnsCacheMu.Lock()
-	defer dnsCacheMu.Unlock()
-	if len(dnsCache) > dnsCacheMaxEntries {
-		t.Fatalf("expected cache size to stay capped at %d, got %d", dnsCacheMaxEntries, len(dnsCache))
 	}
 }
 
@@ -382,4 +285,35 @@ func findSubstr(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// TestSafeHTTPClient_PreservesDefaultTransportSettings is a regression test:
+// SafeHTTPClient must keep proxy support, connection pooling, and HTTP/2
+// from http.DefaultTransport, only swapping DialContext. A hand-built
+// &http.Transport{DialContext: ...} would silently drop all of that.
+func TestSafeHTTPClient_PreservesDefaultTransportSettings(t *testing.T) {
+	client := SafeHTTPClient(10 * time.Second)
+
+	transport, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("expected *http.Transport, got %T", client.Transport)
+	}
+
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+
+	if transport.Proxy == nil {
+		t.Fatal("expected Proxy support (e.g. HTTP_PROXY/HTTPS_PROXY) to be preserved")
+	}
+	if transport.MaxIdleConns != defaultTransport.MaxIdleConns {
+		t.Fatalf("expected MaxIdleConns %d, got %d", defaultTransport.MaxIdleConns, transport.MaxIdleConns)
+	}
+	if transport.IdleConnTimeout != defaultTransport.IdleConnTimeout {
+		t.Fatalf("expected IdleConnTimeout %v, got %v", defaultTransport.IdleConnTimeout, transport.IdleConnTimeout)
+	}
+	if transport.ForceAttemptHTTP2 != defaultTransport.ForceAttemptHTTP2 {
+		t.Fatalf("expected ForceAttemptHTTP2 %v, got %v", defaultTransport.ForceAttemptHTTP2, transport.ForceAttemptHTTP2)
+	}
+	if transport.DialContext == nil {
+		t.Fatal("expected DialContext to be set to SafeDialContext")
+	}
 }

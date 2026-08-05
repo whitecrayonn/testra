@@ -8,27 +8,19 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 )
 
 const (
-	// dnsCacheTTL bounds how long a resolved hostname is trusted before a
-	// fresh lookup is required. Kept short (rather than a more typical
-	// resolver TTL) because ValidateURL's result is used to gate an SSRF
-	// check on a URL the caller then dials independently: caching widens the
-	// window between "validated as public" and "actually connected to" that
-	// a DNS-rebinding attacker could exploit by re-pointing the record. This
-	// still gives repeat validations of the same host a cache hit without
-	// leaving a long-lived blind spot.
-	dnsCacheTTL = 30 * time.Second
-	// dnsLookupTimeout bounds a single resolution so a slow or hanging
+	// dnsLookupTimeout bounds a single DNS resolution so a slow or hanging
 	// resolver cannot stall the caller beyond a fixed budget.
 	dnsLookupTimeout = 2 * time.Second
-	// dnsCacheMaxEntries bounds the cache's memory footprint. Entries are
-	// user-influenced (any hostname passed to ValidateURL), so without a cap
-	// the map would grow for the lifetime of the process.
-	dnsCacheMaxEntries = 512
+	// dialTimeout bounds the TCP connect step performed by SafeDialContext.
+	// Kept equal to net/http.DefaultTransport's own dial timeout (30s) so
+	// SafeHTTPClient callers see the same connect-latency budget they had
+	// before — a slow or distant legitimate endpoint should not start
+	// failing just because SSRF protection was added.
+	dialTimeout = 30 * time.Second
 )
 
 // lookupIPAddr resolves a hostname. It is a package-level variable so tests
@@ -39,60 +31,22 @@ var lookupIPAddr = net.DefaultResolver.LookupIPAddr
 // dialContext performs the actual network dial for SafeDialContext. It is a
 // package-level variable so tests can substitute a fake dialer without
 // depending on real network access.
-var dialContext = (&net.Dialer{Timeout: dnsLookupTimeout}).DialContext
+var dialContext = (&net.Dialer{Timeout: dialTimeout}).DialContext
 
-type dnsCacheEntry struct {
-	addrs   []net.IPAddr
-	expires time.Time
-}
-
-var (
-	dnsCacheMu sync.Mutex
-	dnsCache   = map[string]dnsCacheEntry{}
-)
-
-// resolveHost returns the resolved addresses for host, serving from an
-// in-memory TTL cache when possible and otherwise performing a
-// timeout-bounded lookup.
+// resolveHost resolves host with a bounded timeout. It intentionally does
+// not cache: it backs ValidateURL's pre-flight check only (e.g. rejecting an
+// obviously-bad URL early with a friendly error when a user saves an
+// integration/webhook config), not the actual security boundary. The real
+// enforcement happens in SafeDialContext, which always performs its own
+// fresh, uncached resolution immediately before connecting — see its doc
+// comment for why an earlier check (cached or not) can never be sufficient
+// on its own. A cache here would only add a window in which this pre-flight
+// check itself gives a stale answer, for no benefit, since it isn't consulted
+// at connection time anyway.
 func resolveHost(ctx context.Context, host string) ([]net.IPAddr, error) {
-	dnsCacheMu.Lock()
-	if entry, ok := dnsCache[host]; ok && time.Now().Before(entry.expires) {
-		dnsCacheMu.Unlock()
-		return entry.addrs, nil
-	}
-	dnsCacheMu.Unlock()
-
 	lookupCtx, cancel := context.WithTimeout(ctx, dnsLookupTimeout)
 	defer cancel()
-
-	addrs, err := lookupIPAddr(lookupCtx, host)
-	if err != nil {
-		return nil, err
-	}
-
-	dnsCacheMu.Lock()
-	pruneExpiredDNSCacheLocked(time.Now())
-	// If the cache is still full after pruning expired entries, skip caching
-	// this result rather than growing further; the lookup above already
-	// succeeded, so the caller is unaffected, and this bounds worst-case
-	// memory even under a burst of many distinct hostnames within one TTL
-	// window.
-	if len(dnsCache) < dnsCacheMaxEntries {
-		dnsCache[host] = dnsCacheEntry{addrs: addrs, expires: time.Now().Add(dnsCacheTTL)}
-	}
-	dnsCacheMu.Unlock()
-
-	return addrs, nil
-}
-
-// pruneExpiredDNSCacheLocked removes expired entries from dnsCache. Callers
-// must hold dnsCacheMu.
-func pruneExpiredDNSCacheLocked(now time.Time) {
-	for host, entry := range dnsCache {
-		if now.After(entry.expires) {
-			delete(dnsCache, host)
-		}
-	}
+	return lookupIPAddr(lookupCtx, host)
 }
 
 // ValidateURL blocks user-controlled URLs that point to local or private network
@@ -133,8 +87,8 @@ func ValidateURL(ctx context.Context, raw string) error {
 		return nil
 	}
 
-	// For hostnames, resolve (via the cache, bounded by a timeout) and block
-	// if any returned address is forbidden.
+	// For hostnames, resolve (bounded by a timeout) and block if any
+	// returned address is forbidden.
 	addrs, err := resolveHost(ctx, host)
 	if err != nil {
 		// Treat resolution failure as a validation error rather than allowing
@@ -179,15 +133,14 @@ func checkHostnameAllowed(host string) error {
 // re-validates the destination immediately before connecting and pins the
 // connection to the specific address it just validated.
 //
-// ValidateURL alone (even uncached) has an inherent gap: it checks a
-// hostname, and the caller then makes a *separate* connection which
-// performs its own, independent DNS resolution — an attacker who controls
-// the target's DNS record can have it answer safely for the check and
-// answer with an internal address moments later for the real connection
-// (DNS rebinding). Wiring SafeDialContext into the client that actually
-// performs the request closes that gap: the address that gets validated is
-// the exact address that gets dialed, with no second lookup in between, and
-// the check here is always fresh (it does not consult ValidateURL's cache).
+// ValidateURL alone has an inherent gap: it checks a hostname, and the
+// caller then makes a *separate* connection which performs its own,
+// independent DNS resolution — an attacker who controls the target's DNS
+// record can have it answer safely for the check and answer with an
+// internal address moments later for the real connection (DNS rebinding).
+// Wiring SafeDialContext into the client that actually performs the request
+// closes that gap: the address that gets validated is the exact address
+// that gets dialed, with no second lookup in between.
 func SafeDialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -236,11 +189,16 @@ func SafeDialContext(ctx context.Context, network, addr string) (net.Conn, error
 // SafeDialContext, so a request to a user-supplied URL is protected against
 // SSRF (including DNS rebinding between check and use) at the moment of the
 // actual outbound connection, not just by an earlier ValidateURL call.
+//
+// The transport is cloned from http.DefaultTransport rather than built from
+// scratch, so callers keep everything they'd otherwise silently lose:
+// HTTP_PROXY/HTTPS_PROXY/NO_PROXY support, connection pooling
+// (MaxIdleConns/IdleConnTimeout), and HTTP/2 — only DialContext is replaced.
 func SafeHTTPClient(timeout time.Duration) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DialContext = SafeDialContext
 	return &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			DialContext: SafeDialContext,
-		},
+		Timeout:   timeout,
+		Transport: transport,
 	}
 }
