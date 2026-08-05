@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/testra/testra/apps/api/internal/defects"
 	"github.com/testra/testra/apps/api/internal/results"
+	"github.com/testra/testra/apps/api/internal/shared/db"
+	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	"github.com/testra/testra/apps/api/internal/testmanagement"
 )
 
@@ -152,6 +154,16 @@ func (f *fakeAutomationRepo) ListLogs(_ context.Context, executionID uuid.UUID, 
 
 func (f *fakeAutomationRepo) RunInTx(_ context.Context, fn func(Repository) error) error {
 	return fn(f)
+}
+
+// GetWorkspaceOrganization has no workspace/org fixtures to draw from in
+// these unit tests, so it trusts the caller's tenant context (mirroring a
+// workspace that belongs to whichever tenant made the request).
+func (f *fakeAutomationRepo) GetWorkspaceOrganization(ctx context.Context, _ uuid.UUID) (uuid.UUID, error) {
+	if tenantID, ok := db.TenantIDFromContext(ctx); ok {
+		return tenantID, nil
+	}
+	return uuid.Nil, sharederrors.ErrNotFound
 }
 
 type fakeResultsRepo struct {
@@ -433,7 +445,8 @@ func TestIngestJUnit(t *testing.T) {
   </testsuite>
 </testsuites>`)
 
-	result, err := svc.Ingest(context.Background(), IngestInput{
+	ctx := db.WithTenantID(context.Background(), uuid.New())
+	result, err := svc.Ingest(ctx, IngestInput{
 		WorkspaceID: wsID,
 		ProjectID:   projID,
 		Name:        "CI Build #1",

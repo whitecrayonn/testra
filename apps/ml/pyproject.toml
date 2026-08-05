@@ -25,7 +25,7 @@ dev = [
 ]
 
 [tool.setuptools]
-py-modules = []
+packages = ["api"]
 
 [tool.ruff]
 line-length = 100

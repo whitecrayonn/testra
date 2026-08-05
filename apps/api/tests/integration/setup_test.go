@@ -258,10 +258,117 @@ func makeRequest(t *testing.T, handler http.Handler, method, path, token, idempo
 	if idempotencyKey != "" {
 		req.Header.Set("Idempotency-Key", idempotencyKey)
 	}
+	// The JWT-authenticated route group enforces double-submit CSRF
+	// protection on mutating requests (see internal/shared/middleware/csrf.go).
+	// A bearer-token client that never received the CSRF cookie from a
+	// browser session can still satisfy the check by presenting a
+	// self-consistent cookie/header pair, since the middleware only verifies
+	// the two match.
+	if isMutatingHTTPMethod(method) {
+		req.AddCookie(&http.Cookie{Name: "testra_csrf_token", Value: "integration-test-csrf-token"})
+		req.Header.Set("X-CSRF-Token", "integration-test-csrf-token")
+	}
 
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	return rr
+}
+
+func isMutatingHTTPMethod(method string) bool {
+	switch strings.ToUpper(method) {
+	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
+		return false
+	default:
+		return true
+	}
+}
+
+// createAPIKey provisions an API key scoped to ten's workspace via the
+// authenticated /api-keys endpoint, returning the raw key for use with the
+// X-API-Key header. ten must hold a role with the apikeys:create permission.
+func createAPIKey(t *testing.T, handler http.Handler, ten *testTenant, scopes []string) string {
+	t.Helper()
+
+	body := map[string]any{
+		"workspace_id": ten.WorkspaceID.String(),
+		"name":         "integration-test-key",
+		"scopes":       scopes,
+	}
+
+	rr := makeRequest(t, handler, "POST", "/api/v1/api-keys", ten.Token, uuid.New().String(), body)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create api key: expected 201, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var res struct {
+		RawKey string `json:"raw_key"`
+	}
+	env := parseResponse(t, rr)
+	if err := json.Unmarshal(env.Data, &res); err != nil {
+		t.Fatalf("unmarshal api key response: %v", err)
+	}
+	if res.RawKey == "" {
+		t.Fatal("expected non-empty raw_key")
+	}
+	return res.RawKey
+}
+
+// makeAPIKeyRequest is like makeRequest but authenticates with an API key via
+// the X-API-Key header instead of a JWT bearer token.
+func makeAPIKeyRequest(t *testing.T, handler http.Handler, method, path, apiKey, idempotencyKey string, body map[string]any) *httptest.ResponseRecorder {
+	t.Helper()
+
+	var payload []byte
+	if body != nil {
+		var err error
+		payload, err = json.Marshal(body)
+		if err != nil {
+			t.Fatalf("marshal body: %v", err)
+		}
+	}
+
+	req := httptest.NewRequest(method, path, strings.NewReader(string(payload)))
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey != "" {
+		req.Header.Set("X-API-Key", apiKey)
+	}
+	if idempotencyKey != "" {
+		req.Header.Set("Idempotency-Key", idempotencyKey)
+	}
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	return rr
+}
+
+// createTestCase creates a test case in ten's workspace/project via the
+// authenticated /test-cases endpoint, returning its id. ten must hold a role
+// with the tests:create permission.
+func createTestCase(t *testing.T, handler http.Handler, ten *testTenant) string {
+	t.Helper()
+
+	body := map[string]any{
+		"workspace_id": ten.WorkspaceID.String(),
+		"project_id":   ten.ProjectID.String(),
+		"title":        "Integration Test Case",
+	}
+
+	rr := makeRequest(t, handler, "POST", "/api/v1/test-cases", ten.Token, uuid.New().String(), body)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create test case: expected 201, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var res struct {
+		ID string `json:"id"`
+	}
+	env := parseResponse(t, rr)
+	if err := json.Unmarshal(env.Data, &res); err != nil {
+		t.Fatalf("unmarshal test case response: %v", err)
+	}
+	if res.ID == "" {
+		t.Fatal("expected non-empty test case id")
+	}
+	return res.ID
 }
 
 type responseEnvelope struct {

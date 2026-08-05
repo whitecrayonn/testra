@@ -2,6 +2,7 @@ package automationhub
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/testra/testra/apps/api/internal/defects"
 	"github.com/testra/testra/apps/api/internal/results"
+	"github.com/testra/testra/apps/api/internal/shared/db"
 	sharederrors "github.com/testra/testra/apps/api/internal/shared/errors"
 	"github.com/testra/testra/apps/api/internal/shared/eventbus"
 	"github.com/testra/testra/apps/api/internal/shared/validation"
@@ -56,6 +58,27 @@ func (s *Service) Ingest(ctx context.Context, input IngestInput) (*IngestResult,
 	}
 	if len(input.Body) == 0 {
 		return nil, sharederrors.ErrInvalidInput
+	}
+
+	// Verify the target workspace belongs to the authenticated tenant. This
+	// check is enforced at the service layer (not just via RLS) per
+	// ADR-004: request-scoped connection roles are not guaranteed to be
+	// RLS-restricted (e.g. a role that owns the schema bypasses RLS), so
+	// callers must not rely on the database alone to reject cross-tenant
+	// writes.
+	tenantID, ok := db.TenantIDFromContext(ctx)
+	if !ok {
+		return nil, sharederrors.ErrForbidden
+	}
+	workspaceOrgID, err := s.repo.GetWorkspaceOrganization(ctx, input.WorkspaceID)
+	if err != nil {
+		if errors.Is(err, sharederrors.ErrNotFound) {
+			return nil, sharederrors.ErrForbidden
+		}
+		return nil, err
+	}
+	if workspaceOrgID != tenantID {
+		return nil, sharederrors.ErrForbidden
 	}
 
 	report, err := ParseReport(input.Format, input.Body)

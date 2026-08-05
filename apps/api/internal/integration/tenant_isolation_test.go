@@ -184,12 +184,12 @@ func seedTenant(adminDB *sql.DB, slug string) (userID, orgID, workspaceID uuid.U
 		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("insert user: %w", err)
 	}
 	if _, err := adminDB.Exec(
-		"INSERT INTO organizations (id, name, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())",
-		orgID, slug); err != nil {
+		"INSERT INTO organizations (id, name, slug, owner_id, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+		orgID, slug, slug, userID); err != nil {
 		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("insert org: %w", err)
 	}
 	if _, err := adminDB.Exec(
-		"INSERT INTO organization_members (organization_id, user_id, role, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW())",
+		"INSERT INTO organization_members (organization_id, user_id, role, created_at) VALUES ($1, $2, $3, NOW())",
 		orgID, userID, "owner"); err != nil {
 		return uuid.Nil, uuid.Nil, uuid.Nil, fmt.Errorf("insert member: %w", err)
 	}

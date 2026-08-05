@@ -29,5 +29,9 @@ type Repository interface {
 	CreateLog(ctx context.Context, l *AutomationLog) error
 	ListLogs(ctx context.Context, executionID uuid.UUID, cursor string, limit int) ([]AutomationLog, error)
 
+	// GetWorkspaceOrganization returns the organization a workspace belongs
+	// to, used to verify tenant ownership independent of row-level security.
+	GetWorkspaceOrganization(ctx context.Context, workspaceID uuid.UUID) (uuid.UUID, error)
+
 	RunInTx(ctx context.Context, fn func(Repository) error) error
 }
