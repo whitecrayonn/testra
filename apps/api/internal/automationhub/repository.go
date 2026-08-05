@@ -46,6 +46,18 @@ func (r *SQLRepository) RunInTx(ctx context.Context, fn func(Repository) error) 
 	return tx.Commit()
 }
 
+func (r *SQLRepository) GetWorkspaceOrganization(ctx context.Context, workspaceID uuid.UUID) (uuid.UUID, error) {
+	var orgID uuid.UUID
+	err := r.db.QueryRowContext(ctx,
+		`SELECT organization_id FROM workspaces WHERE id = $1`,
+		workspaceID,
+	).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return uuid.Nil, sharederrors.ErrNotFound
+	}
+	return orgID, err
+}
+
 // ----------------- Projects -----------------
 
 func (r *SQLRepository) CreateProject(ctx context.Context, p *AutomationProject) error {

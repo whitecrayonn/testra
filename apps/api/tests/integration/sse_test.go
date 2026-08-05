@@ -13,12 +13,14 @@ func TestRunProgressStreamRequiresAuth(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	testCaseID := createTestCase(t, handler, ten)
 
 	body := map[string]any{
-		"workspace_id": ten.WorkspaceID.String(),
-		"project_id":   ten.ProjectID.String(),
-		"name":         "SSE Auth Test",
-		"source":       "manual",
+		"workspace_id":  ten.WorkspaceID.String(),
+		"project_id":    ten.ProjectID.String(),
+		"name":          "SSE Auth Test",
+		"source":        "manual",
+		"test_case_ids": []string{testCaseID},
 	}
 	rr := makeRequest(t, handler, "POST", "/api/v1/test-runs", ten.Token, "", body)
 	if rr.Code != http.StatusCreated {
@@ -44,12 +46,14 @@ func TestRunProgressStreamRejectsQueryToken(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	testCaseID := createTestCase(t, handler, ten)
 
 	body := map[string]any{
-		"workspace_id": ten.WorkspaceID.String(),
-		"project_id":   ten.ProjectID.String(),
-		"name":         "SSE Stream Test",
-		"source":       "manual",
+		"workspace_id":  ten.WorkspaceID.String(),
+		"project_id":    ten.ProjectID.String(),
+		"name":          "SSE Stream Test",
+		"source":        "manual",
+		"test_case_ids": []string{testCaseID},
 	}
 	rr := makeRequest(t, handler, "POST", "/api/v1/test-runs", ten.Token, "", body)
 	if rr.Code != http.StatusCreated {

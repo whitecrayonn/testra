@@ -25,6 +25,7 @@ func TestIngestionQueueFlow(t *testing.T) {
 	db := openTestDB(t)
 	handler := newTestServer(db)
 	ten := newTenant(t, db, ownerRoleID)
+	apiKey := createAPIKey(t, handler, ten, []string{"runs:ingest"})
 
 	payload := `<testsuites><testsuite name="S" tests="1" time="0.1"><testcase name="T" time="0.1"/></testsuite></testsuites>`
 	body := map[string]any{
@@ -36,7 +37,7 @@ func TestIngestionQueueFlow(t *testing.T) {
 	}
 	idempotencyKey := uuid.New().String()
 
-	rr := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body)
+	rr := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -100,7 +101,7 @@ func TestIngestionQueueFlow(t *testing.T) {
 	}
 
 	// Idempotency replay must return the same run and not create a new one.
-	rr2 := makeRequest(t, handler, "POST", "/api/v1/ingest", ten.Token, idempotencyKey, body)
+	rr2 := makeAPIKeyRequest(t, handler, "POST", "/api/v1/ingest", apiKey, idempotencyKey, body)
 	if rr2.Code != http.StatusCreated {
 		t.Fatalf("expected replay 201, got %d: %s", rr2.Code, rr2.Body.String())
 	}

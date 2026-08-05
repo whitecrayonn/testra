@@ -74,7 +74,7 @@ func TestRBAC_ViewerCannotCreateProject(t *testing.T) {
 	ownerBody := map[string]any{
 		"workspace_id": owner.WorkspaceID.String(),
 		"name":         "Owner Allowed Project",
-		"key":          "OWNERGRANT1",
+		"key":          "OWNERGRNT1",
 	}
 	rr = makeRequest(t, handler, http.MethodPost, "/api/v1/projects", owner.Token, "", ownerBody)
 	if rr.Code != http.StatusCreated {
