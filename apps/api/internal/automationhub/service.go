@@ -60,12 +60,22 @@ func (s *Service) Ingest(ctx context.Context, input IngestInput) (*IngestResult,
 		return nil, sharederrors.ErrInvalidInput
 	}
 
-	// Verify the target workspace belongs to the authenticated tenant. This
-	// check is enforced at the service layer (not just via RLS) per
+	// Verify the target workspace and project belong to the authenticated
+	// caller. This is enforced at the service layer (not just via RLS) per
 	// ADR-004: request-scoped connection roles are not guaranteed to be
 	// RLS-restricted (e.g. a role that owns the schema bypasses RLS), so
 	// callers must not rely on the database alone to reject cross-tenant
-	// writes.
+	// writes. Three things must line up:
+	//   1. the API key's own workspace scope must match the target
+	//      workspace (a key provisioned for one workspace cannot be used to
+	//      write into a sibling workspace in the same organization);
+	//   2. the target workspace must belong to the key's organization; and
+	//   3. the target project must actually belong to the target workspace
+	//      (a caller cannot pair their own workspace_id with someone else's
+	//      project_id to smuggle results into a foreign project).
+	if keyWorkspaceID, ok := db.APIKeyWorkspaceIDFromContext(ctx); ok && keyWorkspaceID != input.WorkspaceID {
+		return nil, sharederrors.ErrForbidden
+	}
 	tenantID, ok := db.TenantIDFromContext(ctx)
 	if !ok {
 		return nil, sharederrors.ErrForbidden
@@ -78,6 +88,16 @@ func (s *Service) Ingest(ctx context.Context, input IngestInput) (*IngestResult,
 		return nil, err
 	}
 	if workspaceOrgID != tenantID {
+		return nil, sharederrors.ErrForbidden
+	}
+	projectWorkspaceID, err := s.repo.GetProjectWorkspace(ctx, input.ProjectID)
+	if err != nil {
+		if errors.Is(err, sharederrors.ErrNotFound) {
+			return nil, sharederrors.ErrForbidden
+		}
+		return nil, err
+	}
+	if projectWorkspaceID != input.WorkspaceID {
 		return nil, sharederrors.ErrForbidden
 	}
 
