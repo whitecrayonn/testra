@@ -10,7 +10,9 @@
 - [`ADR-007-security-standards.md`](../architecture/adrs/ADR-007-security-standards.md)
 - [`PRODUCTION_READINESS_CHECKLIST.md`](../operations/PRODUCTION_READINESS_CHECKLIST.md)
 
-Use this checklist for every security-sensitive change and before production launch.
+Use this checklist for every security-sensitive change and before production launch. Checking a box is a reviewer sign-off action for launch, not an implementation-status flag — see the Sprint 4 note below for what a Sprint 4 M1 cleanup pass actually implemented.
+
+> **Sprint 4 status (2026-08-04):** Since Sprint 3, the following controls were added or hardened (see `SPRINT_BACKLOG.md` M1 status note and PR #15 for detail): account lockout after repeated failed logins with uniform-response account-enumeration resistance (identity, item below); refresh-token invalidation and login-lockout clearing on password reset; a magic-link (HTTPS URL, not a bare token) password-reset email; SSRF hostname validation now caches DNS results for a short (30s) window with a size-bounded, pruned cache and dial-time re-validation pinned to the validated address (closing the gap between validation and the actual outbound connection); a CSP `report-uri` endpoint with body-size and shape limits; and a first pass at CI dependency scanning (Trivy + SBOM, currently report-only pending remediation of pre-existing CVEs it surfaced — see the follow-up task). This does not itself constitute the sign-off below; a reviewer still needs to check the relevant boxes with evidence before launch.
 
 ## Identity and Access
 

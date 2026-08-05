@@ -244,6 +244,133 @@ func TestResolveHost_CapsCacheSize(t *testing.T) {
 	}
 }
 
+type fakeConn struct {
+	net.Conn
+}
+
+// withFakeDialer swaps dialContext for the duration of the test, so it never
+// needs real network access, and restores it afterward.
+func withFakeDialer(t *testing.T, fn func(ctx context.Context, network, addr string) (net.Conn, error)) {
+	t.Helper()
+	original := dialContext
+	dialContext = fn
+	t.Cleanup(func() {
+		dialContext = original
+	})
+}
+
+// TestSafeDialContext_RejectsBlockedLiteralIP is a regression test: dialing
+// a raw loopback/private IP address must be rejected without ever reaching
+// the real dialer.
+func TestSafeDialContext_RejectsBlockedLiteralIP(t *testing.T) {
+	var dialed bool
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialed = true
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "127.0.0.1:8080")
+	if err == nil {
+		t.Fatal("expected error dialing a loopback IP")
+	}
+	if dialed {
+		t.Fatal("expected the real dialer never to be invoked for a blocked IP")
+	}
+}
+
+// TestSafeDialContext_RejectsInternalHostnameSuffix is a regression test:
+// hostnames disallowed by name (e.g. .internal) must be rejected before any
+// DNS resolution or dial is attempted.
+func TestSafeDialContext_RejectsInternalHostnameSuffix(t *testing.T) {
+	var resolved, dialed bool
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		resolved = true
+		return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
+	})
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialed = true
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "service.internal:443")
+	if err == nil {
+		t.Fatal("expected error dialing an .internal hostname")
+	}
+	if resolved || dialed {
+		t.Fatal("expected neither resolution nor dial to occur for a disallowed hostname")
+	}
+}
+
+// TestSafeDialContext_PinsToResolvedAddress is a regression test for the
+// DNS-rebinding gap: the address actually dialed must be the exact address
+// that was just validated, not a second, independent resolution.
+func TestSafeDialContext_PinsToResolvedAddress(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("203.0.113.10")}}, nil
+	})
+
+	var dialedAddr string
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialedAddr = addr
+		return &fakeConn{}, nil
+	})
+
+	conn, err := SafeDialContext(context.Background(), "tcp", "api.example.com:443")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if conn == nil {
+		t.Fatal("expected a non-nil connection")
+	}
+	if dialedAddr != "203.0.113.10:443" {
+		t.Fatalf("expected dial pinned to the resolved IP:port, got %q", dialedAddr)
+	}
+}
+
+// TestSafeDialContext_SkipsBlockedAddressesInResolvedList is a regression
+// test: if a hostname resolves to multiple addresses, a blocked one among
+// them must not be dialed even if it's returned first.
+func TestSafeDialContext_SkipsBlockedAddressesInResolvedList(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{
+			{IP: net.ParseIP("127.0.0.1")},
+			{IP: net.ParseIP("203.0.113.20")},
+		}, nil
+	})
+
+	var dialedAddr string
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialedAddr = addr
+		return &fakeConn{}, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "multi.example.com:443")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dialedAddr != "203.0.113.20:443" {
+		t.Fatalf("expected dial to skip the blocked address and use the allowed one, got %q", dialedAddr)
+	}
+}
+
+// TestSafeDialContext_RejectsWhenAllResolvedAddressesBlocked is a regression
+// test: a hostname that resolves only to disallowed addresses (e.g. after
+// DNS rebinding) must be rejected outright.
+func TestSafeDialContext_RejectsWhenAllResolvedAddressesBlocked(t *testing.T) {
+	withFakeResolver(t, func(ctx context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP("127.0.0.1")}, {IP: net.ParseIP("169.254.169.254")}}, nil
+	})
+	withFakeDialer(t, func(ctx context.Context, network, addr string) (net.Conn, error) {
+		t.Fatal("expected the dialer never to be invoked when every resolved address is blocked")
+		return nil, nil
+	})
+
+	_, err := SafeDialContext(context.Background(), "tcp", "rebound.example.com:443")
+	if err == nil {
+		t.Fatal("expected error when every resolved address is blocked")
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(substr) == 0 || (len(s) >= len(substr) && findSubstr(s, substr))
 }

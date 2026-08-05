@@ -10,12 +10,54 @@ import { NextResponse } from "next/server";
 // Bound the damage a hostile caller can do: cap the body size (both via a
 // declared Content-Length and via a hard read limit, since Content-Length
 // can be absent or wrong), require the parsed body to be a JSON object
-// (not an arbitrarily large/nested value), and truncate what actually gets
-// written to the log. Rate limiting is left to the reverse-proxy/WAF layer
-// (see BIBLICAL_TESTRA.md "CDN / WAF future"), consistent with how other
-// public, unauthenticated endpoints in this app are handled.
+// (not an arbitrarily large/nested value), truncate what actually gets
+// written to the log, and rate-limit per client so one caller can't flood
+// logs by volume of requests alone. This in-memory limiter is a
+// single-process best effort (this app runs as a supervised native process,
+// not serverless — see BIBLICAL_TESTRA.md "Deployment shape"), not a
+// substitute for reverse-proxy/WAF-level protection in front of it.
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_LOGGED_CHARS = 2000;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const RATE_LIMIT_MAX_TRACKED_CLIENTS = 1000;
+
+const rateLimitBuckets = new Map<string, { count: number; windowStart: number }>();
+
+function clientKey(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]!.trim();
+  }
+  const realIP = request.headers.get("x-real-ip");
+  if (realIP) {
+    return realIP.trim();
+  }
+  // No reverse-proxy header present (e.g. local dev without one in front):
+  // fall back to a single shared bucket rather than being unbounded.
+  return "unknown";
+}
+
+function isRateLimited(key: string, now: number): boolean {
+  const bucket = rateLimitBuckets.get(key);
+  if (!bucket || now - bucket.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    // Bound the map itself the same way the SSRF DNS cache is bounded:
+    // prune expired buckets before inserting, and skip tracking a brand
+    // new client if still full afterward, rather than growing unbounded.
+    for (const [k, v] of rateLimitBuckets) {
+      if (now - v.windowStart >= RATE_LIMIT_WINDOW_MS) {
+        rateLimitBuckets.delete(k);
+      }
+    }
+    if (!rateLimitBuckets.has(key) && rateLimitBuckets.size >= RATE_LIMIT_MAX_TRACKED_CLIENTS) {
+      return false;
+    }
+    rateLimitBuckets.set(key, { count: 1, windowStart: now });
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > RATE_LIMIT_MAX_REQUESTS;
+}
 
 async function readLimitedBody(request: Request, maxBytes: number): Promise<string | null> {
   const reader = request.body?.getReader();
@@ -45,6 +87,10 @@ async function readLimitedBody(request: Request, maxBytes: number): Promise<stri
 }
 
 export async function POST(request: Request) {
+  if (isRateLimited(clientKey(request), Date.now())) {
+    return new NextResponse(null, { status: 429 });
+  }
+
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
     return new NextResponse(null, { status: 413 });

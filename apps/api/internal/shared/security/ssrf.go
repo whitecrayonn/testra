@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -34,6 +35,11 @@ const (
 // can substitute a fake resolver without depending on real DNS/network
 // access.
 var lookupIPAddr = net.DefaultResolver.LookupIPAddr
+
+// dialContext performs the actual network dial for SafeDialContext. It is a
+// package-level variable so tests can substitute a fake dialer without
+// depending on real network access.
+var dialContext = (&net.Dialer{Timeout: dnsLookupTimeout}).DialContext
 
 type dnsCacheEntry struct {
 	addrs   []net.IPAddr
@@ -116,14 +122,8 @@ func ValidateURL(ctx context.Context, raw string) error {
 		return fmt.Errorf("missing URL host")
 	}
 
-	if strings.EqualFold(host, "localhost") {
-		return fmt.Errorf("localhost is not allowed")
-	}
-	lowerHost := strings.ToLower(host)
-	for _, suffix := range []string{".local", ".localhost", ".internal"} {
-		if strings.HasSuffix(lowerHost, suffix) {
-			return fmt.Errorf("internal hostname suffix %q is not allowed", suffix)
-		}
+	if err := checkHostnameAllowed(host); err != nil {
+		return err
 	}
 
 	if ip := net.ParseIP(host); ip != nil {
@@ -158,4 +158,89 @@ func isBlockedIP(ip net.IP) bool {
 		ip.IsLinkLocalMulticast() ||
 		ip.IsMulticast() ||
 		ip.IsPrivate()
+}
+
+// checkHostnameAllowed rejects hostnames that are disallowed by name alone,
+// before any DNS resolution is attempted.
+func checkHostnameAllowed(host string) error {
+	if strings.EqualFold(host, "localhost") {
+		return fmt.Errorf("localhost is not allowed")
+	}
+	lowerHost := strings.ToLower(host)
+	for _, suffix := range []string{".local", ".localhost", ".internal"} {
+		if strings.HasSuffix(lowerHost, suffix) {
+			return fmt.Errorf("internal hostname suffix %q is not allowed", suffix)
+		}
+	}
+	return nil
+}
+
+// SafeDialContext is a DialContext function for http.Transport that
+// re-validates the destination immediately before connecting and pins the
+// connection to the specific address it just validated.
+//
+// ValidateURL alone (even uncached) has an inherent gap: it checks a
+// hostname, and the caller then makes a *separate* connection which
+// performs its own, independent DNS resolution — an attacker who controls
+// the target's DNS record can have it answer safely for the check and
+// answer with an internal address moments later for the real connection
+// (DNS rebinding). Wiring SafeDialContext into the client that actually
+// performs the request closes that gap: the address that gets validated is
+// the exact address that gets dialed, with no second lookup in between, and
+// the check here is always fresh (it does not consult ValidateURL's cache).
+func SafeDialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid dial address %q: %w", addr, err)
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		if isBlockedIP(ip) {
+			return nil, fmt.Errorf("dial to blocked IP %s is not allowed", ip)
+		}
+		return dialContext(ctx, network, addr)
+	}
+
+	if err := checkHostnameAllowed(host); err != nil {
+		return nil, err
+	}
+
+	lookupCtx, cancel := context.WithTimeout(ctx, dnsLookupTimeout)
+	defer cancel()
+	addrs, err := lookupIPAddr(lookupCtx, host)
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve host %q: %w", host, err)
+	}
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("host %q resolved to no addresses", host)
+	}
+
+	var lastErr error
+	for _, a := range addrs {
+		if isBlockedIP(a.IP) {
+			continue
+		}
+		conn, dialErr := dialContext(ctx, network, net.JoinHostPort(a.IP.String(), port))
+		if dialErr == nil {
+			return conn, nil
+		}
+		lastErr = dialErr
+	}
+	if lastErr != nil {
+		return nil, fmt.Errorf("host %q had no allowed address reachable: %w", host, lastErr)
+	}
+	return nil, fmt.Errorf("host %q resolved only to blocked addresses", host)
+}
+
+// SafeHTTPClient returns an *http.Client whose Transport dials through
+// SafeDialContext, so a request to a user-supplied URL is protected against
+// SSRF (including DNS rebinding between check and use) at the moment of the
+// actual outbound connection, not just by an earlier ValidateURL call.
+func SafeHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			DialContext: SafeDialContext,
+		},
+	}
 }
