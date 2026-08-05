@@ -65,6 +65,34 @@ func (r *fakeRepo) UpdateMFA(ctx context.Context, userID uuid.UUID, secret strin
 	return nil
 }
 
+func (r *fakeRepo) IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) (int, error) {
+	u, ok := r.users[userID]
+	if !ok {
+		return 0, sharederrors.ErrNotFound
+	}
+	u.FailedLoginAttempts++
+	return u.FailedLoginAttempts, nil
+}
+
+func (r *fakeRepo) LockAccount(ctx context.Context, userID uuid.UUID, until time.Time) error {
+	u, ok := r.users[userID]
+	if !ok {
+		return sharederrors.ErrNotFound
+	}
+	u.LockedUntil = &until
+	return nil
+}
+
+func (r *fakeRepo) ResetFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error {
+	u, ok := r.users[userID]
+	if !ok {
+		return sharederrors.ErrNotFound
+	}
+	u.FailedLoginAttempts = 0
+	u.LockedUntil = nil
+	return nil
+}
+
 func (r *fakeRepo) UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash string) error {
 	u, ok := r.users[userID]
 	if !ok {
@@ -301,6 +329,166 @@ func TestLoginWithoutMFA(t *testing.T) {
 	}
 }
 
+// TestLoginRepeatedFailuresLockout is a regression test for SBL-022: repeated
+// wrong-password attempts must lock the account, independent of MFA.
+func TestLoginRepeatedFailuresLockout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "login-lockout@test.com", "TestPass123!@#")
+
+	for i := 0; i < loginMaxAttempts; i++ {
+		_, err := svc.Login(context.Background(), LoginInput{
+			Email:    user.Email,
+			Password: "WrongPassword!",
+		})
+		if err != sharederrors.ErrInvalidCredential {
+			t.Fatalf("attempt %d: expected ErrInvalidCredential, got %v", i+1, err)
+		}
+	}
+
+	// The account is now locked. The response must stay indistinguishable
+	// from an ordinary wrong-password failure (ErrInvalidCredential, not a
+	// distinct ErrTooManyRequests/429), even with the correct password,
+	// so a caller can't enumerate "this email exists and is locked" versus
+	// "invalid credentials". The lock itself is verified via the repo below.
+	if user.LockedUntil == nil {
+		t.Fatal("expected account to be locked in the repository")
+	}
+	_, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != sharederrors.ErrInvalidCredential {
+		t.Fatalf("expected ErrInvalidCredential once locked (uniform response), got %v", err)
+	}
+}
+
+// TestLoginLockoutExpiryClearsCounter is a regression test: once a lockout
+// window has passed, a single further mistake must not immediately re-lock
+// the account for another window. It must behave like a fresh account.
+func TestLoginLockoutExpiryClearsCounter(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "expired-lockout@test.com", "TestPass123!@#")
+
+	// Simulate an already-expired lockout left over from a previous window.
+	user.FailedLoginAttempts = loginMaxAttempts
+	past := time.Now().UTC().Add(-time.Minute)
+	user.LockedUntil = &past
+
+	// One more wrong password should behave like attempt 1 of a fresh
+	// window (still ErrInvalidCredential), not re-trigger a lock.
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "WrongPassword!",
+	}); err != sharederrors.ErrInvalidCredential {
+		t.Fatalf("expected ErrInvalidCredential, got %v", err)
+	}
+	if user.LockedUntil != nil {
+		t.Fatal("expected account not to be re-locked after only one failure past an expired window")
+	}
+
+	// The correct password should now succeed outright.
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected successful login after expired lockout cleared, got %v", err)
+	}
+}
+
+// TestResetPasswordClearsLockout is a regression test: resetting a password
+// is the normal self-service escape from a lockout and must clear it, not
+// leave the account locked despite the user proving account ownership.
+func TestResetPasswordClearsLockout(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "locked-reset@test.com", "TestPass123!@#")
+
+	future := time.Now().UTC().Add(10 * time.Minute)
+	user.FailedLoginAttempts = loginMaxAttempts
+	user.LockedUntil = &future
+
+	rawToken, _ := generateResetToken()
+	hash := hashToken(rawToken)
+	repo.resetTokens[hash] = &PasswordResetToken{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		TokenHash: hash,
+		ExpiresAt: time.Now().UTC().Add(30 * time.Minute),
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := svc.ResetPassword(context.Background(), ResetPasswordInput{
+		Token:       rawToken,
+		NewPassword: "NewPass123!@#",
+	}); err != nil {
+		t.Fatalf("reset password: %v", err)
+	}
+
+	if user.LockedUntil != nil {
+		t.Fatal("expected lockout to be cleared by password reset")
+	}
+	if user.FailedLoginAttempts != 0 {
+		t.Fatalf("expected failed attempts cleared, got %d", user.FailedLoginAttempts)
+	}
+
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "NewPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected login with new password to succeed, got %v", err)
+	}
+}
+
+// TestLoginSuccessResetsFailedAttempts is a regression test for SBL-022: a
+// successful login must clear the failed-attempt counter so occasional typos
+// don't accumulate toward a future lockout.
+func TestLoginSuccessResetsFailedAttempts(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "reset-attempts@test.com", "TestPass123!@#")
+
+	for i := 0; i < loginMaxAttempts-1; i++ {
+		_, err := svc.Login(context.Background(), LoginInput{
+			Email:    user.Email,
+			Password: "WrongPassword!",
+		})
+		if err != sharederrors.ErrInvalidCredential {
+			t.Fatalf("attempt %d: expected ErrInvalidCredential, got %v", i+1, err)
+		}
+	}
+
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected successful login, got %v", err)
+	}
+
+	if user.FailedLoginAttempts != 0 {
+		t.Fatalf("expected failed attempts reset to 0, got %d", user.FailedLoginAttempts)
+	}
+
+	// A subsequent run of near-max failures should not carry over and should
+	// not lock the account, since the counter was reset above.
+	for i := 0; i < loginMaxAttempts-1; i++ {
+		_, err := svc.Login(context.Background(), LoginInput{
+			Email:    user.Email,
+			Password: "WrongPassword!",
+		})
+		if err != sharederrors.ErrInvalidCredential {
+			t.Fatalf("post-reset attempt %d: expected ErrInvalidCredential, got %v", i+1, err)
+		}
+	}
+	if _, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	}); err != nil {
+		t.Fatalf("expected login to still succeed (not locked), got %v", err)
+	}
+}
+
 func TestSetupMFA_AlreadyEnabled(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
@@ -445,6 +633,34 @@ func TestRequestPasswordReset_UserNotFound_ReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestPasswordResetLink_UsesConfiguredWebBaseURL(t *testing.T) {
+	repo := newFakeRepo()
+	tm, err := jwt.NewTestManager("test-issuer", "test-audience")
+	if err != nil {
+		t.Fatalf("new token manager: %v", err)
+	}
+	svc := NewService(repo, tm, 15*time.Minute, 30*24*time.Hour, 90*24*time.Hour, SMTPConfig{
+		WebBaseURL: "https://app.testra.example/",
+	})
+
+	link := svc.passwordResetLink("sometoken")
+	want := "https://app.testra.example/reset-password?token=sometoken"
+	if link != want {
+		t.Fatalf("expected %q, got %q", want, link)
+	}
+}
+
+func TestPasswordResetLink_DefaultsWhenUnconfigured(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+
+	link := svc.passwordResetLink("sometoken")
+	want := "http://localhost:3000/reset-password?token=sometoken"
+	if link != want {
+		t.Fatalf("expected %q, got %q", want, link)
+	}
+}
+
 func TestRequestPasswordReset_Success(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo)
@@ -556,6 +772,44 @@ func TestResetPassword_Success(t *testing.T) {
 	}
 	if token.UsedAt == nil {
 		t.Fatal("expected token to be marked as used")
+	}
+}
+
+// TestResetPassword_RevokesExistingSessions is a regression test for
+// SBL-023: resetting a password must invalidate any refresh tokens issued
+// before the reset, so a stolen session can't survive a password reset.
+func TestResetPassword_RevokesExistingSessions(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo)
+	user := seedUser(repo, "session-reset@test.com", "TestPass123!@#")
+
+	loginResult, err := svc.Login(context.Background(), LoginInput{
+		Email:    user.Email,
+		Password: "TestPass123!@#",
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	rawToken, _ := generateResetToken()
+	hash := hashToken(rawToken)
+	repo.resetTokens[hash] = &PasswordResetToken{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		TokenHash: hash,
+		ExpiresAt: time.Now().UTC().Add(30 * time.Minute),
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := svc.ResetPassword(context.Background(), ResetPasswordInput{
+		Token:       rawToken,
+		NewPassword: "NewPass123!@#",
+	}); err != nil {
+		t.Fatalf("reset password: %v", err)
+	}
+
+	if _, err := svc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: loginResult.RefreshToken}); err != sharederrors.ErrTokenRevoked {
+		t.Fatalf("expected ErrTokenRevoked for session predating password reset, got %v", err)
 	}
 }
 

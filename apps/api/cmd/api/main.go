@@ -50,6 +50,7 @@ func main() {
 		SMTPPasswordSecret:  cfg.SMTPPasswordSecret,
 		SecretProvider:      cfg.SecretProvider(),
 		CORSAllowedOrigins:  cfg.CORSAllowedOrigins,
+		WebBaseURL:          cfg.WebBaseURL,
 		IdempotencyKeyTTL:   time.Duration(cfg.IdempotencyKeyTTLMinutes) * time.Minute,
 		MLServiceURL:        cfg.MLServiceURL,
 		StripeSecretKey:     cfg.StripeSecretKey,

@@ -33,32 +33,68 @@ func (r *SQLRepository) Create(ctx context.Context, user *User) error {
 
 func (r *SQLRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
+	var lockedUntil sql.NullTime
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, email, password, name, mfa_secret, mfa_enabled, created_at, updated_at FROM users WHERE email = $1`,
+		`SELECT id, email, password, name, mfa_secret, mfa_enabled, failed_login_attempts, locked_until, created_at, updated_at FROM users WHERE email = $1`,
 		email,
-	).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.MFASecret, &user.MFAEnabled, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.MFASecret, &user.MFAEnabled, &user.FailedLoginAttempts, &lockedUntil, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sharederrors.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
+	}
+	if lockedUntil.Valid {
+		user.LockedUntil = &lockedUntil.Time
 	}
 	return &user, nil
 }
 
 func (r *SQLRepository) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var user User
+	var lockedUntil sql.NullTime
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, email, password, name, mfa_secret, mfa_enabled, created_at, updated_at FROM users WHERE id = $1`,
+		`SELECT id, email, password, name, mfa_secret, mfa_enabled, failed_login_attempts, locked_until, created_at, updated_at FROM users WHERE id = $1`,
 		id,
-	).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.MFASecret, &user.MFAEnabled, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.MFASecret, &user.MFAEnabled, &user.FailedLoginAttempts, &lockedUntil, &user.CreatedAt, &user.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sharederrors.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
+	if lockedUntil.Valid {
+		user.LockedUntil = &lockedUntil.Time
+	}
 	return &user, nil
+}
+
+func (r *SQLRepository) IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx,
+		`UPDATE users SET failed_login_attempts = failed_login_attempts + 1, updated_at = NOW() WHERE id = $1 RETURNING failed_login_attempts`,
+		userID,
+	).Scan(&count)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, sharederrors.ErrNotFound
+	}
+	return count, err
+}
+
+func (r *SQLRepository) LockAccount(ctx context.Context, userID uuid.UUID, until time.Time) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET locked_until = $1, updated_at = NOW() WHERE id = $2`,
+		until, userID,
+	)
+	return err
+}
+
+func (r *SQLRepository) ResetFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET failed_login_attempts = 0, locked_until = NULL, updated_at = NOW() WHERE id = $1`,
+		userID,
+	)
+	return err
 }
 
 func (r *SQLRepository) UpdateMFA(ctx context.Context, userID uuid.UUID, secret string, enabled bool) error {

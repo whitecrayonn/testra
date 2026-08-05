@@ -32,7 +32,9 @@ func (f *fakeRepo) Create(_ context.Context, key *APIKey) error {
 }
 
 func (f *fakeRepo) GetByHash(_ context.Context, hash string) (*APIKey, error) {
-	if key, ok := f.hashToKey[hash]; ok {
+	// Mirror the real SQLRepository, which filters out revoked keys at the
+	// query level (WHERE revoked_at IS NULL) rather than in application code.
+	if key, ok := f.hashToKey[hash]; ok && key.RevokedAt == nil {
 		return key, nil
 	}
 	return nil, sharederrors.ErrNotFound
@@ -218,5 +220,39 @@ func TestServiceRevokeAndList(t *testing.T) {
 
 	if err := svc.Revoke(context.Background(), uuid.New()); err != sharederrors.ErrNotFound {
 		t.Fatalf("expected not found, got %v", err)
+	}
+}
+
+// TestServiceValidateRejectsRevokedKey is a regression test for SBL-014: a
+// revoked API key must stop authenticating immediately, not just disappear
+// from list endpoints.
+func TestServiceValidateRejectsRevokedKey(t *testing.T) {
+	repo := newFakeRepo()
+	svc := NewService(repo)
+	wsID := uuid.New()
+	orgID := uuid.New()
+	userID := uuid.New()
+	repo.workspaceOrg[wsID] = orgID
+
+	res, err := svc.Create(context.Background(), CreateInput{
+		WorkspaceID: wsID,
+		Name:        "Key",
+		Scopes:      []string{"runs:ingest"},
+		CreatedBy:   userID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, err := svc.Validate(context.Background(), res.RawKey); err != nil {
+		t.Fatalf("expected key to validate before revocation, got %v", err)
+	}
+
+	if err := svc.Revoke(context.Background(), res.APIKey.ID); err != nil {
+		t.Fatalf("revoke failed: %v", err)
+	}
+
+	if _, err := svc.Validate(context.Background(), res.RawKey); err != sharederrors.ErrInvalidCredential {
+		t.Fatalf("expected revoked key to be rejected as invalid credential, got %v", err)
 	}
 }

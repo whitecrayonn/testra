@@ -7,14 +7,16 @@ import (
 )
 
 type User struct {
-	ID         uuid.UUID
-	Email      string
-	Password   string // hashed
-	Name       string
-	MFASecret  string // TOTP secret, empty if not enrolled
-	MFAEnabled bool
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID                  uuid.UUID
+	Email               string
+	Password            string // hashed
+	Name                string
+	MFASecret           string // TOTP secret, empty if not enrolled
+	MFAEnabled          bool
+	FailedLoginAttempts int
+	LockedUntil         *time.Time
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 type PasswordResetToken struct {

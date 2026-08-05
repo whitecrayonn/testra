@@ -5,7 +5,7 @@
 **Scope:** `testra/apps/api/migrations/000001_*.sql` through `000027_*.sql` (up migrations), plus related down files. Migration `000018` adds notifications, notification preferences, and notification channels; migrations `000019` through `000027` add API-key tenant lookup, defects, analytics, intelligence, integration hub, billing, additional permissions, the worker queue, and user-lookup RLS policies; migrations `000028` through `000032` add role-assignment and queue dead-letter fixes, idempotency org scope, performance indexes, and the API Testing Engine schema.
 **Status:** Review complete. This document catalogs the schema evolution, entity relationships, security policies, and permission model as expressed in the migration files.
 **Source of Truth:** `apps/api/migrations/*.sql` for authoritative schema; DATABASE_GUIDE.md for interpretation.
-**Last Updated:** July 2026
+**Last Updated:** August 2026
 **Related documents:**
 - [`BIBLICAL_TESTRA.md`](../BIBLICAL_TESTRA.md)
 - [`SYSTEM_FLOWS.md`](SYSTEM_FLOWS.md)
@@ -42,6 +42,8 @@
 | `000031_add_performance_indexes.up.sql` | Adds secondary indexes for hot query paths. |
 | `000032_add_api_testing.up.sql` | Creates `api_collections`, `api_folders`, `api_environments`, `api_requests`, and `api_request_history` tables with RLS and `api_testing:*` permissions. |
 | `000042_add_test_case_generation.up.sql` | Creates `generation_runs`; adds `source`, `generation_run_id`, `reviewed_by` to `test_cases`; enables RLS on `generation_runs`. |
+| `000043_add_access_token_denylist.up.sql` | Creates `access_token_denylist` (jti, user_id, expires_at) so a still-live JWT access token can be revoked before its natural expiry (e.g. on logout). |
+| `000044_add_account_lockout.up.sql` | Adds `failed_login_attempts` (INT, default 0) and `locked_until` (TIMESTAMPTZ, nullable) to `users`, for account lockout after repeated failed login attempts. |
 
 > Migrations `000019`–`000041` (excluding those listed above) exist in `apps/api/migrations/` but predate this catalog entry and are not yet individually documented here — see the migration files themselves for their `up`/`down` SQL. This gap predates the generation feature and is called out rather than silently left unmentioned.
 
@@ -129,6 +131,8 @@ api_request_history (workspace_id, request_id?, environment_id?)
 - `password` (hashed)
 - `name` VARCHAR(100)
 - `mfa_secret`, `mfa_enabled`
+- `failed_login_attempts` INT NOT NULL DEFAULT 0 — consecutive wrong-password count; reset on a fully successful login, on an expired lockout window, or on a password reset.
+- `locked_until` TIMESTAMPTZ, nullable — set once `failed_login_attempts` reaches the lockout threshold; login is rejected (uniformly with a wrong-password response, to avoid account enumeration) while in the future.
 - `created_at`, `updated_at`
 
 ### `organizations`

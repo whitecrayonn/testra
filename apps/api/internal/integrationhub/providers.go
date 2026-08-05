@@ -19,7 +19,10 @@ import (
 	"github.com/testra/testra/apps/api/internal/shared/security"
 )
 
-var providerHTTPClient = &http.Client{Timeout: 10 * time.Second}
+// providerHTTPClient dials through security.SafeDialContext so requests to
+// user-configured integration URLs are validated at connection time, not
+// just by the earlier, separately-timed security.ValidateURL check below.
+var providerHTTPClient = security.SafeHTTPClient(10 * time.Second)
 
 // --- Jira ---
 

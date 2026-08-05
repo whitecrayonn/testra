@@ -1,8 +1,0 @@
-node_modules/
-reports/
-artifacts/
-*.log
-.env
-storage-*.json
-test-results/
-playwright/.cache/

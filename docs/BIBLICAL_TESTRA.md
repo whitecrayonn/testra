@@ -1033,13 +1033,13 @@ flowchart LR
 
 ## Data Model and Database Schema
 
-The authoritative database schema is the set of `golang-migrate` files under `testra/apps/api/migrations/` (currently `000001` through `000042`; see `DATABASE_GUIDE.md` §1 for the catalog, which does not yet individually document every migration in that range). This section provides a high-level map.
+The authoritative database schema is the set of `golang-migrate` files under `testra/apps/api/migrations/` (currently `000001` through `000044`; see `DATABASE_GUIDE.md` §1 for the catalog, which does not yet individually document every migration in that range). This section provides a high-level map.
 
 ### Schema groups
 
 | Group | Tables | Purpose |
 |-------|--------|---------|
-| Identity | `users` | Cross-tenant user accounts, password hash, MFA state. |
+| Identity | `users` | Cross-tenant user accounts, password hash, MFA state, login-lockout state (`failed_login_attempts`, `locked_until`). |
 | Session | `refresh_tokens`, `password_reset_tokens` | Opaque session and reset tokens. |
 | Tenancy | `organizations`, `organization_members`, `workspaces`, `workspace_members`, `projects` | Organization/workspace/project hierarchy and membership. |
 | RBAC | `roles`, `permissions`, `role_permissions`, `role_assignments` | System roles, permissions, and organization-scoped assignments. |

@@ -19,13 +19,52 @@
 > read endpoint, scoped to the current user — see the note below), and SBL-013
 > (RBAC integration tests: cross-tenant denial + permission grant/revoke) were
 > genuine gaps and have now been implemented, with unit/integration test
-> coverage. SBL-011 stays open (blocked on SBL-025/VM in M2). SBL-014–024 are
-> untouched and are the real remaining Sprint 4 work — see `SPRINT_PLAN.md`.
+> coverage. SBL-011 stays open (blocked on SBL-025/VM in M2).
 >
 > SBL-007 note: `audit_events` has no `organization_id` column yet (SBL-080),
 > so the read endpoint is scoped to the requesting user's own events rather
 > than an org-wide view, to avoid a cross-tenant data leak. An org-wide view
 > for owners/admins is future work once SBL-080 lands.
+>
+> **Sprint 4 status (2026-08-03 audit + implementation pass):** SBL-020
+> (security response headers on the API) was found already implemented in
+> `apiSecurityHeaders` (`shared/server/server.go`) — only a regression test
+> was added. SBL-014 (API-key regression tests) had partial coverage; the
+> gap was end-to-end revoked-key coverage (the fake repo in
+> `apikeys/service_test.go` didn't model SQL-level revocation filtering, and
+> no test exercised a revoked key through the real middleware), now closed
+> with unit and integration tests. SBL-015 (magic-link reset), SBL-016
+> (Trivy/SBOM in CI), SBL-017 (SSRF DNS cache + timeout), SBL-018 (security
+> headers tests, API + web), SBL-022 (account lockout), SBL-023 (session
+> termination on password reset), and SBL-024 (CSP report-uri + report
+> endpoint) were genuine gaps and have now been implemented with test
+> coverage. SBL-019 and SBL-021 remain open (not in this sprint's scope).
+> While validating SBL-014 against a live Postgres, an unrelated
+> pre-existing bug surfaced: CSRF protection on the authenticated route
+> group rejects any mutating request without a CSRF cookie/header, which
+> broke `apps/api/tests/integration`'s `makeRequest` helper for every
+> Bearer-token mutating test; fixed by having the helper mint a matching
+> CSRF cookie/header pair (test-only change, no production code touched).
+> A few further pre-existing, unrelated integration-test fixture bugs
+> (stale `/ingest` auth expectations, an over-length project key fixture)
+> were found and flagged as a follow-up task rather than fixed here, since
+> they predate and are unrelated to Sprint 4.
+>
+> SBL-017 note: the initial implementation cached `ValidateURL`'s DNS
+> lookups, per the deliverable text. Code review (PR #15) correctly pointed
+> out that caching only widens the gap between an SSRF check and the
+> caller's own separate, later connection (DNS rebinding) — a cache doesn't
+> help if the actual outbound request never consults it. The fix that
+> actually closes that gap is `security.SafeDialContext`/`SafeHTTPClient`,
+> which re-validate and pin the connection to the exact address at the
+> moment of the real dial; wired into all three `ValidateURL` callers
+> (integrationhub, notification, apitesting). Given that, the `ValidateURL`
+> cache was removed rather than kept as a second, non-authoritative
+> answer — it only backed a pre-flight UX check (fail fast with a friendly
+> error at config-save time), and a stale cache there added risk for no
+> real benefit once dial-time pinning is the actual boundary. `resolveHost`
+> still applies a lookup timeout, per the other half of the deliverable.
+
 
 | ID | Title | Priority | Effort | Affected Modules | Expected Deliverables | Validation | Rollback Considerations | Dependencies |
 |----|-------|----------|--------|------------------|---------------------|------------|-------------------------|--------------|

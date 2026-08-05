@@ -29,8 +29,11 @@ type Service struct {
 // NewService creates a new service with the default HTTP client.
 func NewService(repo Repository) *Service {
 	return &Service{
-		repo:       repo,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		repo: repo,
+		// Dials through security.SafeDialContext so requests to user-defined
+		// API test targets are validated at connection time, not just by the
+		// earlier, separately-timed security.ValidateURL check below.
+		httpClient: security.SafeHTTPClient(30 * time.Second),
 	}
 }
 
