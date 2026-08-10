@@ -38,27 +38,28 @@ import {
   deleteEnvironment,
   listRequestHistory,
 } from "@/features/apitesting/api";
+import { KeyValueEditor, emptyPair } from "@/components/apitesting/key-value-editor";
+import { ResponseViewer } from "@/components/apitesting/response-viewer";
 import type {
   APICollection,
   APIFolder,
   APIRequest,
   APIEnvironment,
   APIRequestHistory,
-  KeyValuePair,
   ExecutionResponse,
   BodyType,
   AuthType,
   AuthConfig,
   HTTPMethod,
+  KeyValuePair,
 } from "@/types/apitesting";
+import { HTTP_METHODS } from "@/types/apitesting";
 
 type ViewMode = "request" | "environment" | "history";
 
-const METHODS: HTTPMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+const METHODS: HTTPMethod[] = HTTP_METHODS;
 const AUTH_TYPES: AuthType[] = ["none", "bearer", "basic", "api_key"];
 const BODY_TYPES: BodyType[] = ["none", "json", "raw", "form", "urlencoded"];
-
-const emptyPair = (): KeyValuePair => ({ key: "", value: "", enabled: true });
 
 const defaultRequest = (collectionId: string, workspaceId: string): APIRequest => ({
   id: "",
@@ -99,7 +100,6 @@ export default function APITestingPage() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("request");
   const [activeTab, setActiveTab] = useState<"params" | "headers" | "auth" | "body" | "variables">("params");
-  const [responseTab, setResponseTab] = useState<"body" | "headers">("body");
   const [envTab, setEnvTab] = useState<"list" | "editor">("list");
 
   const [loading, setLoading] = useState(true);
@@ -454,14 +454,6 @@ export default function APITestingPage() {
     const next = [...activeEnvironment.variables];
     next.splice(index, 1);
     setActiveEnvironment({ ...activeEnvironment, variables: next });
-  }
-
-  function formatResponseBody(body: string) {
-    try {
-      return JSON.stringify(JSON.parse(body), null, 2);
-    } catch {
-      return body;
-    }
   }
 
   if (!workspaceId) {
@@ -926,41 +918,7 @@ export default function APITestingPage() {
 
               <div className="flex-1 overflow-y-auto p-4">
                 {response ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <Badge variant={response.result.error || response.result.status >= 400 ? "danger" : "success"}>
-                        {response.result.status || "Error"} {response.result.status_text}
-                      </Badge>
-                      <span className="text-sm text-slate-500">{response.result.response_time_ms} ms</span>
-                      {response.result.error && (
-                        <span className="text-sm text-red-600">{response.result.error}</span>
-                      )}
-                    </div>
-                    <div className="flex gap-1 border-b border-slate-200">
-                      {(["body", "headers"] as const).map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setResponseTab(tab)}
-                          className={`px-3 py-1.5 text-sm font-medium capitalize ${
-                            responseTab === tab
-                              ? "border-b-2 border-brand-500 text-brand-700"
-                              : "text-slate-500 hover:text-slate-700"
-                          }`}
-                        >
-                          {tab}
-                        </button>
-                      ))}
-                    </div>
-                    {responseTab === "body" ? (
-                      <pre className="max-h-96 overflow-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-50">
-                        {formatResponseBody(response.result.body)}
-                      </pre>
-                    ) : (
-                      <pre className="max-h-96 overflow-auto rounded-lg bg-slate-50 p-4 text-sm text-slate-900">
-                        {JSON.stringify(response.result.headers, null, 2)}
-                      </pre>
-                    )}
-                  </div>
+                  <ResponseViewer result={response.result} />
                 ) : (
                   <EmptyState
                     icon={Send}
@@ -990,56 +948,6 @@ export default function APITestingPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function KeyValueEditor({
-  pairs,
-  onChange,
-  onAdd,
-  onRemove,
-}: {
-  pairs: KeyValuePair[];
-  onChange: (index: number, key: "key" | "value" | "enabled", value: string | boolean) => void;
-  onAdd: () => void;
-  onRemove: (index: number) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <table className="w-full text-sm">
-        <thead className="text-left text-slate-500">
-          <tr>
-            <th className="pb-2 font-medium w-16">Enabled</th>
-            <th className="pb-2 font-medium">Key</th>
-            <th className="pb-2 font-medium">Value</th>
-            <th className="pb-2 font-medium"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {pairs.map((pair, i) => (
-            <tr key={i} className="border-b border-slate-100">
-              <td className="py-2 pr-2">
-                <Switch checked={pair.enabled} onCheckedChange={(checked) => onChange(i, "enabled", checked)} />
-              </td>
-              <td className="py-2 pr-2">
-                <Input value={pair.key} onChange={(e) => onChange(i, "key", e.target.value)} className="h-8" />
-              </td>
-              <td className="py-2 pr-2">
-                <Input value={pair.value} onChange={(e) => onChange(i, "value", e.target.value)} className="h-8" />
-              </td>
-              <td className="py-2">
-                <Button variant="ghost" size="sm" onClick={() => onRemove(i)}>
-                  <X className="h-4 w-4 text-red-500" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Button variant="secondary" size="sm" onClick={onAdd}>
-        <Plus className="mr-1 h-4 w-4" /> Add
-      </Button>
     </div>
   );
 }

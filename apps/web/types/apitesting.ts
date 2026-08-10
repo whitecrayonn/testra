@@ -39,6 +39,7 @@ export interface APIEnvironment {
 }
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+export const HTTP_METHODS: HTTPMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 export type AuthType = "none" | "bearer" | "basic" | "api_key";
 export type BodyType = "none" | "json" | "raw" | "form" | "urlencoded";
 
@@ -77,6 +78,7 @@ export interface APIRequestHistory {
   workspace_id: string;
   request_id: string | null;
   environment_id: string | null;
+  test_case_id: string | null;
   name: string;
   method: string;
   url: string;

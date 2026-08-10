@@ -16,7 +16,9 @@ import {
   listTestCaseVersions,
   approveTestCase,
 } from "@/features/testmanagement/api";
+import { getLatestExecutionForTestCase } from "@/features/apitesting/api";
 import type { TestCase, TestCaseVersion, TestStep } from "@/types/testmanagement";
+import type { APIRequestHistory } from "@/types/apitesting";
 
 const statusVariants: Record<string, "neutral" | "success" | "danger" | "warning"> = {
   draft: "neutral",
@@ -50,6 +52,7 @@ export default function TestCaseDetailPage() {
   const [priority, setPriority] = useState("medium");
   const [tagsInput, setTagsInput] = useState("");
   const [steps, setSteps] = useState<TestStep[]>([]);
+  const [lastExecution, setLastExecution] = useState<APIRequestHistory | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -61,7 +64,7 @@ export default function TestCaseDetailPage() {
         setPreconditions(testCase.preconditions);
         setStatus(testCase.status);
         setPriority(testCase.priority);
-        setTagsInput(testCase.tags.join(", "));
+        setTagsInput((testCase.tags ?? []).join(", "));
         setSteps(testCase.steps);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load test case");
@@ -70,6 +73,12 @@ export default function TestCaseDetailPage() {
       }
     }
     load();
+    const workspaceId = typeof window !== "undefined" ? localStorage.getItem("testra_workspace_id") : null;
+    if (workspaceId) {
+      getLatestExecutionForTestCase(id, workspaceId)
+        .then(setLastExecution)
+        .catch(() => setLastExecution(null));
+    }
   }, [id]);
 
   async function loadVersions() {
@@ -208,10 +217,23 @@ export default function TestCaseDetailPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant={statusVariants[tc.status] || "neutral"}>{tc.status.replace("_", " ")}</Badge>
         <Badge variant={priorityVariants[tc.priority] || "neutral"}>{tc.priority}</Badge>
         {tc.source === "generated_spec" && <Badge variant="info">Generated from spec</Badge>}
+        {lastExecution && (
+          <span className="text-sm text-slate-500">
+            Last tested:{" "}
+            <Badge
+              variant={
+                lastExecution.error || lastExecution.response_status >= 400 ? "danger" : "success"
+              }
+            >
+              {lastExecution.error ? "error" : lastExecution.response_status}
+            </Badge>{" "}
+            {new Date(lastExecution.created_at).toLocaleString()}
+          </span>
+        )}
       </div>
       {tc.status === "pending_review" && (
         <div role="status">

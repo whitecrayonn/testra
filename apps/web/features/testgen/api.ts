@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { GenerateFromSpecResponse } from "@/types/testgen";
+import type { EndpointField, GenerateFromSpecResponse } from "@/types/testgen";
 
 /**
  * Generates draft test cases from an OpenAPI 3.0/3.1 spec. This is
@@ -16,6 +16,27 @@ export async function generateFromSpec(input: {
   spec: Record<string, unknown>;
 }): Promise<GenerateFromSpecResponse> {
   return apiFetch("/api/v1/generate/from-spec", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Generates draft test cases for a single endpoint described directly by
+ * method/path/fields — no OpenAPI document required. Uses the same
+ * deterministic rule set as generateFromSpec (see
+ * apps/api/internal/testgen/endpoint_spec.go), just fed by a form instead of
+ * an uploaded spec.
+ */
+export async function generateFromEndpoint(input: {
+  workspace_id: string;
+  project_id: string;
+  method: string;
+  path: string;
+  fields: EndpointField[];
+  requires_auth: boolean;
+}): Promise<GenerateFromSpecResponse> {
+  return apiFetch("/api/v1/generate/from-endpoint", {
     method: "POST",
     body: JSON.stringify(input),
   });

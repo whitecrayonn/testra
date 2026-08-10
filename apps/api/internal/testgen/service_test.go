@@ -3,6 +3,7 @@ package testgen
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -187,6 +188,115 @@ func TestGenerateFromSpecCreatesCasesAndRun(t *testing.T) {
 		}
 		if tc.WorkspaceID != wsID || tc.ProjectID != projID {
 			t.Errorf("case %q: workspace/project id was not propagated from the request", tc.Title)
+		}
+	}
+}
+
+func TestGenerateFromEndpointRequiresMethodAndPath(t *testing.T) {
+	svc := NewService(newFakeRunsRepo(), newFakeTestMgmtRepo())
+	_, err := svc.GenerateFromEndpoint(context.Background(), GenerateFromEndpointInput{
+		WorkspaceID: uuid.New(),
+		ProjectID:   uuid.New(),
+		Method:      "",
+		Path:        "/ping",
+		CreatedBy:   uuid.New(),
+	})
+	if err != sharederrors.ErrInvalidInput {
+		t.Fatalf("expected ErrInvalidInput for an empty method, got %v", err)
+	}
+
+	_, err = svc.GenerateFromEndpoint(context.Background(), GenerateFromEndpointInput{
+		WorkspaceID: uuid.New(),
+		ProjectID:   uuid.New(),
+		Method:      "GET",
+		Path:        "",
+		CreatedBy:   uuid.New(),
+	})
+	if err != sharederrors.ErrInvalidInput {
+		t.Fatalf("expected ErrInvalidInput for an empty path, got %v", err)
+	}
+}
+
+func TestGenerateFromEndpointCreatesCasesAndRun(t *testing.T) {
+	runs := newFakeRunsRepo()
+	testMgmt := newFakeTestMgmtRepo()
+	svc := NewService(runs, testMgmt)
+
+	wsID, projID, userID := uuid.New(), uuid.New(), uuid.New()
+	result, err := svc.GenerateFromEndpoint(context.Background(), GenerateFromEndpointInput{
+		WorkspaceID: wsID,
+		ProjectID:   projID,
+		Method:      "post",
+		Path:        "/widgets",
+		Fields: []EndpointField{
+			{Name: "name", Location: "body", Type: "string", Required: true},
+			{Name: "priority", Location: "body", Type: "string", Required: true, Enum: []string{"low", "high"}},
+			{Name: "id", Location: "path", Type: "string", Required: true},
+		},
+		RequiresAuth: true,
+		CreatedBy:    userID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Run.EndpointCount != 1 {
+		t.Errorf("expected 1 endpoint, got %d", result.Run.EndpointCount)
+	}
+	if result.Run.CaseCount != len(result.Cases) {
+		t.Errorf("run.CaseCount (%d) should match len(cases) (%d)", result.Run.CaseCount, len(result.Cases))
+	}
+	if len(testMgmt.cases) != len(result.Cases) {
+		t.Fatalf("expected all %d generated cases to be persisted, found %d", len(result.Cases), len(testMgmt.cases))
+	}
+
+	ts := make([]string, 0, len(result.Cases))
+	for _, c := range result.Cases {
+		ts = append(ts, c.Title)
+	}
+	if !containsSubstr(ts, "POST /widgets — valid request succeeds") {
+		t.Error("expected a happy-path case for POST /widgets")
+	}
+	if !containsSubstr(ts, "missing required 'name'") {
+		t.Error("expected a missing-required case for 'name'")
+	}
+	if !containsSubstr(ts, "'priority' with value outside its enum") {
+		t.Error("expected an enum-violation case for 'priority'")
+	}
+	if !containsSubstr(ts, "missing auth token") {
+		t.Error("expected an auth case since RequiresAuth was true")
+	}
+
+	for _, tc := range testMgmt.cases {
+		if tc.Status != testmanagement.TestCaseStatusPendingReview {
+			t.Errorf("case %q: expected status pending_review, got %q", tc.Title, tc.Status)
+		}
+		if tc.Source != testmanagement.TestCaseSourceGeneratedSpec {
+			t.Errorf("case %q: expected source generated_spec, got %q", tc.Title, tc.Source)
+		}
+		if tc.GenerationRunID == nil || *tc.GenerationRunID != result.Run.ID {
+			t.Errorf("case %q: expected generation_run_id to point at the run", tc.Title)
+		}
+	}
+}
+
+func TestGenerateFromEndpointNoAuthNoAuthCases(t *testing.T) {
+	testMgmt := newFakeTestMgmtRepo()
+	svc := NewService(newFakeRunsRepo(), testMgmt)
+
+	result, err := svc.GenerateFromEndpoint(context.Background(), GenerateFromEndpointInput{
+		WorkspaceID: uuid.New(),
+		ProjectID:   uuid.New(),
+		Method:      "GET",
+		Path:        "/ping",
+		CreatedBy:   uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, c := range result.Cases {
+		if strings.Contains(c.Title, "auth token") {
+			t.Errorf("did not expect an auth case when RequiresAuth is false, got %q", c.Title)
 		}
 	}
 }

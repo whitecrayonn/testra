@@ -140,8 +140,12 @@ type ExecuteInput struct {
 	RequestID     *uuid.UUID
 	EnvironmentID *uuid.UUID
 	Request       *InlineRequest
-	Save          bool
-	CreatedBy     uuid.UUID
+	// TestCaseID optionally links this execution back to the generated test
+	// case it came from (see testgen), e.g. via the "Test Now" action on the
+	// quick-generate page. Not persisted unless Save is also true.
+	TestCaseID *uuid.UUID
+	Save       bool
+	CreatedBy  uuid.UUID
 }
 
 // Collection CRUD
@@ -533,6 +537,7 @@ func (s *Service) Execute(ctx context.Context, input ExecuteInput) (*ExecutionRe
 		WorkspaceID:        input.WorkspaceID,
 		RequestID:          requestID,
 		EnvironmentID:      environmentID,
+		TestCaseID:         input.TestCaseID,
 		Name:               req.Name,
 		Method:             string(req.Method),
 		URL:                req.URL,
@@ -583,6 +588,16 @@ func (s *Service) GetRequestHistory(ctx context.Context, id uuid.UUID) (*Request
 		return nil, sharederrors.ErrInvalidInput
 	}
 	return s.repo.GetRequestHistoryByID(ctx, id)
+}
+
+// GetLatestExecutionForTestCase returns the most recent "Test Now" execution
+// for a generated test case, so the test case detail page can show a
+// "last tested" indicator.
+func (s *Service) GetLatestExecutionForTestCase(ctx context.Context, testCaseID uuid.UUID) (*RequestHistory, error) {
+	if testCaseID == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	return s.repo.GetLatestRequestHistoryByTestCase(ctx, testCaseID)
 }
 
 func (s *Service) ListRequestHistory(ctx context.Context, requestID *uuid.UUID, workspaceID uuid.UUID, cursor string, limit int) ([]RequestHistory, error) {

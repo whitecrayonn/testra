@@ -237,6 +237,22 @@ func (f *fakeRepository) ListRequestHistory(_ context.Context, requestID *uuid.U
 	return out, nil
 }
 
+func (f *fakeRepository) GetLatestRequestHistoryByTestCase(_ context.Context, testCaseID uuid.UUID) (*RequestHistory, error) {
+	var latest *RequestHistory
+	for _, h := range f.history {
+		if h.TestCaseID == nil || *h.TestCaseID != testCaseID {
+			continue
+		}
+		if latest == nil || h.CreatedAt.After(latest.CreatedAt) {
+			latest = h
+		}
+	}
+	if latest == nil {
+		return nil, sharederrors.ErrNotFound
+	}
+	return latest, nil
+}
+
 func (f *fakeRepository) RunInTx(_ context.Context, fn func(Repository) error) error {
 	return fn(f)
 }
@@ -476,6 +492,58 @@ type failIfUsed struct{ t *testing.T }
 func (f *failIfUsed) RoundTrip(*http.Request) (*http.Response, error) {
 	f.t.Fatalf("HTTP client should not have been invoked for a blocked URL")
 	return nil, nil
+}
+
+func TestServiceExecuteRequestLinksTestCase(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, `{"ok":true}`)
+	})
+
+	repo := newFakeRepository()
+	svc := NewService(repo)
+	svc.SetHTTPClient(&http.Client{Transport: &handlerRoundTripper{handler: handler}})
+
+	wsID := uuid.New()
+	userID := uuid.New()
+	testCaseID := uuid.New()
+
+	_, history, err := svc.Execute(context.Background(), ExecuteInput{
+		WorkspaceID: wsID,
+		TestCaseID:  &testCaseID,
+		Request: &InlineRequest{
+			Name:   "Get users",
+			Method: MethodGET,
+			URL:    "http://8.8.8.8/users",
+		},
+		Save:      true,
+		CreatedBy: userID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if history == nil {
+		t.Fatal("expected history to be saved")
+	}
+	if history.TestCaseID == nil || *history.TestCaseID != testCaseID {
+		t.Fatalf("expected history.TestCaseID to be %s, got %v", testCaseID, history.TestCaseID)
+	}
+
+	latest, err := svc.GetLatestExecutionForTestCase(context.Background(), testCaseID)
+	if err != nil {
+		t.Fatalf("unexpected error fetching latest execution: %v", err)
+	}
+	if latest.ID != history.ID {
+		t.Errorf("expected latest execution to be %s, got %s", history.ID, latest.ID)
+	}
+}
+
+func TestServiceGetLatestExecutionForTestCaseNotFound(t *testing.T) {
+	svc := NewService(newFakeRepository())
+	_, err := svc.GetLatestExecutionForTestCase(context.Background(), uuid.New())
+	if err != sharederrors.ErrNotFound {
+		t.Fatalf("expected ErrNotFound for a test case with no executions, got %v", err)
+	}
 }
 
 func TestServiceExecuteRequestRejectsSSRF(t *testing.T) {

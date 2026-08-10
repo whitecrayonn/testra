@@ -125,3 +125,89 @@ func (h *Handler) GenerateFromSpec(w http.ResponseWriter, r *http.Request) {
 		Cases: caseResp,
 	})
 }
+
+type endpointFieldRequest struct {
+	Name     string   `json:"name"`
+	Location string   `json:"location"`
+	Type     string   `json:"type"`
+	Required bool     `json:"required"`
+	Enum     []string `json:"enum"`
+}
+
+type generateFromEndpointRequest struct {
+	WorkspaceID  string                 `json:"workspace_id"`
+	ProjectID    string                 `json:"project_id"`
+	Method       string                 `json:"method"`
+	Path         string                 `json:"path"`
+	Fields       []endpointFieldRequest `json:"fields"`
+	RequiresAuth bool                   `json:"requires_auth"`
+}
+
+// GenerateFromEndpoint accepts a single method/path/fields description (no
+// OpenAPI document) and creates one pending_review test case per rule match,
+// via the same deterministic rule set GenerateFromSpec uses — see
+// Service.GenerateFromEndpoint for how the two entry points converge.
+func (h *Handler) GenerateFromEndpoint(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	var req generateFromEndpointRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+		return
+	}
+
+	wsID, err := uuid.Parse(req.WorkspaceID)
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace id")
+		return
+	}
+	projID, err := uuid.Parse(req.ProjectID)
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project id")
+		return
+	}
+
+	fields := make([]EndpointField, len(req.Fields))
+	for i, f := range req.Fields {
+		fields[i] = EndpointField{
+			Name:     f.Name,
+			Location: f.Location,
+			Type:     f.Type,
+			Required: f.Required,
+			Enum:     f.Enum,
+		}
+	}
+
+	result, err := h.service.GenerateFromEndpoint(r.Context(), GenerateFromEndpointInput{
+		WorkspaceID:  wsID,
+		ProjectID:    projID,
+		Method:       req.Method,
+		Path:         req.Path,
+		Fields:       fields,
+		RequiresAuth: req.RequiresAuth,
+		CreatedBy:    userID,
+	})
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	caseResp := make([]generatedCaseResponse, len(result.Cases))
+	for i, c := range result.Cases {
+		caseResp[i] = generatedCaseResponse{
+			ID:       c.ID.String(),
+			Title:    c.Title,
+			Priority: string(c.Priority),
+			Status:   string(c.Status),
+		}
+	}
+
+	apihttp.JSON(w, http.StatusCreated, generateFromSpecResponse{
+		Run:   mapRunResponse(result.Run),
+		Cases: caseResp,
+	})
+}

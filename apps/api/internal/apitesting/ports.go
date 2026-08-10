@@ -41,6 +41,10 @@ type Repository interface {
 	CreateRequestHistory(ctx context.Context, h *RequestHistory) error
 	GetRequestHistoryByID(ctx context.Context, id uuid.UUID) (*RequestHistory, error)
 	ListRequestHistory(ctx context.Context, requestID *uuid.UUID, workspaceID uuid.UUID, cursor string, limit int) ([]RequestHistory, error)
+	// GetLatestRequestHistoryByTestCase returns the most recent execution
+	// linked to a generated test case (see TestCaseID on RequestHistory),
+	// e.g. for a "last tested" indicator on the test case detail page.
+	GetLatestRequestHistoryByTestCase(ctx context.Context, testCaseID uuid.UUID) (*RequestHistory, error)
 
 	// Transactions
 	RunInTx(ctx context.Context, fn func(Repository) error) error

@@ -21,3 +21,14 @@ export interface GenerateFromSpecResponse {
   run: GenerationRun;
   cases: GeneratedCaseSummary[];
 }
+
+export type EndpointFieldLocation = "query" | "path" | "header" | "body";
+export type EndpointFieldType = "string" | "integer" | "number" | "boolean";
+
+export interface EndpointField {
+  name: string;
+  location: EndpointFieldLocation;
+  type: EndpointFieldType;
+  required: boolean;
+  enum?: string[];
+}
