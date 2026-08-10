@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -23,8 +23,11 @@ import {
   Moon,
   Sun,
   ChevronsUpDown,
+  Check,
+  Plus,
 } from "lucide-react";
 import { useTheme } from "@/components/providers/theme-provider";
+import type { Workspace } from "@/types/platform";
 
 type NavEntry =
   | { kind: "label"; key: string; label: string }
@@ -33,9 +36,48 @@ type NavEntry =
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { workspace, user } = useWorkspace();
+  const { workspace, workspaces, setWorkspace, user } = useWorkspace();
   const { theme, setTheme } = useTheme();
   const unreadCount = useUnreadCount();
+
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!switcherOpen) return;
+    function onPointerDown(e: MouseEvent) {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+        setSwitcherOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setSwitcherOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [switcherOpen]);
+
+  async function handleSelectWorkspace(w: Workspace) {
+    if (w.id === workspace?.id) {
+      setSwitcherOpen(false);
+      return;
+    }
+    setSwitching(true);
+    try {
+      await setWorkspace(w);
+      // Full reload so every page re-reads the new workspace/project from
+      // localStorage — most pages fetch on mount, not reactively off context.
+      window.location.href = "/dashboard";
+    } finally {
+      setSwitching(false);
+      setSwitcherOpen(false);
+    }
+  }
 
   const nav: NavEntry[] = [
     { kind: "label", key: "l-workspace", label: "WORKSPACE" },
@@ -110,18 +152,72 @@ export function Sidebar() {
         </div>
       </div>
 
-      <button className="mb-4 flex w-full items-center gap-2.5 rounded-[13px] border border-hair bg-panel px-2.5 py-2 text-left transition-colors hover:border-hair-hi hover:bg-panel-hi">
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-acc-soft text-[11px] font-bold text-acc">
-          {(workspace?.name ?? "TC").slice(0, 2).toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[12.5px] font-semibold leading-tight text-fg">
-            {workspace?.name ?? "Select workspace"}
+      <div className="relative mb-4" ref={switcherRef}>
+        <button
+          type="button"
+          onClick={() => setSwitcherOpen((o) => !o)}
+          aria-expanded={switcherOpen}
+          aria-haspopup="listbox"
+          disabled={switching}
+          className="flex w-full items-center gap-2.5 rounded-[13px] border border-hair bg-panel px-2.5 py-2 text-left transition-colors hover:border-hair-hi hover:bg-panel-hi disabled:opacity-60"
+        >
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-acc-soft text-[11px] font-bold text-acc">
+            {(workspace?.name ?? "TC").slice(0, 2).toUpperCase()}
           </div>
-          <div className="truncate text-[10.5px] leading-tight text-fg3">Workspace</div>
-        </div>
-        <ChevronsUpDown className="h-3.5 w-3.5 flex-none text-fg3" aria-hidden="true" />
-      </button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[12.5px] font-semibold leading-tight text-fg">
+              {switching ? "Switching…" : (workspace?.name ?? "Select workspace")}
+            </div>
+            <div className="truncate text-[10.5px] leading-tight text-fg3">Workspace</div>
+          </div>
+          <ChevronsUpDown className="h-3.5 w-3.5 flex-none text-fg3" aria-hidden="true" />
+        </button>
+
+        {switcherOpen && (
+          <div
+            role="listbox"
+            aria-label="Switch workspace"
+            className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-[280px] overflow-y-auto rounded-[13px] border border-hair-hi bg-glass p-1.5 shadow-glass backdrop-blur-[26px] backdrop-saturate-150"
+          >
+            {workspaces.length === 0 ? (
+              <p className="px-2.5 py-2 text-[12px] text-fg3">No workspaces yet.</p>
+            ) : (
+              workspaces.map((w) => {
+                const active = w.id === workspace?.id;
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => handleSelectWorkspace(w)}
+                    className={cn(
+                      "flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-[12.5px] font-medium transition-colors",
+                      active ? "bg-acc-soft text-fg" : "text-fg2 hover:bg-panel",
+                    )}
+                  >
+                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-panel text-[10px] font-bold text-fg3">
+                      {w.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{w.name}</span>
+                    {active && <Check className="h-3.5 w-3.5 flex-none text-acc" aria-hidden="true" />}
+                  </button>
+                );
+              })
+            )}
+            <div className="mt-1 border-t border-hair pt-1">
+              <Link
+                href="/create-workspace"
+                onClick={() => setSwitcherOpen(false)}
+                className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-[12.5px] font-medium text-fg2 transition-colors hover:bg-panel"
+              >
+                <Plus className="h-3.5 w-3.5 flex-none" aria-hidden="true" />
+                New workspace
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
 
       <nav ref={navRef} data-tour="nav" className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {indicator && (
