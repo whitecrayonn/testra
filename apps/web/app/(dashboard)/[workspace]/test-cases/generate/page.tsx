@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, FileJson, CheckCircle2, Zap, Play } from "lucide-react";
+import { ArrowLeft, Upload, FileJson, FileSpreadsheet, CheckCircle2, Zap, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +12,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/link-button";
 import { ResponseViewer } from "@/components/apitesting/response-viewer";
-import { generateFromSpec, generateFromEndpoint } from "@/features/testgen/api";
+import { generateFromSpec, generateFromEndpoint, generateFromFile } from "@/features/testgen/api";
 import { executeRequest } from "@/features/apitesting/api";
-import type { GenerateFromSpecResponse, EndpointField, EndpointFieldType } from "@/types/testgen";
+import type {
+  GenerateFromSpecResponse,
+  GenerateFromFileResponse,
+  EndpointField,
+  EndpointFieldType,
+} from "@/types/testgen";
 import { HTTP_METHODS } from "@/types/apitesting";
 import type { HTTPMethod, ExecutionResult } from "@/types/apitesting";
 
@@ -26,6 +31,8 @@ const priorityVariants: Record<string, "neutral" | "info" | "warning" | "danger"
 };
 
 const FIELD_TYPES: EndpointFieldType[] = ["string", "integer", "number", "boolean"];
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // mirrors the backend's route-scoped limit
 
 interface FieldRow {
   name: string;
@@ -145,7 +152,7 @@ export default function GenerateTestCasesPage() {
   const [projectId, setProjectId] = useState("");
   const [workspaceId, setWorkspaceId] = useState("");
 
-  const [mode, setMode] = useState<"endpoint" | "spec">("endpoint");
+  const [mode, setMode] = useState<"endpoint" | "spec" | "upload">("endpoint");
 
   // Full OpenAPI spec upload — unchanged from the original flow.
   const [specText, setSpecText] = useState("");
@@ -160,9 +167,13 @@ export default function GenerateTestCasesPage() {
   const [headerFields, setHeaderFields] = useState<FieldRow[]>([]);
   const [bodyFields, setBodyFields] = useState<FieldRow[]>([]);
 
+  // Upload a spreadsheet — AI-assisted (see handleGenerateFromFile).
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadContext, setUploadContext] = useState("");
+
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<GenerateFromSpecResponse | null>(null);
+  const [result, setResult] = useState<GenerateFromSpecResponse | GenerateFromFileResponse | null>(null);
 
   const [testingNow, setTestingNow] = useState(false);
   const [testNowResult, setTestNowResult] = useState<ExecutionResult | null>(null);
@@ -272,6 +283,43 @@ export default function GenerateTestCasesPage() {
     }
   }
 
+  async function handleGenerateFromFile() {
+    if (!projectId || !workspaceId) {
+      setError("No project or workspace selected. Select a project first.");
+      return;
+    }
+    if (!uploadFile) {
+      setError("Choose a .csv or .xlsx file first.");
+      return;
+    }
+    const name = uploadFile.name.toLowerCase();
+    if (!name.endsWith(".csv") && !name.endsWith(".xlsx")) {
+      setError("Only .csv or .xlsx files are supported.");
+      return;
+    }
+    if (uploadFile.size > MAX_UPLOAD_BYTES) {
+      setError("File is too large — max 5 MB.");
+      return;
+    }
+
+    setGenerating(true);
+    setError(null);
+    resetResult();
+    try {
+      const response = await generateFromFile({
+        workspace_id: workspaceId,
+        project_id: projectId,
+        file: uploadFile,
+        context: uploadContext.trim() || undefined,
+      });
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate test cases");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   async function handleTestNow(testCaseId: string) {
     setTestingNow(true);
     setTestNowError(null);
@@ -338,7 +386,7 @@ export default function GenerateTestCasesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Generate Test Cases"
-        description="Create draft test cases deterministically and rule-based — no AI/ML involved."
+        description="From an OpenAPI spec: deterministic, rule-based, no AI. From an uploaded spreadsheet: AI-assisted."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Test Cases", href: "/dashboard/test-cases" },
@@ -347,7 +395,13 @@ export default function GenerateTestCasesPage() {
         actions={
           !result ? (
             <Button
-              onClick={mode === "endpoint" ? handleGenerateFromEndpoint : handleGenerateFromSpec}
+              onClick={
+                mode === "endpoint"
+                  ? handleGenerateFromEndpoint
+                  : mode === "spec"
+                    ? handleGenerateFromSpec
+                    : handleGenerateFromFile
+              }
               loading={generating}
             >
               <FileJson className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -383,6 +437,15 @@ export default function GenerateTestCasesPage() {
             >
               <Upload className="mr-2 h-4 w-4" aria-hidden="true" />
               Full OpenAPI Spec
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "upload" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setMode("upload")}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" aria-hidden="true" />
+              Upload Test Cases
             </Button>
           </div>
 
@@ -436,7 +499,7 @@ export default function GenerateTestCasesPage() {
                 <FieldRowsEditor rows={bodyFields} onChange={setBodyFields} />
               </div>
             </Card>
-          ) : (
+          ) : mode === "spec" ? (
             <Card className="space-y-4 p-6">
               <div className="flex flex-wrap items-center gap-3">
                 <Button
@@ -483,6 +546,42 @@ export default function GenerateTestCasesPage() {
                 </p>
               </div>
             </Card>
+          ) : (
+            <Card className="space-y-4 p-6">
+              <p className="text-sm text-slate-600">
+                Upload a spreadsheet of test cases or raw requirements. AI reads each row and
+                drafts a standard test case (title, steps, expected result, priority) from it —
+                works best with columns like <strong>Title</strong>, <strong>Steps</strong>,{" "}
+                <strong>Expected Result</strong>, and <strong>Priority</strong>, but other layouts
+                are still attempted. Every case is still <strong>pending_review</strong>, and rows
+                the AI can&apos;t confidently map are reported below instead of guessed at.
+              </p>
+
+              <div>
+                <label htmlFor="upload-file" className="mb-1 block text-sm font-medium text-slate-700">
+                  File (.csv or .xlsx, max 5 MB)
+                </label>
+                <Input
+                  id="upload-file"
+                  type="file"
+                  accept=".csv,.xlsx"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                />
+                {uploadFile && <p className="mt-1 text-xs text-slate-500">{uploadFile.name}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="upload-context" className="mb-1 block text-sm font-medium text-slate-700">
+                  Context (optional)
+                </label>
+                <Input
+                  id="upload-context"
+                  value={uploadContext}
+                  onChange={(e) => setUploadContext(e.target.value)}
+                  placeholder="e.g. Checkout flow, Login feature"
+                />
+              </div>
+            </Card>
           )}
         </>
       )}
@@ -497,7 +596,8 @@ export default function GenerateTestCasesPage() {
             <p className="text-sm text-slate-600">
               Created <strong>{result.run.case_count}</strong> draft test case
               {result.run.case_count === 1 ? "" : "s"} from{" "}
-              <strong>{result.run.endpoint_count}</strong> endpoint
+              <strong>{result.run.endpoint_count}</strong>{" "}
+              {mode === "upload" ? "row" : "endpoint"}
               {result.run.endpoint_count === 1 ? "" : "s"}
               {result.run.spec_filename ? ` in ${result.run.spec_filename}` : ""}. All cases are
               pending review.
@@ -513,12 +613,32 @@ export default function GenerateTestCasesPage() {
                   resetResult();
                   setSpecText("");
                   setSpecFilename("");
+                  setUploadFile(null);
+                  setUploadContext("");
                 }}
               >
                 Generate another
               </Button>
             </div>
           </Card>
+
+          {"skipped_rows" in result && result.skipped_rows.length > 0 && (
+            <Card className="space-y-2 p-6">
+              <h3 className="font-medium text-slate-900">Skipped rows</h3>
+              <p className="text-sm text-slate-600">
+                The AI couldn&apos;t confidently turn these rows into test cases, so nothing was
+                fabricated for them:
+              </p>
+              <ul className="space-y-1 text-sm text-slate-600">
+                {result.skipped_rows.map((s, i) => (
+                  <li key={i}>
+                    <span className="font-mono text-xs text-slate-400">row {s.row}</span> —{" "}
+                    {s.reason}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           {mode === "endpoint" && happyPathCase && (
             <Card className="space-y-3 p-6">

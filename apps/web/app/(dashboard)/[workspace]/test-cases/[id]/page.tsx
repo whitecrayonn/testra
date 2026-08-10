@@ -221,6 +221,7 @@ export default function TestCaseDetailPage() {
         <Badge variant={statusVariants[tc.status] || "neutral"}>{tc.status.replace("_", " ")}</Badge>
         <Badge variant={priorityVariants[tc.priority] || "neutral"}>{tc.priority}</Badge>
         {tc.source === "generated_spec" && <Badge variant="info">Generated from spec</Badge>}
+        {tc.source === "generated_file" && <Badge variant="info">Generated from upload (AI)</Badge>}
         {lastExecution && (
           <span className="text-sm text-slate-500">
             Last tested:{" "}

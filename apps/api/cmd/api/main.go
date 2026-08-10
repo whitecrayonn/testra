@@ -53,6 +53,7 @@ func main() {
 		WebBaseURL:          cfg.WebBaseURL,
 		IdempotencyKeyTTL:   time.Duration(cfg.IdempotencyKeyTTLMinutes) * time.Minute,
 		MLServiceURL:        cfg.MLServiceURL,
+		MLAPIKey:            cfg.MLAPIKey,
 		StripeSecretKey:     cfg.StripeSecretKey,
 		StripePriceID:       cfg.StripePriceID,
 		RateLimitDisabled:   cfg.RateLimitDisabled,

@@ -21,10 +21,11 @@ export interface TestCase {
   created_by: string;
   created_at: string;
   updated_at: string;
-  /** "manual" for user-authored cases, "generated_spec" for cases produced by
-   * the deterministic OpenAPI-driven generator (apps/api/internal/testgen).
-   * No AI/ML is involved in generation — see docs/BIBLICAL_TESTRA.md. */
-  source: "manual" | "generated_spec";
+  /** "manual" for user-authored cases; "generated_spec" for the deterministic
+   * OpenAPI-driven generator (no AI/ML); "generated_file" for the LLM-backed
+   * Excel/CSV upload generator — the one opt-in exception to "no AI/ML" (see
+   * docs/BIBLICAL_TESTRA.md and apps/api/internal/testgen). */
+  source: "manual" | "generated_spec" | "generated_file";
   generation_run_id: string | null;
   reviewed_by: string | null;
 }

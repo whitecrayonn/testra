@@ -52,7 +52,7 @@ func main() {
 
 	notificationModule := notification.NewModule(database, smtpCfg.Host, smtpCfg.Port, smtpCfg.From, smtpCfg.Username, smtpCfg.SecretProvider, smtpCfg.PasswordSecret)
 	analyticsModule := analytics.New(database)
-	intelligenceModule := intelligence.New(database, cfg.MLServiceURL)
+	intelligenceModule := intelligence.New(database, cfg.MLServiceURL, cfg.MLAPIKey)
 	dbHandle := db.Wrap(database)
 	auditSvc := audit.NewModule(dbHandle).Service
 	eventBus := eventbus.New(256)
