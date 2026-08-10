@@ -412,6 +412,14 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/generate/from-spec", testGenModule.Handler.GenerateFromSpec)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "tests:create"),
+					sharedmiddleware.AuditLog("test_case.generate", "generation_run",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/generate/from-endpoint", testGenModule.Handler.GenerateFromEndpoint)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -975,6 +983,7 @@ func New(cfg Config) http.Handler {
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-collections", apiTestingModule.Handler.ListCollections)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-environments", apiTestingModule.Handler.ListEnvironments)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-executions", apiTestingModule.Handler.ListRequestHistory)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-executions/latest", apiTestingModule.Handler.GetLatestExecutionByTestCase)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-requests/search", apiTestingModule.Handler.SearchRequests)
 			})
 

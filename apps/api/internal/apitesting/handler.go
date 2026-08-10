@@ -894,6 +894,7 @@ type executeRequestRequest struct {
 	WorkspaceID   string         `json:"workspace_id"`
 	RequestID     string         `json:"request_id"`
 	EnvironmentID string         `json:"environment_id"`
+	TestCaseID    string         `json:"test_case_id"`
 	Request       *InlineRequest `json:"request"`
 	Save          bool           `json:"save"`
 }
@@ -917,6 +918,7 @@ type requestHistoryResponse struct {
 	WorkspaceID        string         `json:"workspace_id"`
 	RequestID          *string        `json:"request_id"`
 	EnvironmentID      *string        `json:"environment_id"`
+	TestCaseID         *string        `json:"test_case_id"`
 	Name               string         `json:"name"`
 	Method             string         `json:"method"`
 	URL                string         `json:"url"`
@@ -957,6 +959,10 @@ func toRequestHistoryResponse(h *RequestHistory) requestHistoryResponse {
 	if h.EnvironmentID != nil {
 		s := h.EnvironmentID.String()
 		resp.EnvironmentID = &s
+	}
+	if h.TestCaseID != nil {
+		s := h.TestCaseID.String()
+		resp.TestCaseID = &s
 	}
 	return resp
 }
@@ -1005,6 +1011,16 @@ func (h *Handler) ExecuteRequest(w http.ResponseWriter, r *http.Request) {
 		environmentID = &id
 	}
 
+	var testCaseID *uuid.UUID
+	if req.TestCaseID != "" {
+		id, err := uuid.Parse(req.TestCaseID)
+		if err != nil {
+			apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid test_case_id")
+			return
+		}
+		testCaseID = &id
+	}
+
 	uid, ok := userID(r)
 	if !ok {
 		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "user not authenticated")
@@ -1015,6 +1031,7 @@ func (h *Handler) ExecuteRequest(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID:   workspaceID,
 		RequestID:     requestID,
 		EnvironmentID: environmentID,
+		TestCaseID:    testCaseID,
 		Request:       req.Request,
 		Save:          req.Save,
 		CreatedBy:     uid,
@@ -1110,4 +1127,25 @@ func (h *Handler) ListRequestHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apihttp.JSONWithMeta(w, http.StatusOK, resp, meta)
+}
+
+// GetLatestExecutionByTestCase returns the most recent "Test Now" execution
+// linked to a generated test case, for the test case detail page's
+// "last tested" indicator. Registered as a static route
+// (GET /api-executions/latest) ahead of GET /api-executions/{id} — chi
+// resolves the literal segment first, so the two never collide.
+func (h *Handler) GetLatestExecutionByTestCase(w http.ResponseWriter, r *http.Request) {
+	testCaseID, err := uuid.Parse(r.URL.Query().Get("test_case_id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid test_case_id")
+		return
+	}
+
+	history, err := h.service.GetLatestExecutionForTestCase(r.Context(), testCaseID)
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	apihttp.JSON(w, http.StatusOK, toRequestHistoryResponse(history))
 }

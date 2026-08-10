@@ -722,11 +722,11 @@ func (r *SQLRepository) CreateRequestHistory(ctx context.Context, h *RequestHist
 
 	_, err = r.db.ExecContext(ctx,
 		`INSERT INTO api_request_history (
-			id, workspace_id, request_id, environment_id, name, method, url,
+			id, workspace_id, request_id, environment_id, test_case_id, name, method, url,
 			request_headers, request_body, response_status, response_status_text,
 			response_headers, response_body, response_time_ms, error, created_by, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17)`,
-		h.ID, h.WorkspaceID, h.RequestID, h.EnvironmentID, h.Name, h.Method, h.URL,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13::jsonb, $14, $15, $16, $17, $18)`,
+		h.ID, h.WorkspaceID, h.RequestID, h.EnvironmentID, h.TestCaseID, h.Name, h.Method, h.URL,
 		reqHeadersJSON, h.RequestBody, responseStatus, h.ResponseStatusText,
 		respHeadersJSON, h.ResponseBody, responseTimeMs, h.Error, h.CreatedBy, h.CreatedAt,
 	)
@@ -735,7 +735,7 @@ func (r *SQLRepository) CreateRequestHistory(ctx context.Context, h *RequestHist
 
 func (r *SQLRepository) GetRequestHistoryByID(ctx context.Context, id uuid.UUID) (*RequestHistory, error) {
 	row, err := r.db.QueryContext(ctx,
-		`SELECT id, workspace_id, request_id, environment_id, name, method, url,
+		`SELECT id, workspace_id, request_id, environment_id, test_case_id, name, method, url,
 			   request_headers::text, request_body, response_status, response_status_text,
 			   response_headers::text, response_body, response_time_ms, error, created_by, created_at
 		 FROM api_request_history WHERE id = $1`,
@@ -753,11 +753,11 @@ func (r *SQLRepository) GetRequestHistoryByID(ctx context.Context, id uuid.UUID)
 	}
 
 	var h RequestHistory
-	var requestID, envID, createdBy sql.NullString
+	var requestID, envID, testCaseID, createdBy sql.NullString
 	var reqHeadersJSON, respHeadersJSON string
 	var responseStatus, responseTimeMs sql.NullInt32
 	err = row.Scan(
-		&h.ID, &h.WorkspaceID, &requestID, &envID, &h.Name, &h.Method, &h.URL,
+		&h.ID, &h.WorkspaceID, &requestID, &envID, &testCaseID, &h.Name, &h.Method, &h.URL,
 		&reqHeadersJSON, &h.RequestBody, &responseStatus, &h.ResponseStatusText,
 		&respHeadersJSON, &h.ResponseBody, &responseTimeMs, &h.Error, &createdBy, &h.CreatedAt,
 	)
@@ -769,6 +769,76 @@ func (r *SQLRepository) GetRequestHistoryByID(ctx context.Context, id uuid.UUID)
 		return nil, err
 	}
 	h.EnvironmentID, err = nullUUIDPtr(envID)
+	if err != nil {
+		return nil, err
+	}
+	h.TestCaseID, err = nullUUIDPtr(testCaseID)
+	if err != nil {
+		return nil, err
+	}
+	if createdBy.Valid {
+		h.CreatedBy, err = uuid.Parse(createdBy.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stored created_by: %w", err)
+		}
+	}
+	h.ResponseStatus = int(responseStatus.Int32)
+	h.ResponseTimeMs = int(responseTimeMs.Int32)
+	h.RequestHeaders, err = unmarshalKeyValuePairs(reqHeadersJSON)
+	if err != nil {
+		return nil, err
+	}
+	h.ResponseHeaders, err = unmarshalKeyValuePairs(respHeadersJSON)
+	if err != nil {
+		return nil, err
+	}
+	return &h, nil
+}
+
+// GetLatestRequestHistoryByTestCase returns the most recent execution linked
+// to a generated test case, or sharederrors.ErrNotFound if the case has
+// never been executed via "Test Now".
+func (r *SQLRepository) GetLatestRequestHistoryByTestCase(ctx context.Context, testCaseID uuid.UUID) (*RequestHistory, error) {
+	row, err := r.db.QueryContext(ctx,
+		`SELECT id, workspace_id, request_id, environment_id, test_case_id, name, method, url,
+			   request_headers::text, request_body, response_status, response_status_text,
+			   response_headers::text, response_body, response_time_ms, error, created_by, created_at
+		 FROM api_request_history WHERE test_case_id = $1
+		 ORDER BY created_at DESC LIMIT 1`,
+		testCaseID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer row.Close()
+	if !row.Next() {
+		if err := row.Err(); err != nil {
+			return nil, err
+		}
+		return nil, sharederrors.ErrNotFound
+	}
+
+	var h RequestHistory
+	var requestID, envID, testCaseIDCol, createdBy sql.NullString
+	var reqHeadersJSON, respHeadersJSON string
+	var responseStatus, responseTimeMs sql.NullInt32
+	err = row.Scan(
+		&h.ID, &h.WorkspaceID, &requestID, &envID, &testCaseIDCol, &h.Name, &h.Method, &h.URL,
+		&reqHeadersJSON, &h.RequestBody, &responseStatus, &h.ResponseStatusText,
+		&respHeadersJSON, &h.ResponseBody, &responseTimeMs, &h.Error, &createdBy, &h.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	h.RequestID, err = nullUUIDPtr(requestID)
+	if err != nil {
+		return nil, err
+	}
+	h.EnvironmentID, err = nullUUIDPtr(envID)
+	if err != nil {
+		return nil, err
+	}
+	h.TestCaseID, err = nullUUIDPtr(testCaseIDCol)
 	if err != nil {
 		return nil, err
 	}

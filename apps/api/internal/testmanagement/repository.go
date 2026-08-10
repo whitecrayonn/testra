@@ -340,6 +340,9 @@ func (r *SQLRepository) GetCaseByID(ctx context.Context, id uuid.UUID) (*TestCas
 	}
 	tc.Status = TestCaseStatus(status)
 	tc.Priority = TestCasePriority(priority)
+	if tags == nil {
+		tags = []string{}
+	}
 	tc.Tags = tags
 	tc.Source = TestCaseSource(source)
 	if suiteID.Valid {
@@ -552,6 +555,9 @@ func scanCaseCommon(tc *TestCase, suiteID, generationRunID, reviewedBy sql.NullS
 	tc.Status = TestCaseStatus(status)
 	tc.Priority = TestCasePriority(priority)
 	tc.Source = TestCaseSource(source)
+	if tags == nil {
+		tags = []string{}
+	}
 	tc.Tags = tags
 	if suiteID.Valid {
 		sid, err := uuid.Parse(suiteID.String)

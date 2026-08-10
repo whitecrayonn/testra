@@ -31,3 +31,16 @@ type GenerationRun struct {
 	CreatedBy     uuid.UUID
 	CreatedAt     time.Time
 }
+
+// EndpointField describes one query/path/header/body field of a
+// single-endpoint quick-generate request. It carries the same information an
+// OpenAPI parameter or request body property would (see field in
+// openapi_parser.go) so buildEndpointSpec can translate it directly into the
+// same map[string]interface{} shape GenerateDraftCases already parses.
+type EndpointField struct {
+	Name     string
+	Location string // query | path | header | body
+	Type     string // string | integer | number | boolean
+	Required bool
+	Enum     []string
+}

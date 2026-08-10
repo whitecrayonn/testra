@@ -2,6 +2,7 @@ package testgen
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -54,16 +55,65 @@ func (s *Service) GenerateFromSpec(ctx context.Context, input GenerateFromSpecIn
 		return nil, sharederrors.ErrInvalidInput
 	}
 
+	return s.persistGeneratedCases(ctx, input.WorkspaceID, input.ProjectID, input.CreatedBy, input.SpecFilename, drafts, endpointCount)
+}
+
+// GenerateFromEndpointInput describes a single HTTP endpoint (method, path,
+// and its query/path/header/body fields) typed directly into the "quick
+// generate" form — no OpenAPI document required.
+type GenerateFromEndpointInput struct {
+	WorkspaceID  uuid.UUID
+	ProjectID    uuid.UUID
+	Method       string
+	Path         string
+	Fields       []EndpointField
+	RequiresAuth bool
+	CreatedBy    uuid.UUID
+}
+
+// GenerateFromEndpoint generates draft cases for one endpoint described
+// directly by the caller (method/path/fields), rather than parsed from an
+// uploaded OpenAPI spec. It builds the same map[string]interface{} shape an
+// OpenAPI document would produce for that single operation (buildEndpointSpec
+// in endpoint_spec.go) and reuses GenerateDraftCases unchanged, so the rule
+// set — required fields, enums, wrong types, auth — is identical to the
+// full-spec path. Boundary-value cases only appear when GenerateDraftCases
+// finds min/max constraints on a field's schema; the quick form does not
+// collect those, so only the full-spec path produces boundary cases today.
+func (s *Service) GenerateFromEndpoint(ctx context.Context, input GenerateFromEndpointInput) (*GenerateFromSpecResult, error) {
+	if input.WorkspaceID == uuid.Nil || input.ProjectID == uuid.Nil || input.CreatedBy == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	method := strings.TrimSpace(input.Method)
+	path := strings.TrimSpace(input.Path)
+	if method == "" || path == "" {
+		return nil, sharederrors.ErrInvalidInput
+	}
+
+	spec := buildEndpointSpec(method, path, input.Fields, input.RequiresAuth)
+	drafts, endpointCount := GenerateDraftCases(spec)
+	if len(drafts) == 0 {
+		return nil, sharederrors.ErrInvalidInput
+	}
+
+	filename := strings.ToUpper(method) + " " + path
+	return s.persistGeneratedCases(ctx, input.WorkspaceID, input.ProjectID, input.CreatedBy, filename, drafts, endpointCount)
+}
+
+// persistGeneratedCases writes the generation_run audit record and one
+// pending_review test case per draft. Shared by GenerateFromSpec and
+// GenerateFromEndpoint so both entry points persist identically.
+func (s *Service) persistGeneratedCases(ctx context.Context, workspaceID, projectID, createdBy uuid.UUID, specFilename string, drafts []draftCase, endpointCount int) (*GenerateFromSpecResult, error) {
 	now := time.Now().UTC()
 	run := &GenerationRun{
 		ID:            uuid.New(),
-		WorkspaceID:   input.WorkspaceID,
-		ProjectID:     input.ProjectID,
+		WorkspaceID:   workspaceID,
+		ProjectID:     projectID,
 		Source:        string(testmanagement.TestCaseSourceGeneratedSpec),
-		SpecFilename:  input.SpecFilename,
+		SpecFilename:  specFilename,
 		EndpointCount: endpointCount,
 		CaseCount:     len(drafts),
-		CreatedBy:     input.CreatedBy,
+		CreatedBy:     createdBy,
 		CreatedAt:     now,
 	}
 
@@ -82,8 +132,8 @@ func (s *Service) GenerateFromSpec(ctx context.Context, input GenerateFromSpecIn
 		runID := run.ID
 		cases[i] = testmanagement.TestCase{
 			ID:            uuid.New(),
-			WorkspaceID:   input.WorkspaceID,
-			ProjectID:     input.ProjectID,
+			WorkspaceID:   workspaceID,
+			ProjectID:     projectID,
 			Title:         d.Title,
 			Description:   "Generated from an imported OpenAPI spec. Review before approving.",
 			Preconditions: d.Preconditions,
@@ -93,7 +143,7 @@ func (s *Service) GenerateFromSpec(ctx context.Context, input GenerateFromSpecIn
 			Status:          testmanagement.TestCaseStatusPendingReview,
 			Priority:        testmanagement.TestCasePriority(d.Priority),
 			Version:         1,
-			CreatedBy:       input.CreatedBy,
+			CreatedBy:       createdBy,
 			CreatedAt:       now,
 			UpdatedAt:       now,
 			Source:          testmanagement.TestCaseSourceGeneratedSpec,
