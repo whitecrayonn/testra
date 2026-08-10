@@ -8,9 +8,9 @@ type Module struct {
 	Handler    *Handler
 }
 
-func New(sqlDB *sql.DB, mlServiceURL string) *Module {
+func New(sqlDB *sql.DB, mlServiceURL string, mlAPIKey string) *Module {
 	repo := NewSQLRepository(sqlDB)
-	service := NewService(repo, NewMLClient(mlServiceURL))
+	service := NewService(repo, NewMLClient(mlServiceURL, mlAPIKey))
 	handler := NewHandler(service)
 
 	return &Module{

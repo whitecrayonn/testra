@@ -22,6 +22,17 @@ export interface GenerateFromSpecResponse {
   cases: GeneratedCaseSummary[];
 }
 
+export interface SkippedRow {
+  row: number;
+  reason: string;
+}
+
+export interface GenerateFromFileResponse {
+  run: GenerationRun;
+  cases: GeneratedCaseSummary[];
+  skipped_rows: SkippedRow[];
+}
+
 export type EndpointFieldLocation = "query" | "path" | "header" | "body";
 export type EndpointFieldType = "string" | "integer" | "number" | "boolean";
 

@@ -34,15 +34,21 @@ const (
 	TestCaseStatusPendingReview TestCaseStatus = "pending_review"
 )
 
-// TestCaseSource distinguishes manually authored test cases from ones produced
-// by deterministic generation. Per docs/AI_MEMORY.md ("No external LLM
-// processing"), generation is rule-based only — there is no "generated_text"
-// source, since free-text requirement parsing is not possible without a model.
+// TestCaseSource distinguishes manually authored test cases from ones
+// produced by generation. TestCaseSourceGeneratedSpec is deterministic,
+// rule-based generation from an OpenAPI spec (no AI/ML — see
+// docs/BIBLICAL_TESTRA.md's "No External LLM" principle).
+// TestCaseSourceGeneratedFile is the one intentional, opt-in exception to
+// that principle: it comes from the testgen.GenerateFromFile path, which
+// calls an external LLM (Gemini) to turn an uploaded spreadsheet's rows into
+// draft test cases. Both sources are always created as pending_review and
+// require human approval before they count toward coverage.
 type TestCaseSource string
 
 const (
 	TestCaseSourceManual        TestCaseSource = "manual"
 	TestCaseSourceGeneratedSpec TestCaseSource = "generated_spec"
+	TestCaseSourceGeneratedFile TestCaseSource = "generated_file"
 )
 
 type TestCasePriority string

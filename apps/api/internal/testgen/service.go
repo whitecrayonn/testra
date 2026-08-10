@@ -18,10 +18,19 @@ import (
 type Service struct {
 	runs     Repository
 	testMgmt testmanagement.Repository
+	fileGen  FileGenerationClient
 }
 
-func NewService(runs Repository, testMgmt testmanagement.Repository) *Service {
-	return &Service{runs: runs, testMgmt: testMgmt}
+// NewService takes fileGen as a variadic argument so every existing 2-arg
+// call site (tests, in particular) keeps compiling unchanged. When omitted,
+// GenerateFromFile fails loudly with "not configured" rather than silently
+// doing nothing.
+func NewService(runs Repository, testMgmt testmanagement.Repository, fileGen ...FileGenerationClient) *Service {
+	var fg FileGenerationClient = &unconfiguredFileGenerationClient{}
+	if len(fileGen) > 0 && fileGen[0] != nil {
+		fg = fileGen[0]
+	}
+	return &Service{runs: runs, testMgmt: testMgmt, fileGen: fg}
 }
 
 type GenerateFromSpecInput struct {
@@ -164,4 +173,122 @@ func (s *Service) persistGeneratedCases(ctx context.Context, workspaceID, projec
 	}
 
 	return &GenerateFromSpecResult{Run: run, Cases: cases}, nil
+}
+
+// GenerateFromFileInput describes an uploaded spreadsheet to run through the
+// ML service's LLM-backed generator.
+type GenerateFromFileInput struct {
+	WorkspaceID uuid.UUID
+	ProjectID   uuid.UUID
+	Filename    string
+	Content     []byte
+	Context     string
+	CreatedBy   uuid.UUID
+}
+
+// SkippedRow is a row the LLM could not confidently turn into a test case —
+// surfaced to the caller instead of silently dropped or fabricated.
+type SkippedRow struct {
+	Row    int
+	Reason string
+}
+
+type GenerateFromFileResult struct {
+	Run         *GenerationRun
+	Cases       []testmanagement.TestCase
+	SkippedRows []SkippedRow
+}
+
+// GenerateFromFile is the one path in this package that calls an external
+// LLM (via the ML service) rather than generating deterministically — see
+// the package doc comment for why. Every case it writes is source =
+// generated_file and status = pending_review, the same human-review gate
+// GenerateFromSpec/GenerateFromEndpoint use.
+func (s *Service) GenerateFromFile(ctx context.Context, input GenerateFromFileInput) (*GenerateFromFileResult, error) {
+	if input.WorkspaceID == uuid.Nil || input.ProjectID == uuid.Nil || input.CreatedBy == uuid.Nil {
+		return nil, sharederrors.ErrInvalidInput
+	}
+	if len(input.Content) == 0 {
+		return nil, sharederrors.ErrInvalidInput
+	}
+
+	resp, err := s.fileGen.GenerateFromFile(ctx, input.Filename, input.Content, input.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	run := &GenerationRun{
+		ID:            uuid.New(),
+		WorkspaceID:   input.WorkspaceID,
+		ProjectID:     input.ProjectID,
+		Source:        string(testmanagement.TestCaseSourceGeneratedFile),
+		SpecFilename:  input.Filename,
+		EndpointCount: resp.RowCount,
+		CaseCount:     len(resp.Cases),
+		CreatedBy:     input.CreatedBy,
+		CreatedAt:     now,
+	}
+	if err := s.runs.CreateRun(ctx, run); err != nil {
+		return nil, err
+	}
+
+	cases := make([]testmanagement.TestCase, len(resp.Cases))
+	for i, c := range resp.Cases {
+		runID := run.ID
+		steps := make([]testmanagement.TestStep, len(c.Steps))
+		for j, st := range c.Steps {
+			steps[j] = testmanagement.TestStep{Order: j + 1, Action: st.Action, Expected: st.Expected, TestData: st.TestData}
+		}
+		cases[i] = testmanagement.TestCase{
+			ID:              uuid.New(),
+			WorkspaceID:     input.WorkspaceID,
+			ProjectID:       input.ProjectID,
+			Title:           c.Title,
+			Description:     c.Description,
+			Preconditions:   c.Preconditions,
+			Steps:           steps,
+			Status:          testmanagement.TestCaseStatusPendingReview,
+			Priority:        testmanagement.TestCasePriority(normalizePriority(c.Priority)),
+			Tags:            c.Tags,
+			Version:         1,
+			CreatedBy:       input.CreatedBy,
+			CreatedAt:       now,
+			UpdatedAt:       now,
+			Source:          testmanagement.TestCaseSourceGeneratedFile,
+			GenerationRunID: &runID,
+		}
+	}
+
+	if len(cases) > 0 {
+		err := s.testMgmt.RunInTx(ctx, func(tx testmanagement.Repository) error {
+			for i := range cases {
+				if err := tx.CreateCase(ctx, &cases[i]); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	skipped := make([]SkippedRow, len(resp.SkippedRows))
+	for i, sr := range resp.SkippedRows {
+		skipped[i] = SkippedRow{Row: sr.Row, Reason: sr.Reason}
+	}
+
+	return &GenerateFromFileResult{Run: run, Cases: cases, SkippedRows: skipped}, nil
+}
+
+// normalizePriority re-validates the ML service's priority value on the Go
+// side too (defense in depth) rather than trusting the upstream response.
+func normalizePriority(p string) string {
+	switch strings.ToLower(strings.TrimSpace(p)) {
+	case "low", "medium", "high", "critical":
+		return strings.ToLower(strings.TrimSpace(p))
+	default:
+		return "medium"
+	}
 }

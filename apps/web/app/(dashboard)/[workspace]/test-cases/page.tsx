@@ -226,7 +226,7 @@ export default function TestCasesPage() {
                       {tc.status.replace("_", " ")}
                     </StatusPill>
                     <StatusPill tone={PRIORITY_TONE[tc.priority] ?? "neutral"}>{tc.priority}</StatusPill>
-                    {tc.source === "generated_spec" && (
+                    {(tc.source === "generated_spec" || tc.source === "generated_file") && (
                       <StatusPill tone="info">generated</StatusPill>
                     )}
                   </div>

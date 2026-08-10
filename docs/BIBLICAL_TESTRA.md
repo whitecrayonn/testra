@@ -166,6 +166,7 @@ Testra is a unified quality engineering platform for teams that want to manage t
 - **Primary ICP:** Mid-market to enterprise SaaS companies in APAC that need governance, audit, and multi-tenancy.
 - **Scope MVP (Phases 1-3.5):** self-hosted identity and tenancy, RBAC, API keys, test management, manual and CI result runs, in-app notifications, a polished web dashboard, and a stable local developer workflow.
 - **Out of scope for MVP:** built-in CI runner, source-code hosting, external LLM features, billing, and WorkOS SSO.
+- **Exception to "No External LLM":** Test Cases → Generate → "Upload Test Cases" (`testgen.GenerateFromFile`) is a deliberate, narrowly-scoped, opt-in exception — see [Machine Learning Service](#machine-learning-service). Every other generation and intelligence path in the product remains LLM-free.
 
 **Authoritative sources:** `testra-master-context.md`, `testra-product-strategy.md`, `testra-product-discovery.md`, `testra-brd.md`, `testra/docs/engineering/ROADMAP.md`.
 
@@ -301,7 +302,7 @@ Every backend module follows Clean / Hexagonal Architecture. The dependency rule
 | `apikeys` | [Implemented] | Create, list, revoke scoped API keys | `testra/apps/api/internal/apikeys/` |
 | `rbac` | [Implemented] | Roles, permissions, role assignments, SQL loader | `testra/apps/api/internal/rbac/`, `shared/middleware/rbac.go` |
 | `testmanagement` | [Implemented] | Folders, suites, cases, versioning, full-text search | `testra/apps/api/internal/testmanagement/` |
-| `testgen` | [Implemented] | Deterministic (no AI/ML) test case generation from an OpenAPI spec | `testra/apps/api/internal/testgen/` |
+| `testgen` | [Implemented] | Deterministic (no AI/ML) test case generation from an OpenAPI spec, plus one opt-in exception: LLM-based generation from an uploaded Excel/CSV via the ML service (`GenerateFromFile`, only active when `GEMINI_API_KEY` is configured on the ML service) | `testra/apps/api/internal/testgen/` |
 | `results` | [Implemented] | Test runs and items, status updates, SSE progress | `testra/apps/api/internal/results/` |
 | `automationhub` | [Implemented] | Ingest JUnit XML and Playwright/Cypress JSON | `testra/apps/api/internal/automationhub/` |
 | `notification` | [Implemented] | In-app notifications, preferences, channels | `testra/apps/api/internal/notification/` |
@@ -824,13 +825,17 @@ flowchart TD
 ## Machine Learning Service
 
 - **Runtime:** Python 3.12+ FastAPI service (`testra/apps/ml/api/main.py`).
-- **Current state:** Skeleton with a `/health` endpoint [Implemented].
+- **Current state:** `/health`, `/predict-flaky`, `/classify-failure` (local heuristics, no ML libs used yet) [Implemented].
 - **Planned capabilities (Phase 6):**
   - Flaky test detection using time-series variance scoring.
   - Failure classification with rule-based filtering + DBSCAN/HDBSCAN clustering and optional XGBoost.
   - Risk/health scores with logistic regression / XGBoost and SHAP explainability.
   - Release readiness thresholds and trends.
 - **Principles:** No external LLM APIs; models trained per tenant on that tenant's data only; inputs limited to test metadata and results, never source code or secrets.
+- **Exception — LLM-based file-to-test-case generation [Implemented, opt-in]:** `POST /generate-test-cases-from-file` (`testra/apps/ml/api/generation.py`), called from `testgen.GenerateFromFile` (`testra/apps/api/internal/testgen/mlclient.go`). A user uploads a `.csv`/`.xlsx` of test cases or raw requirements from Test Cases → Generate → "Upload Test Cases"; the service parses rows with pandas/openpyxl and prompts Google Gemini (`gemini-2.0-flash`, temperature 0.2, JSON-schema-constrained output) to draft standard test cases (title, description, preconditions, priority, steps, tags). Rows the model can't confidently map are returned as `skipped_rows`, never fabricated. Every generated case is written as `source = generated_file`, `status = pending_review` — the same human-review gate `generated_spec` cases use. This is the one place in Testra that calls an external LLM:
+  - **Opt-in:** disabled unless `GEMINI_API_KEY` is set on the ML service; the endpoint fails with a clear `503` rather than silently no-op'ing when it isn't.
+  - **Scoped:** no other generation, analytics, or intelligence path in the product calls an LLM.
+  - **Why Gemini:** a genuinely free tier (not a metered trial) from a reputable vendor, with constrained/structured JSON output support.
 
 ---
 
@@ -870,7 +875,7 @@ Per ADR-009, the official local workflow uses native services:
 - **Transport:** TLS in production, CORS restricted to configured origins, `MaxBodySize` middleware.
 - **Rate limiting:** Local in-memory rate limiter implemented; Redis-backed token bucket planned.
 - **Audit:** Immutable `audit_events` for mutating actions.
-- **Privacy:** Zero customer code retention, zero API collection retention, customer-owned data, no external LLM processing, tenant-isolated ML models.
+- **Privacy:** Zero customer code retention, zero API collection retention, customer-owned data, no external LLM processing, tenant-isolated ML models — with one documented, opt-in exception: Test Cases → Generate → "Upload Test Cases" sends the uploaded spreadsheet's row content to Google's Gemini API (see [Machine Learning Service](#machine-learning-service)). It only runs when a workspace admin has configured `GEMINI_API_KEY`; every other feature stays LLM-free.
 - **Compliance posture:** Audit logs (7 years), RBAC, MFA, encryption, and data-residency path support SOC 2 readiness.
 
 ---
