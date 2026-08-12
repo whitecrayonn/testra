@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Search, Plus, ChevronRight, TestTube, FileJson, Check } from "lucide-react";
+import { Search, Plus, ChevronRight, TestTube, FileJson, Check, Loader2 } from "lucide-react";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   listTestCases,
@@ -37,11 +37,12 @@ export default function TestCasesPage() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const projectId =
     typeof window !== "undefined"
@@ -52,13 +53,24 @@ export default function TestCasesPage() {
       ? localStorage.getItem("testra_workspace_id") || ""
       : "";
 
+  // Search live as you type, same as global search — debounced so we're not
+  // re-fetching the whole list on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setCursor(undefined);
+  }, [debouncedQuery]);
+
   const fetchCases = useCallback(
-    async (reset?: boolean) => {
+    async (reset: boolean) => {
       setLoading(true);
       setError(null);
       try {
-        if (searchMode && searchQuery.trim()) {
-          const result = await searchTestCases(workspaceId, searchQuery, {
+        if (debouncedQuery) {
+          const result = await searchTestCases(workspaceId, debouncedQuery, {
             cursor: reset ? undefined : cursor,
           });
           setCases((prev) => (reset ? result.data : [...prev, ...result.data]));
@@ -79,19 +91,13 @@ export default function TestCasesPage() {
         setLoading(false);
       }
     },
-    [cursor, projectId, searchMode, searchQuery, workspaceId],
+    [cursor, debouncedQuery, projectId, workspaceId],
   );
 
   useEffect(() => {
-    fetchCases(true);
-  }, [fetchCases]);
-
-  const handleSearch = () => {
-    setSearchMode(searchQuery.trim().length > 0);
-    setCursor(undefined);
-    setCases([]);
-    setTimeout(() => fetchCases(true), 0);
-  };
+    fetchCases(cursor === undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, cursor, projectId]);
 
   const handleLoadMore = () => {
     if (meta?.next_cursor) {
@@ -143,23 +149,20 @@ export default function TestCasesPage() {
       </div>
 
       <div className="flex animate-rise-sm gap-2.5">
-        <div className="flex h-[38px] max-w-md flex-1 items-center gap-2 rounded-[13px] border border-hair bg-panel px-3.5">
+        <div
+          className="flex h-[38px] max-w-md flex-1 cursor-text items-center gap-2 rounded-[13px] border border-hair bg-panel px-3.5"
+          onClick={() => searchInputRef.current?.focus()}
+        >
           <Search className="h-3.5 w-3.5 text-fg3" aria-hidden="true" />
           <input
+            ref={searchInputRef}
             placeholder="Search test cases..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="flex-1 bg-transparent text-[13px] text-fg outline-none placeholder:text-fg3"
           />
+          {loading && searchQuery && <Loader2 className="h-3.5 w-3.5 flex-none animate-spin text-fg3" aria-hidden="true" />}
         </div>
-        <button
-          onClick={handleSearch}
-          className="flex h-[38px] items-center gap-2 rounded-[13px] border border-hair-hi bg-panel px-4 text-[13px] font-semibold text-fg transition-colors hover:bg-panel-hi"
-        >
-          <Search className="h-3.5 w-3.5" aria-hidden="true" />
-          Search
-        </button>
         {pendingReviewCount > 0 && (
           <button
             onClick={() => setNeedsReviewOnly((v) => !v)}

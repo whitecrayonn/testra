@@ -39,6 +39,7 @@ export interface TestCaseVersion {
   preconditions: string;
   steps: TestStep[];
   changed_by: string;
+  changed_by_name: string;
   created_at: string;
 }
 

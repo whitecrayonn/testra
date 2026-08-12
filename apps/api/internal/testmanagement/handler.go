@@ -160,6 +160,7 @@ type versionResponse struct {
 	Preconditions string         `json:"preconditions"`
 	Steps         []stepResponse `json:"steps"`
 	ChangedBy     string         `json:"changed_by"`
+	ChangedByName string         `json:"changed_by_name"`
 	CreatedAt     string         `json:"created_at"`
 }
 
@@ -182,6 +183,7 @@ func mapVersionResponse(v *TestCaseVersion) versionResponse {
 		Preconditions: v.Preconditions,
 		Steps:         steps,
 		ChangedBy:     v.ChangedBy.String(),
+		ChangedByName: v.ChangedByName,
 		CreatedAt:     v.CreatedAt.Format(time.RFC3339),
 	}
 }
