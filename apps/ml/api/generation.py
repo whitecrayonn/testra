@@ -60,9 +60,9 @@ def _read_rows(filename: str, content: bytes) -> pd.DataFrame:
     try:
         if lower.endswith(".csv"):
             return pd.read_csv(io.BytesIO(content))
-        if lower.endswith(".xlsx") or lower.endswith(".xls"):
+        if lower.endswith((".xlsx", ".xls")):
             return pd.read_excel(io.BytesIO(content), engine="openpyxl")
-    except Exception as exc:  # noqa: BLE001 - surfaced to the caller as a 400
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Could not parse file: {exc}",
@@ -128,7 +128,7 @@ def _call_gemini(prompt: str) -> dict[str, Any]:
             contents=prompt,
             config=types.GenerateContentConfig(temperature=0.2, response_mime_type="application/json"),
         )
-    except Exception as exc:  # noqa: BLE001 - classified into a stable status code below
+    except Exception as exc:
         message = str(exc)
         if "429" in message or "quota" in message.lower() or "rate" in message.lower():
             raise HTTPException(
