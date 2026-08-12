@@ -61,7 +61,7 @@ export default function TestCaseDetailPage() {
         setPreconditions(testCase.preconditions);
         setStatus(testCase.status);
         setPriority(testCase.priority);
-        setTagsInput(testCase.tags.join(", "));
+        setTagsInput((testCase.tags ?? []).join(", "));
         setSteps(testCase.steps);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load test case");
