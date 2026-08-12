@@ -71,10 +71,11 @@ export async function bulkUpdateTestRunItems(
   runId: string,
   input: { item_ids: string[]; status: RunItemStatus },
 ): Promise<{ data: TestRunItem[] }> {
-  return apiFetch(`/api/v1/test-runs/${runId}/bulk`, {
+  const data = await apiFetch<TestRunItem[]>(`/api/v1/test-runs/${runId}/bulk`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+  return { data };
 }
 
 export async function listTestRunItems(
@@ -87,7 +88,10 @@ export async function listTestRunItems(
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
   const query = searchParams.toString();
-  return apiFetch(`/api/v1/test-runs/${runId}/items${query ? `?${query}` : ""}`);
+  const result = await apiFetchWithMeta<TestRunItem>(
+    `/api/v1/test-runs/${runId}/items${query ? `?${query}` : ""}`,
+  );
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function updateTestRunItemStatus(
@@ -125,7 +129,8 @@ export async function executeTestRunItem(
 export async function getExecutionHistory(
   itemId: string,
 ): Promise<{ data: ExecutionHistoryEntry[] }> {
-  return apiFetch(`/api/v1/test-run-items/${itemId}/history`);
+  const data = await apiFetch<ExecutionHistoryEntry[]>(`/api/v1/test-run-items/${itemId}/history`);
+  return { data };
 }
 
 export async function attachEvidence(
@@ -137,14 +142,16 @@ export async function attachEvidence(
     storage_path?: string;
   },
 ): Promise<{ data: Evidence }> {
-  return apiFetch(`/api/v1/test-run-items/${itemId}/evidence`, {
+  const data = await apiFetch<Evidence>(`/api/v1/test-run-items/${itemId}/evidence`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+  return { data };
 }
 
 export async function listEvidence(itemId: string): Promise<{ data: Evidence[] }> {
-  return apiFetch(`/api/v1/test-run-items/${itemId}/evidence`);
+  const data = await apiFetch<Evidence[]>(`/api/v1/test-run-items/${itemId}/evidence`);
+  return { data };
 }
 
 export async function deleteEvidence(itemId: string, evidenceId: string): Promise<void> {
@@ -164,7 +171,8 @@ export async function linkDefect(
 }
 
 export async function listLinkedDefects(itemId: string): Promise<{ data: string[] }> {
-  return apiFetch(`/api/v1/test-run-items/${itemId}/defects`);
+  const data = await apiFetch<string[]>(`/api/v1/test-run-items/${itemId}/defects`);
+  return { data };
 }
 
 export async function unlinkDefect(
@@ -183,11 +191,13 @@ export async function listTestPlans(
   const searchParams = new URLSearchParams({ project_id: projectId });
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
-  return apiFetch(`/api/v1/test-plans?${searchParams.toString()}`);
+  const result = await apiFetchWithMeta<TestPlan>(`/api/v1/test-plans?${searchParams.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function getTestPlan(id: string): Promise<{ data: TestPlan }> {
-  return apiFetch(`/api/v1/test-plans/${id}`);
+  const data = await apiFetch<TestPlan>(`/api/v1/test-plans/${id}`);
+  return { data };
 }
 
 export async function createTestPlan(input: {
@@ -199,10 +209,11 @@ export async function createTestPlan(input: {
   configuration?: Record<string, unknown>;
   test_case_ids?: string[];
 }): Promise<{ data: TestPlan }> {
-  return apiFetch("/api/v1/test-plans", {
+  const data = await apiFetch<TestPlan>("/api/v1/test-plans", {
     method: "POST",
     body: JSON.stringify(input),
   });
+  return { data };
 }
 
 export async function updateTestPlan(
@@ -215,10 +226,11 @@ export async function updateTestPlan(
     test_case_ids: string[];
   }>,
 ): Promise<{ data: TestPlan }> {
-  return apiFetch(`/api/v1/test-plans/${id}`, {
+  const data = await apiFetch<TestPlan>(`/api/v1/test-plans/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
+  return { data };
 }
 
 export async function deleteTestPlan(id: string): Promise<void> {
@@ -228,9 +240,11 @@ export async function deleteTestPlan(id: string): Promise<void> {
 export async function getTestPlanItems(
   planId: string,
 ): Promise<{ data: TestPlanItem[] }> {
-  return apiFetch(`/api/v1/test-plans/${planId}/items`);
+  const data = await apiFetch<TestPlanItem[]>(`/api/v1/test-plans/${planId}/items`);
+  return { data };
 }
 
 export async function createRunFromPlan(planId: string): Promise<{ data: TestRun }> {
-  return apiFetch(`/api/v1/test-plans/${planId}/runs`, { method: "POST" });
+  const data = await apiFetch<TestRun>(`/api/v1/test-plans/${planId}/runs`, { method: "POST" });
+  return { data };
 }

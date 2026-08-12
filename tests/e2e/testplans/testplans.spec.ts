@@ -28,6 +28,37 @@ test.describe("Test Plans @testplans", () => {
     expect(fetched.test_case_ids).toContain(testCase.id);
   });
 
+  test("test plans list and detail pages render without crashing", async ({
+    authPage,
+    api,
+    workspace,
+    project,
+    testCase,
+  }) => {
+    const plan = await api.createTestPlan({
+      workspace_id: workspace.id,
+      project_id: project.id,
+      name: `Regression Plan ${Date.now()}`,
+      test_case_ids: [testCase.id],
+    });
+
+    await setWorkspaceContext(authPage, {
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      organizationId: workspace.organization_id,
+      projectId: project.id,
+      projectName: project.name,
+    });
+
+    await authPage.goto("/dashboard/test-plans");
+    await expect(authPage.getByText(plan.name)).toBeVisible();
+    await expect(authPage.getByText(/something went wrong/i)).not.toBeVisible();
+
+    await authPage.goto(`/dashboard/test-plans/${plan.id}`);
+    await expect(authPage.getByRole("heading", { name: /test cases/i })).toBeVisible();
+    await expect(authPage.getByText(/something went wrong/i)).not.toBeVisible();
+  });
+
   test("negative: create test plan with invalid test case ids", async ({ api, workspace, project }) => {
     await expect(
       api.createTestPlan({
