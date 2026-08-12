@@ -140,7 +140,7 @@ func mapCaseResponse(tc *TestCase) caseResponse {
 		Steps:           steps,
 		Status:          string(tc.Status),
 		Priority:        string(tc.Priority),
-		Tags:            tc.Tags,
+		Tags:            tags,
 		Version:         tc.Version,
 		CreatedBy:       tc.CreatedBy.String(),
 		CreatedAt:       tc.CreatedAt.Format(time.RFC3339),
