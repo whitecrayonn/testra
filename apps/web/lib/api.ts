@@ -77,20 +77,53 @@ async function ensureCsrfToken(): Promise<string | null> {
 
 const FETCH_TIMEOUT_MS = 30_000;
 
+// Extends RequestInit with `silent`, which excludes a request from the
+// global pending-request counter below — used for background polling
+// (e.g. unread-count) that shouldn't trigger a visible loading indicator.
+export interface ApiRequestInit extends RequestInit {
+  silent?: boolean;
+}
+
+type PendingListener = (count: number) => void;
+const pendingListeners = new Set<PendingListener>();
+let pendingRequestCount = 0;
+
+function notifyPending() {
+  pendingListeners.forEach((listener) => listener(pendingRequestCount));
+}
+
+/** Subscribes to the number of in-flight (non-silent) API requests. Used to drive a global loading indicator. */
+export function subscribeToPendingRequests(listener: PendingListener): () => void {
+  pendingListeners.add(listener);
+  listener(pendingRequestCount);
+  return () => {
+    pendingListeners.delete(listener);
+  };
+}
+
 function fetchWithTimeout(
   input: string,
-  init: RequestInit = {},
+  init: ApiRequestInit = {},
 ): Promise<Response> {
+  const { silent, ...requestInit } = init;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  return fetch(input, { ...init, signal: controller.signal }).finally(() =>
-    clearTimeout(timeout),
-  );
+  if (!silent) {
+    pendingRequestCount++;
+    notifyPending();
+  }
+  return fetch(input, { ...requestInit, signal: controller.signal }).finally(() => {
+    clearTimeout(timeout);
+    if (!silent) {
+      pendingRequestCount--;
+      notifyPending();
+    }
+  });
 }
 
 async function rawApiFetch<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestInit = {},
 ): Promise<{ res: Response; body: ApiEnvelope<T> }> {
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
@@ -123,7 +156,7 @@ async function rawApiFetch<T>(
 
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestInit = {},
 ): Promise<T> {
   return request<T>(path, options, false);
 }
@@ -135,7 +168,7 @@ export interface PaginatedResult<T> {
 
 export async function apiFetchWithMeta<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestInit = {},
 ): Promise<PaginatedResult<T>> {
   const { res, body } = await rawApiFetch<T[]>(path, options);
 
@@ -170,7 +203,7 @@ export async function apiFetchWithMeta<T>(
 
 async function request<T>(
   path: string,
-  options: RequestInit,
+  options: ApiRequestInit,
   isRetry: boolean,
 ): Promise<T> {
   const { res, body } = await rawApiFetch<T>(path, options);

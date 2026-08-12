@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   Notification,
   NotificationChannel,
@@ -32,7 +32,8 @@ export async function listNotifications(
   if (cursor) params.set("cursor", cursor);
   if (read !== undefined) params.set("read", String(read));
 
-  return apiFetch<PaginatedNotifications>(`/api/v1/notifications?${params.toString()}`);
+  const result = await apiFetchWithMeta<Notification>(`/api/v1/notifications?${params.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginatedNotifications["meta"] };
 }
 
 export async function getUnreadCount(): Promise<{ unread_count: number }> {
@@ -41,6 +42,7 @@ export async function getUnreadCount(): Promise<{ unread_count: number }> {
 
   return apiFetch<{ unread_count: number }>(
     `/api/v1/notifications/unread-count?workspace_id=${workspaceId}`,
+    { silent: true },
   );
 }
 
