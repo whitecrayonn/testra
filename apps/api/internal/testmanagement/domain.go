@@ -97,5 +97,6 @@ type TestCaseVersion struct {
 	Preconditions string
 	Steps         []TestStep
 	ChangedBy     uuid.UUID
+	ChangedByName string
 	CreatedAt     time.Time
 }

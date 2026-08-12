@@ -518,16 +518,20 @@ func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID, curs
 
 	if cursor != "" {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, test_case_id, version, title, description, preconditions, steps::text, changed_by, created_at
-			 FROM test_case_versions WHERE test_case_id = $1 AND id < $2
-			 ORDER BY id DESC LIMIT $3`,
+			`SELECT tcv.id, tcv.test_case_id, tcv.version, tcv.title, tcv.description, tcv.preconditions,
+			        tcv.steps::text, tcv.changed_by, u.name, tcv.created_at
+			 FROM test_case_versions tcv LEFT JOIN users u ON u.id = tcv.changed_by
+			 WHERE tcv.test_case_id = $1 AND tcv.id < $2
+			 ORDER BY tcv.id DESC LIMIT $3`,
 			caseID, cursor, limit,
 		)
 	} else {
 		rows, err = r.db.QueryContext(ctx,
-			`SELECT id, test_case_id, version, title, description, preconditions, steps::text, changed_by, created_at
-			 FROM test_case_versions WHERE test_case_id = $1
-			 ORDER BY id DESC LIMIT $2`,
+			`SELECT tcv.id, tcv.test_case_id, tcv.version, tcv.title, tcv.description, tcv.preconditions,
+			        tcv.steps::text, tcv.changed_by, u.name, tcv.created_at
+			 FROM test_case_versions tcv LEFT JOIN users u ON u.id = tcv.changed_by
+			 WHERE tcv.test_case_id = $1
+			 ORDER BY tcv.id DESC LIMIT $2`,
 			caseID, limit,
 		)
 	}
@@ -540,9 +544,11 @@ func (r *SQLRepository) ListVersions(ctx context.Context, caseID uuid.UUID, curs
 	for rows.Next() {
 		var v TestCaseVersion
 		var stepsJSON string
-		if err := rows.Scan(&v.ID, &v.TestCaseID, &v.Version, &v.Title, &v.Description, &v.Preconditions, &stepsJSON, &v.ChangedBy, &v.CreatedAt); err != nil {
+		var changedByName sql.NullString
+		if err := rows.Scan(&v.ID, &v.TestCaseID, &v.Version, &v.Title, &v.Description, &v.Preconditions, &stepsJSON, &v.ChangedBy, &changedByName, &v.CreatedAt); err != nil {
 			return nil, err
 		}
+		v.ChangedByName = changedByName.String
 		if err := json.Unmarshal([]byte(stepsJSON), &v.Steps); err != nil {
 			return nil, fmt.Errorf("unmarshal steps: %w", err)
 		}

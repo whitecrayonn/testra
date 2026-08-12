@@ -39,11 +39,12 @@ export default function TestCaseDetailPage() {
   const id = params.id as string;
   const [tc, setTc] = useState<TestCase | null>(null);
   const [versions, setVersions] = useState<TestCaseVersion[]>([]);
+  const [versionsLoaded, setVersionsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showVersions, setShowVersions] = useState(false);
+  const [tab, setTab] = useState<"details" | "history">("details");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -85,9 +86,16 @@ export default function TestCaseDetailPage() {
     try {
       const v = await listTestCaseVersions(id);
       setVersions(v);
-      setShowVersions(true);
+      setVersionsLoaded(true);
     } catch {
       setError("Failed to load version history");
+    }
+  }
+
+  function openTab(next: "details" | "history") {
+    setTab(next);
+    if (next === "history" && !versionsLoaded) {
+      loadVersions();
     }
   }
 
@@ -196,9 +204,6 @@ export default function TestCaseDetailPage() {
         ]}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" onClick={loadVersions}>
-              Version History
-            </Button>
             <Button variant="danger" size="sm" onClick={handleDelete}>
               <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
               Delete
@@ -254,148 +259,174 @@ export default function TestCaseDetailPage() {
         </div>
       )}
 
-      <Card className="space-y-4 p-6">
-        <div>
-          <label htmlFor="tc-title" className="mb-1 block text-sm font-medium text-slate-700">
-            Title
-          </label>
-          <Input id="tc-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
+      <div className="flex gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => openTab("details")}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+            tab === "details"
+              ? "border-brand-500 text-brand-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Details
+        </button>
+        <button
+          type="button"
+          onClick={() => openTab("history")}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+            tab === "history"
+              ? "border-brand-500 text-brand-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Version History
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="tc-status" className="mb-1 block text-sm font-medium text-slate-700">
-              Status
-            </label>
-            <select
-              id="tc-status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            >
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="deprecated">Deprecated</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="tc-priority" className="mb-1 block text-sm font-medium text-slate-700">
-              Priority
-            </label>
-            <select
-              id="tc-priority"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-          </div>
-        </div>
+      {tab === "details" ? (
+        <>
+          <Card className="space-y-4 p-6">
+            <div>
+              <label htmlFor="tc-title" className="mb-1 block text-sm font-medium text-slate-700">
+                Title
+              </label>
+              <Input id="tc-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
 
-        <div>
-          <label htmlFor="tc-description" className="mb-1 block text-sm font-medium text-slate-700">
-            Description
-          </label>
-          <textarea
-            id="tc-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="tc-preconditions" className="mb-1 block text-sm font-medium text-slate-700">
-            Preconditions
-          </label>
-          <textarea
-            id="tc-preconditions"
-            value={preconditions}
-            onChange={(e) => setPreconditions(e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="tc-tags" className="mb-1 block text-sm font-medium text-slate-700">
-            Tags (comma-separated)
-          </label>
-          <Input
-            id="tc-tags"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="smoke, regression, api"
-          />
-        </div>
-      </Card>
-
-      <Card className="space-y-4 p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Test Steps</h2>
-          <Button variant="secondary" size="sm" onClick={addStep}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            Add Step
-          </Button>
-        </div>
-
-        {steps.length === 0 ? (
-          <p className="py-4 text-center text-sm text-slate-500">
-            No steps yet. Add your first test step.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {steps.map((step, i) => (
-              <div
-                key={i}
-                className="flex gap-3 rounded-lg border border-slate-200 p-3"
-              >
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-medium text-brand-700">
-                  {i + 1}
-                </span>
-                <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder="Action"
-                    value={step.action}
-                    onChange={(e) => updateStep(i, "action", e.target.value)}
-                    aria-label={`Step ${i + 1} action`}
-                  />
-                  <Input
-                    placeholder="Expected result"
-                    value={step.expected}
-                    onChange={(e) => updateStep(i, "expected", e.target.value)}
-                    aria-label={`Step ${i + 1} expected result`}
-                  />
-                  <Input
-                    placeholder="Test data (optional)"
-                    value={step.test_data}
-                    onChange={(e) => updateStep(i, "test_data", e.target.value)}
-                    aria-label={`Step ${i + 1} test data`}
-                  />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeStep(i)}
-                  className="text-red-600 hover:bg-red-50"
-                  aria-label={`Remove step ${i + 1}`}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="tc-status" className="mb-1 block text-sm font-medium text-slate-700">
+                  Status
+                </label>
+                <select
+                  id="tc-status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </Button>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="deprecated">Deprecated</option>
+                </select>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+              <div>
+                <label htmlFor="tc-priority" className="mb-1 block text-sm font-medium text-slate-700">
+                  Priority
+                </label>
+                <select
+                  id="tc-priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+            </div>
 
-      {showVersions && (
+            <div>
+              <label htmlFor="tc-description" className="mb-1 block text-sm font-medium text-slate-700">
+                Description
+              </label>
+              <textarea
+                id="tc-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="tc-preconditions" className="mb-1 block text-sm font-medium text-slate-700">
+                Preconditions
+              </label>
+              <textarea
+                id="tc-preconditions"
+                value={preconditions}
+                onChange={(e) => setPreconditions(e.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="tc-tags" className="mb-1 block text-sm font-medium text-slate-700">
+                Tags (comma-separated)
+              </label>
+              <Input
+                id="tc-tags"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="smoke, regression, api"
+              />
+            </div>
+          </Card>
+
+          <Card className="space-y-4 p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Test Steps</h2>
+              <Button variant="secondary" size="sm" onClick={addStep}>
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Add Step
+              </Button>
+            </div>
+
+            {steps.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-500">
+                No steps yet. Add your first test step.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {steps.map((step, i) => (
+                  <div
+                    key={i}
+                    className="flex gap-3 rounded-lg border border-slate-200 p-3"
+                  >
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-medium text-brand-700">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        placeholder="Action"
+                        value={step.action}
+                        onChange={(e) => updateStep(i, "action", e.target.value)}
+                        aria-label={`Step ${i + 1} action`}
+                      />
+                      <Input
+                        placeholder="Expected result"
+                        value={step.expected}
+                        onChange={(e) => updateStep(i, "expected", e.target.value)}
+                        aria-label={`Step ${i + 1} expected result`}
+                      />
+                      <Input
+                        placeholder="Test data (optional)"
+                        value={step.test_data}
+                        onChange={(e) => updateStep(i, "test_data", e.target.value)}
+                        aria-label={`Step ${i + 1} test data`}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeStep(i)}
+                      className="text-red-600 hover:bg-red-50"
+                      aria-label={`Remove step ${i + 1}`}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </>
+      ) : (
         <Card className="space-y-3 p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Version History</h2>
           {versions.length === 0 ? (
             <p className="text-sm text-slate-500">No previous versions.</p>
           ) : (
@@ -408,6 +439,9 @@ export default function TestCaseDetailPage() {
                   <div>
                     <span className="font-medium text-slate-900">v{v.version}</span>
                     <span className="ml-2 text-sm text-slate-500">{v.title}</span>
+                    <span className="ml-2 text-xs text-slate-400">
+                      by {v.changed_by_name || "Unknown user"}
+                    </span>
                   </div>
                   <span className="text-xs text-slate-400">{new Date(v.created_at).toLocaleString()}</span>
                 </div>
