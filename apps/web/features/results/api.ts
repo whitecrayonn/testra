@@ -88,7 +88,10 @@ export async function listTestRunItems(
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
   const query = searchParams.toString();
-  return apiFetchWithMeta(`/api/v1/test-runs/${runId}/items${query ? `?${query}` : ""}`);
+  const result = await apiFetchWithMeta<TestRunItem>(
+    `/api/v1/test-runs/${runId}/items${query ? `?${query}` : ""}`,
+  );
+  return { data: result.data, meta: result.meta as unknown as PaginationMeta };
 }
 
 export async function updateTestRunItemStatus(
