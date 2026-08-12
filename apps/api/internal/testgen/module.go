@@ -13,9 +13,12 @@ type Module struct {
 // NewModule takes a testmanagement.Repository (not just *sql.DB) so the
 // composition root (server.go) can pass the exact same repository instance
 // used to build the testmanagement module — mirroring how automationhub.NewModule
-// is wired in server.go.
-func NewModule(db *sql.DB, testMgmtRepo testmanagement.Repository) *Module {
+// is wired in server.go. mlServiceURL/mlAPIKey configure the LLM-backed
+// GenerateFromFile path; when mlServiceURL is empty that path fails loudly
+// with "not configured" instead of silently doing nothing.
+func NewModule(db *sql.DB, testMgmtRepo testmanagement.Repository, mlServiceURL, mlAPIKey string) *Module {
 	repo := NewSQLRepository(db)
-	service := NewService(repo, testMgmtRepo)
+	fileGen := NewFileGenerationClient(mlServiceURL, mlAPIKey)
+	service := NewService(repo, testMgmtRepo, fileGen)
 	return &Module{Handler: NewHandler(service)}
 }

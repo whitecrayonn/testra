@@ -38,6 +38,7 @@ type Config struct {
 	WebBaseURL               string
 	IdempotencyKeyTTLMinutes int
 	MLServiceURL             string
+	MLAPIKey                 string
 	StripeSecretKey          string
 	StripePriceID            string
 	RateLimitDisabled        bool
@@ -66,6 +67,7 @@ func Load() Config {
 		WebBaseURL:               getEnv("WEB_BASE_URL", "http://localhost:3000"),
 		IdempotencyKeyTTLMinutes: getEnvInt("IDEMPOTENCY_KEY_TTL_MINUTES", 1440),
 		MLServiceURL:             getEnv("ML_SERVICE_URL", ""),
+		MLAPIKey:                 getEnv("ML_API_KEY", ""),
 		StripeSecretKey:          getEnv("STRIPE_SECRET_KEY", ""),
 		StripePriceID:            getEnv("STRIPE_PRICE_ID", ""),
 		RateLimitDisabled:        getEnvBool("RATE_LIMIT_DISABLED", false),

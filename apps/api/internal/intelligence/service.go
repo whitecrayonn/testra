@@ -16,7 +16,7 @@ type Service struct {
 
 func NewService(repo Repository, ml MLClient) *Service {
 	if ml == nil {
-		ml = NewMLClient("")
+		ml = NewMLClient("", "")
 	}
 	return &Service{repo: repo, ml: ml}
 }

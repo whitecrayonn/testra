@@ -17,18 +17,22 @@ import (
 
 // NewMLClient returns a real HTTP ML client when baseURL is provided, otherwise
 // a transparent local heuristic client that requires no external service.
-func NewMLClient(baseURL string) MLClient {
+// apiKey, when non-empty, is sent as X-API-Key on every request to the ML
+// service (the Python service enforces ML_API_KEY when it is configured).
+func NewMLClient(baseURL string, apiKey string) MLClient {
 	if baseURL == "" {
 		return &localMLClient{}
 	}
 	return &httpMLClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
+		apiKey:  apiKey,
 		client:  &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
 type httpMLClient struct {
 	baseURL string
+	apiKey  string
 	client  *http.Client
 }
 
@@ -51,6 +55,9 @@ func (c *httpMLClient) PredictFlaky(ctx context.Context, input PredictionInput) 
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("X-API-Key", c.apiKey)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -92,6 +99,9 @@ func (c *httpMLClient) ClassifyFailure(ctx context.Context, errorMessage string,
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("X-API-Key", c.apiKey)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {

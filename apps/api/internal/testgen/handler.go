@@ -2,6 +2,8 @@ package testgen
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -103,6 +105,199 @@ func (h *Handler) GenerateFromSpec(w http.ResponseWriter, r *http.Request) {
 		ProjectID:    projID,
 		Spec:         req.Spec,
 		SpecFilename: req.SpecFilename,
+		CreatedBy:    userID,
+	})
+	if err != nil {
+		apihttp.MapError(w, err)
+		return
+	}
+
+	caseResp := make([]generatedCaseResponse, len(result.Cases))
+	for i, c := range result.Cases {
+		caseResp[i] = generatedCaseResponse{
+			ID:       c.ID.String(),
+			Title:    c.Title,
+			Priority: string(c.Priority),
+			Status:   string(c.Status),
+		}
+	}
+
+	apihttp.JSON(w, http.StatusCreated, generateFromSpecResponse{
+		Run:   mapRunResponse(result.Run),
+		Cases: caseResp,
+	})
+}
+
+// maxUploadBytes bounds how much of the multipart form GenerateFromFile
+// buffers in memory. The route this handler is mounted on also applies a
+// route-scoped MaxBodySize override at the same limit (see server.go) —
+// that one rejects an oversized request at the wire, this one is a second,
+// defensive check in case the handler is ever exercised without it (e.g.
+// directly in a test).
+const maxUploadBytes = 5 << 20 // 5 MB
+
+type skippedRowJSONResponse struct {
+	Row    int    `json:"row"`
+	Reason string `json:"reason"`
+}
+
+type generateFromFileResponse struct {
+	Run         generationRunResponse    `json:"run"`
+	Cases       []generatedCaseResponse  `json:"cases"`
+	SkippedRows []skippedRowJSONResponse `json:"skipped_rows"`
+}
+
+// GenerateFromFile accepts an uploaded .csv/.xlsx file and creates one
+// pending_review test case per row the LLM could confidently map. This is
+// the one handler in this package that calls an external LLM (via the ML
+// service) — see the package doc comment in domain.go for why that's an
+// intentional, narrowly-scoped exception, and for how rows the model can't
+// map come back as skipped_rows instead of being fabricated.
+func (h *Handler) GenerateFromFile(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "could not parse upload: "+err.Error())
+		return
+	}
+
+	wsID, err := uuid.Parse(r.FormValue("workspace_id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace id")
+		return
+	}
+	projID, err := uuid.Parse(r.FormValue("project_id"))
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project id")
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "file is required")
+		return
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "could not read uploaded file")
+		return
+	}
+
+	result, err := h.service.GenerateFromFile(r.Context(), GenerateFromFileInput{
+		WorkspaceID: wsID,
+		ProjectID:   projID,
+		Filename:    header.Filename,
+		Content:     content,
+		Context:     r.FormValue("context"),
+		CreatedBy:   userID,
+	})
+	if err != nil {
+		var mlErr *MLServiceError
+		if errors.As(err, &mlErr) {
+			code := "ML_UPSTREAM_ERROR"
+			switch mlErr.StatusCode {
+			case http.StatusServiceUnavailable:
+				code = "ML_NOT_CONFIGURED"
+			case http.StatusBadRequest:
+				code = "INVALID_INPUT"
+			}
+			apihttp.ErrorJSON(w, mlErr.StatusCode, code, mlErr.Message)
+			return
+		}
+		apihttp.MapError(w, err)
+		return
+	}
+
+	caseResp := make([]generatedCaseResponse, len(result.Cases))
+	for i, c := range result.Cases {
+		caseResp[i] = generatedCaseResponse{
+			ID:       c.ID.String(),
+			Title:    c.Title,
+			Priority: string(c.Priority),
+			Status:   string(c.Status),
+		}
+	}
+	skippedResp := make([]skippedRowJSONResponse, len(result.SkippedRows))
+	for i, s := range result.SkippedRows {
+		skippedResp[i] = skippedRowJSONResponse{Row: s.Row, Reason: s.Reason}
+	}
+
+	apihttp.JSON(w, http.StatusCreated, generateFromFileResponse{
+		Run:         mapRunResponse(result.Run),
+		Cases:       caseResp,
+		SkippedRows: skippedResp,
+	})
+}
+
+type endpointFieldRequest struct {
+	Name     string   `json:"name"`
+	Location string   `json:"location"`
+	Type     string   `json:"type"`
+	Required bool     `json:"required"`
+	Enum     []string `json:"enum"`
+}
+
+type generateFromEndpointRequest struct {
+	WorkspaceID  string                 `json:"workspace_id"`
+	ProjectID    string                 `json:"project_id"`
+	Method       string                 `json:"method"`
+	Path         string                 `json:"path"`
+	Fields       []endpointFieldRequest `json:"fields"`
+	RequiresAuth bool                   `json:"requires_auth"`
+}
+
+// GenerateFromEndpoint accepts a single method/path/fields description (no
+// OpenAPI document) and creates one pending_review test case per rule match,
+// via the same deterministic rule set GenerateFromSpec uses — see
+// Service.GenerateFromEndpoint for how the two entry points converge.
+func (h *Handler) GenerateFromEndpoint(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		apihttp.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing user context")
+		return
+	}
+
+	var req generateFromEndpointRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", err.Error())
+		return
+	}
+
+	wsID, err := uuid.Parse(req.WorkspaceID)
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid workspace id")
+		return
+	}
+	projID, err := uuid.Parse(req.ProjectID)
+	if err != nil {
+		apihttp.ErrorJSON(w, http.StatusBadRequest, "INVALID_INPUT", "invalid project id")
+		return
+	}
+
+	fields := make([]EndpointField, len(req.Fields))
+	for i, f := range req.Fields {
+		fields[i] = EndpointField{
+			Name:     f.Name,
+			Location: f.Location,
+			Type:     f.Type,
+			Required: f.Required,
+			Enum:     f.Enum,
+		}
+	}
+
+	result, err := h.service.GenerateFromEndpoint(r.Context(), GenerateFromEndpointInput{
+		WorkspaceID:  wsID,
+		ProjectID:    projID,
+		Method:       req.Method,
+		Path:         req.Path,
+		Fields:       fields,
+		RequiresAuth: req.RequiresAuth,
 		CreatedBy:    userID,
 	})
 	if err != nil {

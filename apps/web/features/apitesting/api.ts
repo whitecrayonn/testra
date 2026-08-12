@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchWithMeta } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta, ApiError } from "@/lib/api";
 import type {
   APICollection,
   APIFolder,
@@ -212,6 +212,7 @@ export async function executeRequest(input: {
   workspace_id: string;
   request_id?: string;
   environment_id?: string;
+  test_case_id?: string;
   request?: {
     name?: string;
     method: string;
@@ -231,6 +232,28 @@ export async function executeRequest(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+// getLatestExecutionForTestCase returns the most recent "Test Now" execution
+// linked to a generated test case, or null if the case has never been
+// executed this way — used for the "last tested" indicator on the test case
+// detail page. workspaceId is required so the tenant-context middleware can
+// resolve the organization the same way it does for the other /api-executions
+// routes (see WorkspaceToOrg(OrgIDFromQuery("workspace_id"), ...) in server.go).
+export async function getLatestExecutionForTestCase(
+  testCaseId: string,
+  workspaceId: string,
+): Promise<APIRequestHistory | null> {
+  try {
+    return await apiFetch(
+      `/api/v1/api-executions/latest?test_case_id=${testCaseId}&workspace_id=${workspaceId}`,
+    );
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function listRequestHistory(

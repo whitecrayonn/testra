@@ -431,6 +431,21 @@ func OrgIDFromBody(field string) OrgResolverFunc {
 	}
 }
 
+// OrgIDFromForm resolves the org via a multipart/form-data field (as opposed
+// to OrgIDFromBody, which expects a JSON body). r.FormValue parses the
+// multipart form on first use and caches it on the request, so a handler
+// that later calls r.ParseMultipartForm/r.FormFile reuses the same parse
+// rather than re-reading the (already consumed) body.
+func OrgIDFromForm(field string) OrgResolverFunc {
+	return func(r *http.Request) (uuid.UUID, error) {
+		idStr := r.FormValue(field)
+		if idStr == "" {
+			return uuid.Nil, errMissingField
+		}
+		return uuid.Parse(idStr)
+	}
+}
+
 var errMissingField = &missingFieldError{}
 
 type missingFieldError struct{}

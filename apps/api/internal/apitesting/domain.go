@@ -153,6 +153,7 @@ type RequestHistory struct {
 	WorkspaceID        uuid.UUID
 	RequestID          *uuid.UUID
 	EnvironmentID      *uuid.UUID
+	TestCaseID         *uuid.UUID
 	Name               string
 	Method             string
 	URL                string

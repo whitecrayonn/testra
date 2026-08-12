@@ -21,3 +21,25 @@ export interface GenerateFromSpecResponse {
   run: GenerationRun;
   cases: GeneratedCaseSummary[];
 }
+
+export interface SkippedRow {
+  row: number;
+  reason: string;
+}
+
+export interface GenerateFromFileResponse {
+  run: GenerationRun;
+  cases: GeneratedCaseSummary[];
+  skipped_rows: SkippedRow[];
+}
+
+export type EndpointFieldLocation = "query" | "path" | "header" | "body";
+export type EndpointFieldType = "string" | "integer" | "number" | "boolean";
+
+export interface EndpointField {
+  name: string;
+  location: EndpointFieldLocation;
+  type: EndpointFieldType;
+  required: boolean;
+  enum?: string[];
+}

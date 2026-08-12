@@ -96,7 +96,7 @@
 
 ## Security & privacy (do not break)
 
-- No external LLM processing; ML is transparent, explainable, and tenant-isolated (BIBLICAL, ADR-001).
+- No external LLM processing; ML is transparent, explainable, and tenant-isolated (BIBLICAL, ADR-001) — except the opt-in `testgen.GenerateFromFile` path (Test Cases → Generate → "Upload Test Cases"), which calls Google Gemini only when `GEMINI_API_KEY` is configured. This is a deliberate, narrowly-scoped exception, not a reversal of the rule; see BIBLICAL's Machine Learning Service section. Note: this exception is not yet reflected in a formal ADR amendment to ADR-001 — recommend one before shipping to production.
 - Secrets are hashed at rest (passwords, tokens, API keys) (BIBLICAL, ADR-007).
 - Customer data is customer-owned; zero source code or API collection retention (BIBLICAL Do Not Break List, ADR-011).
 - Rate limiting and abuse controls are required on auth endpoints (BIBLICAL, ADR-007, ROADMAP C1).

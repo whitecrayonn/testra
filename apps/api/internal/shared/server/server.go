@@ -60,6 +60,7 @@ type Config struct {
 	WebBaseURL          string
 	IdempotencyKeyTTL   time.Duration
 	MLServiceURL        string
+	MLAPIKey            string
 	StripeSecretKey     string
 	StripePriceID       string
 	RateLimitDisabled   bool
@@ -155,7 +156,7 @@ func New(cfg Config) http.Handler {
 	projectModule := project.NewModule(cfg.DB)
 	apiKeyModule := apikeys.NewModule(cfg.DB)
 	testMgmtModule := testmanagement.NewModule(cfg.DB)
-	testGenModule := testgen.NewModule(cfg.DB, testmanagement.NewSQLRepository(cfg.DB))
+	testGenModule := testgen.NewModule(cfg.DB, testmanagement.NewSQLRepository(cfg.DB), cfg.MLServiceURL, cfg.MLAPIKey)
 	resultsModule := results.NewModule(cfg.DB)
 	defectsModule := defects.NewModule(cfg.DB)
 	apiTestingModule := apitesting.NewModule(cfg.DB)
@@ -170,7 +171,7 @@ func New(cfg Config) http.Handler {
 	automationStorage := automationhub.NewArtifactStorage(automationStoragePath)
 	automationHubModule := automationhub.NewModule(automationRepo, resultsModule.Repository, defects.NewSQLRepository(cfg.DB), testmanagement.NewSQLRepository(cfg.DB), automationStorage)
 	analyticsModule := analytics.New(cfg.DB)
-	intelligenceModule := intelligence.New(cfg.DB, cfg.MLServiceURL)
+	intelligenceModule := intelligence.New(cfg.DB, cfg.MLServiceURL, cfg.MLAPIKey)
 	dbHandle := db.Wrap(cfg.DB)
 
 	tenantResolver := tenant.NewResolver(dbHandle)
@@ -412,6 +413,41 @@ func New(cfg Config) http.Handler {
 						auditLogFn,
 					),
 				).Post("/generate/from-spec", testGenModule.Handler.GenerateFromSpec)
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "tests:create"),
+					sharedmiddleware.AuditLog("test_case.generate", "generation_run",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/generate/from-endpoint", testGenModule.Handler.GenerateFromEndpoint)
+			})
+
+			// GenerateFromFile is multipart/form-data, not JSON, so it needs its
+			// own group: tenant resolution reads workspace_id from a form field
+			// (OrgIDFromForm) rather than the JSON body, and the body-size limit
+			// is raised from the global 1 MB default to fit a small spreadsheet
+			// upload — scoped to just this route so nothing else on the API is
+			// affected. No IdempotencyKey here: OrgIDFromForm's r.FormValue call
+			// consumes r.Body to read the multipart form before a later
+			// IdempotencyKey middleware could fingerprint it, which would hash
+			// an already-drained body — unlike OrgIDFromURLParam (used by
+			// automationhub's uploads), which never touches r.Body and so is
+			// safe to pair with IdempotencyKey.
+			r.Group(func(r chi.Router) {
+				r.Use(sharedmiddleware.MaxBodySize(5 << 20)) // 5 MB
+				r.Use(sharedmiddleware.TenantContext(cfg.DB,
+					sharedmiddleware.WorkspaceToOrg(sharedmiddleware.OrgIDFromForm("workspace_id"), tenantResolver),
+					tenantResolver,
+				))
+				r.With(
+					sharedmiddleware.RequirePermission(rbacCfg, "tests:create"),
+					sharedmiddleware.AuditLog("test_case.generate_from_file", "generation_run",
+						func(r *http.Request) uuid.UUID { uid, _ := sharedmiddleware.UserIDFromContext(r.Context()); return uid },
+						func(r *http.Request) string { return "" },
+						auditLogFn,
+					),
+				).Post("/generate/from-file", testGenModule.Handler.GenerateFromFile)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -975,6 +1011,7 @@ func New(cfg Config) http.Handler {
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-collections", apiTestingModule.Handler.ListCollections)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-environments", apiTestingModule.Handler.ListEnvironments)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-executions", apiTestingModule.Handler.ListRequestHistory)
+				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-executions/latest", apiTestingModule.Handler.GetLatestExecutionByTestCase)
 				r.With(sharedmiddleware.RequirePermission(rbacCfg, "api_tests:read")).Get("/api-requests/search", apiTestingModule.Handler.SearchRequests)
 			})
 

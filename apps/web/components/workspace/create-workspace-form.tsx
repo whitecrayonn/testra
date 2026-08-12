@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/lib/hooks/use-toast";
-import { slugify } from "@/lib/utils";
-import { createOrganization, createWorkspace, getCurrentUser, listOrganizations } from "@/features/platform/api";
+import { slugify, generateProjectKey } from "@/lib/utils";
+import { createOrganization, createWorkspace, createProject, getCurrentUser, listOrganizations } from "@/features/platform/api";
 import type { Organization, User } from "@/types/platform";
 
 export function CreateWorkspaceForm() {
@@ -59,12 +59,27 @@ export function CreateWorkspaceForm() {
         slug: slug.trim() || slugify(name.trim()),
         description: description.trim(),
       });
+      let project = null;
+      try {
+        project = await createProject({
+          workspace_id: workspace.id,
+          name: `${name.trim()} Project`,
+          key: generateProjectKey(name.trim()),
+        });
+      } catch {
+        // Project creation is best-effort; user can create one manually if it fails
+      }
       if (typeof window !== "undefined") {
         localStorage.setItem("testra_workspace_id", workspace.id);
         localStorage.setItem("testra_workspace_name", workspace.name);
         localStorage.setItem("testra_organization_id", workspace.organization_id);
-        localStorage.removeItem("testra_project_id");
-        localStorage.removeItem("testra_project_name");
+        if (project) {
+          localStorage.setItem("testra_project_id", project.id);
+          localStorage.setItem("testra_project_name", project.name);
+        } else {
+          localStorage.removeItem("testra_project_id");
+          localStorage.removeItem("testra_project_name");
+        }
       }
       toast("Workspace created", "success");
       router.replace("/dashboard");

@@ -12,17 +12,8 @@ import { ProjectOnboarding } from "@/components/project-onboarding";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listProjects, createProject } from "@/features/platform/api";
+import { generateProjectKey } from "@/lib/utils";
 import type { Project } from "@/types/platform";
-
-function generateProjectKey(name: string): string {
-  const cleaned = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
-  if (!cleaned) return "PROJECT";
-  if (/^[0-9]/.test(cleaned)) {
-    return "P" + cleaned.slice(0, 9);
-  }
-  if (cleaned.length < 2) return cleaned + "1";
-  return cleaned;
-}
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
