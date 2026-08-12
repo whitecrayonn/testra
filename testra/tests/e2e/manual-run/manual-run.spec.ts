@@ -16,6 +16,27 @@ test.describe("Manual Test Runner @manual @runs", () => {
     await runs.create(`Manual Run ${Date.now()}`, [testCase.id]);
   });
 
+  test("run detail page renders items without crashing", async ({
+    authPage,
+    workspace,
+    project,
+    testRun,
+  }) => {
+    await setWorkspaceContext(authPage, {
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      organizationId: workspace.organization_id,
+      projectId: project.id,
+      projectName: project.name,
+    });
+
+    await authPage.goto(`/dashboard/test-runs/${testRun.id}`);
+
+    await expect(authPage.getByText("Test Items")).toBeVisible();
+    await expect(authPage.getByText(/application error/i)).not.toBeVisible();
+    await expect(authPage.getByText(/something went wrong/i)).not.toBeVisible();
+  });
+
   test("manual run via API has pending status", async ({ api, workspace, project, testCase }) => {
     const run = await api.createTestRun({
       workspace_id: workspace.id,
