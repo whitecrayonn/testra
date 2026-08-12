@@ -2239,6 +2239,7 @@ export interface paths {
             parameters: {
                 query: {
                     test_case_id: string;
+                    workspace_id: string;
                 };
                 header?: never;
                 path?: never;
