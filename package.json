@@ -1,0 +1,34 @@
+{
+  "name": "@testra/monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Testra Intelligent Quality Engineering Platform monorepo",
+  "scripts": {
+    "dev": "node scripts/dev/start-infra.mjs && turbo run dev --ui=stream --filter=\"!@testra/ml\"",
+    "dev:all": "node scripts/dev/start-infra.mjs && turbo run dev --ui=stream",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "node scripts/dev/clean.mjs",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "postinstall": "node scripts/dev/setup-python.mjs"
+  },
+  "devDependencies": {
+    "js-yaml": "^5.2.1",
+    "prettier": "^3.3.3",
+    "turbo": "^2.0.9"
+  },
+  "packageManager": "pnpm@9.5.0",
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.19",
+      "sharp": "^0.35.3",
+      "minimatch@3>brace-expansion": "^1.1.18",
+      "minimatch@5>brace-expansion": "^2.1.4",
+      "minimatch@10>brace-expansion": "^5.0.9",
+      "js-yaml@4": "^4.3.1",
+      "nanoid@3": "^3.3.17"
+    }
+  }
+}

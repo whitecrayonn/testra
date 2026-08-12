@@ -1,0 +1,45 @@
+package identity
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type Repository interface {
+	Create(ctx context.Context, user *User) error
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
+	UpdateMFA(ctx context.Context, userID uuid.UUID, secret string, enabled bool) error
+	UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash string) error
+
+	// IncrementFailedLoginAttempts atomically increments the user's failed
+	// login counter and returns the new count, so the caller can decide
+	// whether the account should now be locked.
+	IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) (int, error)
+	// LockAccount sets locked_until so further login attempts are rejected
+	// until the given time.
+	LockAccount(ctx context.Context, userID uuid.UUID, until time.Time) error
+	// ResetFailedLoginAttempts clears the failed-attempt counter and any
+	// lockout, called after a fully successful login.
+	ResetFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error
+
+	CreateResetToken(ctx context.Context, token *PasswordResetToken) error
+	GetResetTokenByHash(ctx context.Context, hash string) (*PasswordResetToken, error)
+	MarkResetTokenUsed(ctx context.Context, tokenID uuid.UUID) error
+
+	CreateRefreshToken(ctx context.Context, token *RefreshToken) error
+	GetRefreshTokenByHash(ctx context.Context, hash string) (*RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, tokenID uuid.UUID, replacedBy uuid.UUID) error
+	RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
+	RevokeAllUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
+
+	// DenylistAccessToken records a still-live access token's jti as revoked so
+	// it is rejected by the Auth middleware before its natural expiry (e.g. on
+	// logout). expiresAt is the token's own expiry, used to bound how long the
+	// denylist row needs to be kept.
+	DenylistAccessToken(ctx context.Context, jti string, userID uuid.UUID, expiresAt time.Time) error
+	// IsAccessTokenDenylisted reports whether the given jti has been revoked.
+	IsAccessTokenDenylisted(ctx context.Context, jti string) (bool, error)
+}
