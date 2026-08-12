@@ -236,7 +236,7 @@ export default function TestCasesPage() {
                   <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-[11px] text-fg3">
                     <span>v{tc.version}</span>
                     <span>{tc.steps.length} steps</span>
-                    {tc.tags.length > 0 && <span>{tc.tags.join(", ")}</span>}
+                    {(tc.tags ?? []).length > 0 && <span>{(tc.tags ?? []).join(", ")}</span>}
                   </div>
                 </div>
                 {tc.status === "pending_review" && (
