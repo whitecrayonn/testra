@@ -46,6 +46,8 @@
 | Test suites | ✅ | ❌ | ✅ | 🔄 | ❌ | Backend only |
 | Test cases (CRUD, steps, tags, search) | ✅ | 🔄 | ✅ | 🔄 | ❌ | List/create/edit/versions UI exist; no suite/folder mgmt |
 | Test case generation from OpenAPI spec | ✅ | ✅ | ✅ | ✅ | ❌ | Deterministic, rule-based (no AI/ML, per "No External LLM" principle); `apps/api/internal/testgen`; creates `pending_review` cases; web UI to generate (`/test-cases/generate`) and approve (inline on list + detail page) |
+| Test case generation from endpoint description | ✅ | ✅ | ✅ | ✅ | ❌ | Deterministic, same rule set as from-spec but takes a single method/path/fields description instead of a full document; `POST /generate/from-endpoint` |
+| Test case generation from uploaded file (AI) | ✅ | ✅ | ✅ | ✅ | ❌ | Calls external LLM via `apps/ml/api/generation.py` (`POST /generate/from-file`, multipart .csv/.xlsx upload) — the one generation path that is not rule-based |
 | Test case versioning | ✅ | 🔄 | ✅ | 🔄 | ❌ | History list UI exists |
 | Test runs / results | ✅ | ✅ | ✅ | 🔄 | ❌ | Manual runs work; SSE uses query-token auth in browsers |
 | Test run progress (SSE) | ✅ | ✅ | ✅ | 🔄 | ❌ | `Auth` middleware accepts `Authorization` header or `access_token` query param |

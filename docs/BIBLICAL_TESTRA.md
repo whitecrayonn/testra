@@ -745,11 +745,13 @@ Tenant resolution and RLS are non-negotiable. No repository call may run on a co
 | API Keys | DELETE | /api-keys/{id} | `apikeys:delete` |
 | Test Management | CRUD | /test-folders, /test-suites, /test-cases, /test-cases/{id}/versions | `tests:*` |
 | Test Generation | POST | /generate/from-spec | `tests:create`, deterministic (no AI/ML) |
+| Test Generation | POST | /generate/from-endpoint | `tests:create`, deterministic (no AI/ML), same rule set as from-spec but takes a single method/path/fields description |
+| Test Generation | POST | /generate/from-file | `tests:create`, multipart upload (.csv/.xlsx), calls ML service (apps/ml/api/generation.py) |
 | Test Generation | POST | /test-cases/{id}/approve | `tests:update`, moves `pending_review` → `active` |
 | Test Runs | CRUD | /test-runs, /test-runs/{id}, /test-runs/{id}/items, /test-runs/{id}/stream | `runs:*` |
 | Run Items | PUT | /test-run-items/{id} | `runs:update` |
 | Ingest | POST | /ingest | `runs:ingest`, `Idempotency-Key` required, currently JWT only (API-key auth pending) |
-| API Testing | CRUD | /api-collections, /api-folders, /api-environments, /api-requests, /api-requests/search, /api-requests/{id}/history, /api-executions | `api_testing:*` (`api_testing:execute` for POST /api-executions) + `Idempotency-Key` on mutating endpoints, `AuditLog` on writes |
+| API Testing | CRUD | /api-collections, /api-folders, /api-environments, /api-requests, /api-requests/search, /api-requests/{id}/history, /api-executions, /api-executions/latest | `api_testing:*` (`api_testing:execute` for POST /api-executions) + `Idempotency-Key` on mutating endpoints, `AuditLog` on writes |
 | Notifications | GET | /notifications | `notifications:read` |
 | Notifications | POST | /notifications | `notifications:create` + AuditLog |
 | Notifications | GET | /notifications/unread-count | `notifications:read` |

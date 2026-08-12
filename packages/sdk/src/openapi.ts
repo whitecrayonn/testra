@@ -3535,7 +3535,7 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
             /** @enum {string} */
-            source?: "manual" | "generated_spec";
+            source?: "manual" | "generated_spec" | "generated_file";
             /** Format: uuid */
             generation_run_id?: string | null;
             /** Format: uuid */

@@ -5382,6 +5382,7 @@ components:
           enum:
             - manual
             - generated_spec
+            - generated_file
         generation_run_id:
           type: string
           format: uuid
