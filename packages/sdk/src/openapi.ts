@@ -132,6 +132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's own audit trail
+         * @description Returns the current user's own audit events (logins, password changes, MFA changes, etc.), most recent first. Scoped to the requesting user rather than their whole organization/workspace, since `audit_events` has no `organization_id` column yet (see `docs/engineering/SPRINT_BACKLOG.md` SBL-080); an org-wide view for owners/admins depends on that column existing.
+         */
+        get: operations["listMyAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations": {
         parameters: {
             query?: never;
@@ -246,9 +266,11 @@ export interface paths {
         };
         /** Get a project by ID */
         get: operations["getProject"];
-        put?: never;
+        /** Update a project */
+        put: operations["updateProject"];
         post?: never;
-        delete?: never;
+        /** Delete a project */
+        delete: operations["deleteProject"];
         options?: never;
         head?: never;
         patch?: never;
@@ -660,7 +682,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/analytics/activity": {
+    "/analytics/recent-activity": {
         parameters: {
             query?: never;
             header?: never;
@@ -1038,6 +1060,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/generate/from-spec": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * postGenerateFromSpec
+         * @description Deterministically generates draft test cases from an OpenAPI 3.0/3.1 spec (JSON body). No AI/ML is used — see docs/architecture and apps/api/internal/testgen for the rule-based generation logic. Created cases have status pending_review and must be approved via POST /test-cases/{id}/approve before they count toward coverage.
+         */
+        post: operations["postGenerateFromSpec"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/generate/from-endpoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * postGenerateFromEndpoint
+         * @description Deterministically generates draft test cases from a single method/path/fields description (no OpenAPI document required), using the same rule-based generation logic as POST /generate/from-spec. Created cases have status pending_review and must be approved via POST /test-cases/{id}/approve before they count toward coverage.
+         */
+        post: operations["postGenerateFromEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/generate/from-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * postGenerateFromFile
+         * @description Uses the ML service to generate draft test cases from an uploaded spreadsheet (.csv or .xlsx), one row per candidate test case. Submitted as multipart/form-data with workspace_id, project_id, file, and an optional context field. Created cases have status pending_review and must be approved via POST /test-cases/{id}/approve before they count toward coverage.
+         */
+        post: operations["postGenerateFromFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/test-cases": {
         parameters: {
             query?: never;
@@ -1087,6 +1169,26 @@ export interface paths {
         post?: never;
         /** deleteTest_casesId */
         delete: operations["deleteTest_casesId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/test-cases/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * postTest_casesIdApprove
+         * @description Moves a generated test case from pending_review to active. Only valid for cases with status pending_review.
+         */
+        post: operations["postTest_casesIdApprove"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2122,6 +2224,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api-executions/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the most recent execution for a test case
+         * @description Returns the most recent "Test Now" execution for a generated test case, so the test case detail page can show a last-tested indicator.
+         */
+        get: {
+            parameters: {
+                query: {
+                    test_case_id: string;
+                    workspace_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Execution record */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["APIRequestHistory"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/automation/projects": {
         parameters: {
             query?: never;
@@ -3125,6 +3273,21 @@ export interface components {
             /** @description Whether more results exist beyond the current page */
             has_more?: boolean;
         };
+        AuditEvent: {
+            /** Format: uuid */
+            id?: string;
+            /** @example login */
+            action?: string;
+            /** @example session */
+            resource?: string;
+            resource_id?: string;
+            ip_address?: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            created_at?: string;
+        };
         PaginatedAPICollections: {
             data?: components["schemas"]["APICollection"][];
             meta?: components["schemas"]["PaginationMeta"];
@@ -3361,7 +3524,7 @@ export interface components {
             preconditions?: string;
             steps?: components["schemas"]["TestStep"][];
             /** @enum {string} */
-            status?: "draft" | "active" | "deprecated";
+            status?: "draft" | "active" | "deprecated" | "pending_review";
             /** @enum {string} */
             priority?: "low" | "medium" | "high" | "critical";
             tags?: string[];
@@ -3372,6 +3535,12 @@ export interface components {
             created_at?: string;
             /** Format: date-time */
             updated_at?: string;
+            /** @enum {string} */
+            source?: "manual" | "generated_spec" | "generated_file";
+            /** Format: uuid */
+            generation_run_id?: string | null;
+            /** Format: uuid */
+            reviewed_by?: string | null;
         };
         TestCaseVersion: {
             /** Format: uuid */
@@ -4219,6 +4388,34 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listMyAuditEvents: {
+        parameters: {
+            query?: {
+                /** @description Opaque pagination cursor from a previous response's `meta.next_cursor`. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of the current user's audit events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["AuditEvent"][];
+                        meta?: components["schemas"]["PaginationMeta"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     listOrganizations: {
         parameters: {
             query?: never;
@@ -4489,6 +4686,62 @@ export interface operations {
                         data?: components["schemas"]["Project"];
                     };
                 };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    key?: string;
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Project updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Project"];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -6113,6 +6366,113 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    postGenerateFromSpec: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created — returns the generation run summary and created case ids */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid input (missing workspace/project id, or spec has no usable paths) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    postGenerateFromEndpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created — returns the generation run summary and created case ids */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid input (missing workspace/project id, method, or path) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    postGenerateFromFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uuid */
+                    workspace_id: string;
+                    /** Format: uuid */
+                    project_id: string;
+                    /** Format: binary */
+                    file: string;
+                    context?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created — returns the generation run summary, created case ids, and any skipped rows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid input (missing workspace/project id, missing file, or unsupported file type) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description ML service upstream error (e.g. rate-limited) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ML service is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getTest_cases: {
         parameters: {
             query?: never;
@@ -6224,6 +6584,33 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    postTest_casesIdApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Case is not pending_review */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

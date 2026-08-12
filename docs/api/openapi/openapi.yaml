@@ -2459,6 +2459,79 @@ paths:
           $ref: '#/components/responses/Forbidden'
       security:
         - bearerAuth: []
+  /generate/from-endpoint:
+    post:
+      tags:
+        - Test-Cases
+      operationId: postGenerateFromEndpoint
+      summary: postGenerateFromEndpoint
+      description: >
+        Deterministically generates draft test cases from a single method/path/fields
+        description (no OpenAPI document required), using the same rule-based
+        generation logic as POST /generate/from-spec. Created cases have status
+        pending_review and must be approved via POST /test-cases/{id}/approve
+        before they count toward coverage.
+      responses:
+        '201':
+          description: Created — returns the generation run summary and created case ids
+        '400':
+          description: Invalid input (missing workspace/project id, method, or path)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+  /generate/from-file:
+    post:
+      tags:
+        - Test-Cases
+      operationId: postGenerateFromFile
+      summary: postGenerateFromFile
+      description: >
+        Uses the ML service to generate draft test cases from an uploaded
+        spreadsheet (.csv or .xlsx), one row per candidate test case. Submitted
+        as multipart/form-data with workspace_id, project_id, file, and an
+        optional context field. Created cases have status pending_review and
+        must be approved via POST /test-cases/{id}/approve before they count
+        toward coverage.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - workspace_id
+                - project_id
+                - file
+              properties:
+                workspace_id:
+                  type: string
+                  format: uuid
+                project_id:
+                  type: string
+                  format: uuid
+                file:
+                  type: string
+                  format: binary
+                context:
+                  type: string
+      responses:
+        '201':
+          description: Created — returns the generation run summary, created case ids, and any skipped rows
+        '400':
+          description: Invalid input (missing workspace/project id, missing file, or unsupported file type)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '502':
+          description: ML service upstream error (e.g. rate-limited)
+        '503':
+          description: ML service is not configured
+      security:
+        - bearerAuth: []
   /test-cases:
     get:
       tags:
@@ -3571,6 +3644,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIRequestHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api-executions/latest:
+    get:
+      tags:
+        - API Executions
+      summary: Get the most recent execution for a test case
+      description: >
+        Returns the most recent "Test Now" execution for a generated test
+        case, so the test case detail page can show a last-tested indicator.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: test_case_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: workspace_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Execution record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIRequestHistory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5277,6 +5388,7 @@ components:
           enum:
             - manual
             - generated_spec
+            - generated_file
         generation_run_id:
           type: string
           format: uuid

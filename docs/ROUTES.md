@@ -157,6 +157,8 @@ POST   /test-folders   (tests:create + AuditLog)
 POST   /test-suites    (tests:create + AuditLog)
 POST   /test-cases     (tests:create + AuditLog)
 POST   /generate/from-spec                      (tests:create + AuditLog; deterministic, no AI/ML — apps/api/internal/testgen)
+POST   /generate/from-endpoint                  (tests:create + AuditLog; deterministic, no AI/ML, same rule set as from-spec — apps/api/internal/testgen; single method/path/fields description, no OpenAPI doc required)
+POST   /generate/from-file                      (multipart/form-data; TenantContext via form workspace_id + MaxBodySize 5MB + tests:create + AuditLog; calls ML service to generate cases from an uploaded .csv/.xlsx — apps/ml/api/generation.py)
 
 GET    /test-folders?workspace_id=...
 GET    /test-suites?workspace_id=...
@@ -232,6 +234,7 @@ GET    /api-requests/{id}/history             (TenantContext via request_id + ap
 POST   /api-executions                        (TenantContext via body workspace_id + api_testing:execute + AuditLog + IdempotencyKey)
 GET    /api-executions?workspace_id=...       (TenantContext via query workspace_id + api_testing:read)
 GET    /api-executions/{id}                   (TenantContext via execution_id + api_testing:read)
+GET    /api-executions/latest?test_case_id=...&workspace_id=...  (TenantContext via query workspace_id + api_testing:read; most recent "Test Now" execution for a test case)
 ```
 
 ---
