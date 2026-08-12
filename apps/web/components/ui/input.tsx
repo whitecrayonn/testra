@@ -14,7 +14,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     // alone. File inputs can never take a `value`. This stops a value that's momentarily
     // undefined (e.g. before async data loads) from flipping the input from controlled to
     // uncontrolled, which React warns about and can drop keystrokes over.
-    if ("value" in rest && rest.type !== "file" && rest.value === undefined) {
+    if ("value" in rest && rest.type !== "file" && rest.value == null) {
       rest.value = "";
     }
     return (
