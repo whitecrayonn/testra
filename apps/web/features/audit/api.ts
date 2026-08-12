@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetchWithMeta } from "@/lib/api";
 import type { AuditEvent } from "@/types/audit";
 
 export interface PaginatedAuditEvents {
@@ -15,5 +15,6 @@ export interface PaginatedAuditEvents {
 export async function listMyAuditEvents(cursor?: string, limit = 20): Promise<PaginatedAuditEvents> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor) params.set("cursor", cursor);
-  return apiFetch<PaginatedAuditEvents>(`/api/v1/audit-events?${params.toString()}`);
+  const result = await apiFetchWithMeta<AuditEvent>(`/api/v1/audit-events?${params.toString()}`);
+  return { data: result.data, meta: result.meta as unknown as PaginatedAuditEvents["meta"] };
 }
